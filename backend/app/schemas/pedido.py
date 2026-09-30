@@ -6,17 +6,17 @@ from app.models.pedido import EstadoPedido
 from app.schemas.detalle_pedido import DetallePedidoRead
 
 
+class DetallePedidoCreateSchema(BaseModel):
+    producto_id: UUID
+    cantidad: int
+
+
 class PedidoCreate(BaseModel):
     comercio_id: UUID
     direccion_id: UUID
     metodo_pago: str
     cupon_codigo: str | None = None
-    detalles: list[DetallePedidoCreateSchema] = [] # wait, let's reference DetallePedidoCreate
-
-
-class DetallePedidoCreateSchema(BaseModel):
-    producto_id: UUID
-    cantidad: int
+    detalles: list[DetallePedidoCreateSchema] = []
 
 
 class PedidoEstadoUpdate(BaseModel):
