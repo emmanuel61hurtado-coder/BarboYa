@@ -1,14 +1,19 @@
 import pytest
 import asyncio
-from httpx import AsyncClient
+import os
+from httpx import AsyncClient, ASGITransport
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, AsyncSession
 from app.main import app
 from app.db.base import Base
 from app.db.session import get_db
 
-TEST_DATABASE_URL = "postgresql+asyncpg://barboyadb:barboyasecret@localhost:5432/barboyadb_test"
+TEST_DATABASE_URL = os.getenv("TEST_DATABASE_URL", "sqlite+aiosqlite:///:memory:")
 
-engine = create_async_engine(TEST_DATABASE_URL, future=True, echo=False)
+try:
+    engine = create_async_engine(TEST_DATABASE_URL, future=True, echo=False)
+except Exception:
+    engine = create_async_engine("sqlite+aiosqlite:///:memory:", future=True, echo=False)
+
 TestingSessionLocal = async_sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
 
 
@@ -32,5 +37,5 @@ async def setup_db():
 
 @pytest.fixture
 async def client():
-    async with AsyncClient(app=app, base_url="http://test") as ac:
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:
         yield ac

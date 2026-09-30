@@ -1,0 +1,92 @@
+name: BarboYa CI/CD Pipeline
+
+on:
+  push:
+    branches: [ "master", "main", "develop" ]
+  pull_request:
+    branches: [ "master", "main", "develop" ]
+
+jobs:
+  backend-ci:
+    name: 🐍 Backend (FastAPI / PostgreSQL) CI
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: barboyadb
+          POSTGRES_PASSWORD: barboyasecret
+          POSTGRES_DB: barboyadb_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    defaults:
+      run:
+        working-directory: ./backend
+
+    steps:
+      - name: 📥 Checkout repository
+        uses: actions/checkout@v4
+
+      - name: 🐍 Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: "pip"
+          cache-dependency-path: backend/requirements.txt
+
+      - name: 📦 Install Backend Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: 🔍 Code Linting (Ruff)
+        run: |
+          ruff check app/
+
+      - name: 🗄️ Run Alembic Migrations
+        env:
+          DATABASE_URL: postgresql+asyncpg://barboyadb:barboyasecret@localhost:5432/barboyadb_test
+        run: |
+          alembic upgrade head
+
+      - name: 🧪 Run Pytest Suite
+        env:
+          TEST_DATABASE_URL: postgresql+asyncpg://barboyadb:barboyasecret@localhost:5432/barboyadb_test
+          SECRET_KEY: ci_test_secret_key_12345
+          ENVIRONMENT: test
+        run: |
+          pytest -v
+
+  frontend-ci:
+    name: ⚛️ Frontend (React / Vite) CI
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: ./frontend
+
+    steps:
+      - name: 📥 Checkout repository
+        uses: actions/checkout@v4
+
+      - name: 🟢 Set up Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+          cache-dependency-path: frontend/package.json
+
+      - name: 📦 Install Frontend Dependencies
+        run: |
+          npm ci || npm install
+
+      - name: 🏗️ Type Check and Build
+        run: |
+          npm run build
