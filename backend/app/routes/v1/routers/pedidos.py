@@ -16,7 +16,7 @@ from app.schemas.pedido import PedidoRead, PedidoCreate, PedidoEstadoUpdate
 from app.deps import get_current_user, require_role
 from app.core.exceptions import DomainException
 from app.services.state_machine import validate_transition
-from app.api.v1.ws.manager import manager
+from app.routes.v1.ws.manager import manager
 
 router = APIRouter(prefix="/pedidos", tags=["Pedidos"])
 

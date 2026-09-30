@@ -5,12 +5,12 @@ from sqlalchemy.future import select
 from app.core.config import settings
 from app.core.exceptions import register_exception_handlers
 from app.db.session import get_db
-from app.api.v1.routers import (
+from app.routes.v1.routers import (
     auth, users, comercios, categorias, productos, direcciones,
     pedidos, pagos, entregas, calificaciones, vehiculos, cupones,
     notificaciones, admin, reportes
 )
-from app.api.v1.ws import pedidos_ws, tracking_ws
+from app.routes.v1.ws import pedidos_ws, tracking_ws
 
 app = FastAPI(
     title=settings.PROJECT_NAME,

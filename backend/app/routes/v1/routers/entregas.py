@@ -39,7 +39,7 @@ async def accept_delivery(pedido_id: UUID, current_user: User = Depends(require_
         pedido_id=pedido.id,
         repartidor_id=current_user.id,
         estado=EstadoEntrega.EN_CAMINO,
-        costo_domicilio=Decimal := Decimal("5000.00")
+        costo_domicilio=Decimal("5000.00")
     )
     db.add(entrega)
     await db.commit()
