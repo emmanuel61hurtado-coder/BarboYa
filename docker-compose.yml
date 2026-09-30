@@ -1,0 +1,53 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_image: barboya_postgres
+    environment:
+      POSTGRES_USER: barboya
+      POSTGRES_PASSWORD: barboyasecret
+      POSTGRES_DB: barboya_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U barboya -d barboya_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: barboya_backend
+    environment:
+      - DATABASE_URL=postgresql+asyncpg://barboyadb:barboyasecret@postgres:5432/barboyadb
+      - SECRET_KEY=supersecretkeychangemeinproduction
+      - ENVIRONMENT=development
+      - ALLOWED_ORIGINS=["*"]
+    ports:
+      - "8000:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    command: >
+      sh -c "alembic upgrade head && python -m app.scripts.seed && uvicorn app.main:app --host 0.0.0.0 --port 8000"
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: barboya_frontend
+    environment:
+      - VITE_API_URL=http://localhost:8000/api/v1
+      - VITE_USE_MOCKS=false
+    ports:
+      - "3000:80"
+    depends_on:
+      - backend
+
+volumes:
+  postgres_data:
