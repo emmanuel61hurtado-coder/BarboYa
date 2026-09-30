@@ -1,5 +1,6 @@
 from pydantic import BaseModel, EmailStr
 from app.models.user import UserRole
+from uuid import UUID
 
 
 class LoginRequest(BaseModel):
@@ -18,6 +19,13 @@ class RegisterRequest(BaseModel):
 class TokenResponse(BaseModel):
     access_token: str
     token_type: str = "bearer"
+
+
+Token = TokenResponse
+
+
+class TokenData(BaseModel):
+    user_id: UUID | None = None
 
 
 class ForgotPasswordRequest(BaseModel):

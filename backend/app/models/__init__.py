@@ -2,7 +2,7 @@
 BarboYa Models Package.
 Exports all SQLAlchemy database models.
 """
-from app.models.user import User, UserRole
+from app.models.user import User, UserRole, UserStatus
 from app.models.comercio import Comercio
 from app.models.categoria import Categoria
 from app.models.producto import Producto
@@ -13,12 +13,13 @@ from app.models.pago import Pago, MetodoPago, EstadoPago
 from app.models.entrega import Entrega, EstadoEntrega
 from app.models.calificacion import Calificacion
 from app.models.vehiculo import Vehiculo, TipoVehiculo
-from app.models.cupon import Cupon, TipoDescuento
+from app.models.cupon import Cupon
 from app.models.notificacion import Notificacion
 
 __all__ = [
     "User",
     "UserRole",
+    "UserStatus",
     "Comercio",
     "Categoria",
     "Producto",
@@ -35,6 +36,5 @@ __all__ = [
     "Vehiculo",
     "TipoVehiculo",
     "Cupon",
-    "TipoDescuento",
     "Notificacion",
 ]
