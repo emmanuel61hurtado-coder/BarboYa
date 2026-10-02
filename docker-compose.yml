@@ -3,17 +3,18 @@ version: '3.8'
 services:
   postgres:
     image: postgres:16-alpine
-    container_image: barboya_postgres
+    container_name: barboya_postgres
+    restart: always
     environment:
-      POSTGRES_USER: barboya
-      POSTGRES_PASSWORD: barboyasecret
-      POSTGRES_DB: barboya_db
+      POSTGRES_USER: ${POSTGRES_USER:-barboya}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-barboyasecret}
+      POSTGRES_DB: ${POSTGRES_DB:-barboya_db}
     ports:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U barboya -d barboya_db"]
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER:-barboya} -d $${POSTGRES_DB:-barboya_db}"]
       interval: 5s
       timeout: 5s
       retries: 5
@@ -23,11 +24,14 @@ services:
       context: ./backend
       dockerfile: Dockerfile
     container_name: barboya_backend
+    restart: always
     environment:
-      - DATABASE_URL=postgresql+asyncpg://barboyadb:barboyasecret@postgres:5432/barboyadb
-      - SECRET_KEY=supersecretkeychangemeinproduction
-      - ENVIRONMENT=development
-      - ALLOWED_ORIGINS=["*"]
+      - DATABASE_URL=${DATABASE_URL:-postgresql+asyncpg://barboya:barboyasecret@postgres:5432/barboya_db}
+      - SECRET_KEY=${SECRET_KEY:-supersecretkeychangemeinproduction_barboya}
+      - ENVIRONMENT=${ENVIRONMENT:-production}
+      - ALLOWED_ORIGINS=${ALLOWED_ORIGINS:-["*"]}
+      - ADMIN_EMAIL=${ADMIN_EMAIL:-admin@barboya.com}
+      - ADMIN_PASSWORD=${ADMIN_PASSWORD:-Admin123*}
     ports:
       - "8000:8000"
     depends_on:
@@ -40,10 +44,11 @@ services:
     build:
       context: ./frontend
       dockerfile: Dockerfile
+      args:
+        - VITE_API_URL=${VITE_API_URL:-/api/v1}
+        - VITE_USE_MOCKS=${VITE_USE_MOCKS:-false}
     container_name: barboya_frontend
-    environment:
-      - VITE_API_URL=http://localhost:8000/api/v1
-      - VITE_USE_MOCKS=false
+    restart: always
     ports:
       - "3000:80"
     depends_on:
@@ -51,3 +56,4 @@ services:
 
 volumes:
   postgres_data:
+

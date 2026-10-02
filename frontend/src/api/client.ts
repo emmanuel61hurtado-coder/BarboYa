@@ -1,10 +1,10 @@
 import axios from 'axios';
 import { MOCK_COMERCIOS, MOCK_PEDIDOS } from '../mocks/data';
 
-const USE_MOCKS = import.meta.env.VITE_USE_MOCKS === 'true' || true; // default true for prototype
+const USE_MOCKS = import.meta.env.VITE_USE_MOCKS !== 'false';
 
 export const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || 'http://localhost:8000/api/v1',
+  baseURL: import.meta.env.VITE_API_URL || '/api/v1',
   headers: {
     'Content-Type': 'application/json'
   }
