@@ -28,8 +28,8 @@ services:
       - ALLOWED_ORIGINS=${ALLOWED_ORIGINS:-["*"]}
       - ADMIN_EMAIL=${ADMIN_EMAIL:-admin@barboya.com}
       - ADMIN_PASSWORD=${ADMIN_PASSWORD:-Admin123*}
-    ports:
-      - "8000:8000"
+    expose:
+      - "8000"
     depends_on:
       postgres:
         condition: service_healthy
