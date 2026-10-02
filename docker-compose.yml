@@ -6,7 +6,7 @@ services:
     restart: always
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-barboya}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-barboyasecret}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Error: Variable POSTGRES_PASSWORD no definida en Coolify}
       POSTGRES_DB: ${POSTGRES_DB:-barboya_db}
     volumes:
       - postgres_data:/var/lib/postgresql/data
@@ -22,12 +22,14 @@ services:
       dockerfile: Dockerfile
     restart: always
     environment:
-      - DATABASE_URL=${DATABASE_URL:-postgresql+asyncpg://barboya:barboyasecret@postgres:5432/barboya_db}
-      - SECRET_KEY=${SECRET_KEY:-supersecretkeychangemeinproduction_barboya}
+      - POSTGRES_USER=${POSTGRES_USER:-barboya}
+      - POSTGRES_DB=${POSTGRES_DB:-barboya_db}
+      - DATABASE_URL=${DATABASE_URL:-postgresql+asyncpg://${POSTGRES_USER:-barboya}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-barboya_db}}
+      - SECRET_KEY=${SECRET_KEY:?Error: Variable SECRET_KEY no definida en Coolify}
       - ENVIRONMENT=${ENVIRONMENT:-production}
       - ALLOWED_ORIGINS=${ALLOWED_ORIGINS:-["*"]}
       - ADMIN_EMAIL=${ADMIN_EMAIL:-admin@barboya.com}
-      - ADMIN_PASSWORD=${ADMIN_PASSWORD:-Admin123*}
+      - ADMIN_PASSWORD=${ADMIN_PASSWORD:?Error: Variable ADMIN_PASSWORD no definida en Coolify}
     expose:
       - "8000"
     depends_on:
