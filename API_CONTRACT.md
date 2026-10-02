@@ -1,62 +1,129 @@
-# BarboYa API Contract
+# BarboYa API Contract & Reference
 
-Base URL: `/api/v1`
-Authentication: Bearer token (`Authorization: Bearer <access_token>`) or HttpOnly cookie for refresh token.
-
-## Roles
-- `CLIENTE`
-- `REPARTIDOR` (Pendiente de aprobación por admin)
-- `COMERCIO` (Pendiente de aprobación por admin)
-- `ADMIN`
+**Base URL:** `/api/v1`  
+**Authentication:** Bearer token (`Authorization: Bearer <access_token>`) or HttpOnly Cookie (`refresh_token`).
 
 ---
 
-## 1. Auth & Users (`/auth`, `/users`, `/admin`)
-- `POST /api/v1/auth/register`: Registro de usuario (`email`, `password`, `nombre`, `telefono`, `rol`).
-- `POST /api/v1/auth/login`: Login (`email`, `password`) -> Access token + Refresh cookie.
-- `POST /api/v1/auth/refresh`: Renueva access token con cookie HttpOnly.
-- `POST /api/v1/auth/logout`: Revoca sesión.
-- `POST /api/v1/auth/forgot-password`: Solicita recuperación de contraseña.
-- `POST /api/v1/auth/reset-password`: Restablece contraseña con token.
-- `GET /api/v1/users/me`: Perfil del usuario actual.
-- `PATCH /api/v1/users/me`: Actualiza perfil del usuario actual.
-
-## 2. Comercios & Categorías & Productos (`/comercios`, `/categorias`, `/productos`, `/direcciones`)
-- `GET /api/v1/categorias`: Lista categorías.
-- `GET /api/v1/comercios`: Lista comercios activos (con filtros).
-- `GET /api/v1/comercios/{id}`: Detalle de comercio con menú y productos.
-- `POST /api/v1/comercios`: Crear comercio (Rol COMERCIO).
-- `GET /api/v1/comercios/me/productos`: Productos del comercio actual.
-- `POST /api/v1/comercios/me/productos`: Crear producto.
-- `PATCH /api/v1/comercios/me/productos/{id}`: Actualizar producto.
-- `GET /api/v1/direcciones`: Direcciones del cliente.
-- `POST /api/v1/direcciones`: Crear dirección.
-
-## 3. Pedidos, Pagos & Cupones (`/pedidos`, `/pagos`, `/cupones`)
-- `POST /api/v1/pedidos`: Crear pedido (Rol CLIENTE). Servidor calcula total, aplica cupón, valida stock y horario.
-- `GET /api/v1/pedidos`: Listar pedidos del usuario (filtrado por rol).
-- `GET /api/v1/pedidos/{id}`: Detalle de pedido.
-- `PATCH /api/v1/pedidos/{id}/estado`: Cambiar estado (Transición controlada por máquina de estados).
-- `POST /api/v1/pagos`: Procesar pago con Idempotency-Key.
-- `POST /api/v1/cupones/validar`: Validar cupón.
-
-## 4. Repartidores & Entregas (`/repartidores`, `/entregas`)
-- `GET /api/v1/entregas/disponibles`: Pedidos en estado `LISTO` para repartidores en línea.
-- `POST /api/v1/entregas/{pedido_id}/aceptar`: Aceptar pedido (SELECT FOR UPDATE SKIP LOCKED).
-- `PATCH /api/v1/entregas/{id}/estado`: Actualizar estado de entrega.
-
-## 5. Calificaciones & Notificaciones (`/calificaciones`, `/notificaciones`)
-- `POST /api/v1/calificaciones`: Calificar pedido entregado (1-5).
-- `GET /api/v1/notificaciones`: Notificaciones del usuario.
-
-## 6. Admin & Reportes (`/admin`, `/reportes`)
-- `GET /api/v1/admin/usuarios`: Listar usuarios.
-- `PATCH /api/v1/admin/usuarios/{id}/aprobar`: Aprobar comercio/repartidor.
-- `PATCH /api/v1/admin/usuarios/{id}/bloquear`: Bloquear usuario.
-- `GET /api/v1/admin/reportes/ventas`: Reporte de ventas.
+## 👥 Roles y Permisos (RBAC)
+- `CLIENTE`: Realiza pedidos, administra direcciones, paga y califica.
+- `REPARTIDOR`: Requiere aprobación del admin. Acepta entregas (`LISTO`), actualiza ubicación y estado de entrega.
+- `COMERCIO`: Requiere aprobación del admin. Gestiona su perfil, horarios, productos y pedidos entrantes.
+- `ADMIN`: Control total (aprobar/bloquear usuarios, cupones, tarifas, reportes).
 
 ---
 
-## WebSockets
-- `/api/v1/ws/pedidos/{id}`: Cambios de estado del pedido (Cliente y Comercio).
-- `/api/v1/ws/tracking/{pedido_id}`: Ubicación en tiempo real del repartidor (Repartidor emite, Cliente recibe).
+## 🔐 1. Auth & Usuarios (`/auth`, `/users`)
+
+### `POST /api/v1/auth/register`
+- **Descripción:** Registro de nuevo usuario.
+- **Roles permitidos:** Público (`CLIENTE`, `REPARTIDOR`, `COMERCIO`).
+- **Body Request:**
+  ```json
+  {
+    "email": "cliente@barboya.com",
+    "password": "Password123*",
+    "nombre": "Juan Pérez",
+    "telefono": "3001234567",
+    "rol": "CLIENTE"
+  }
+  ```
+- **Respuesta (201 Created):** Objeto `UserRead`.
+
+### `POST /api/v1/auth/login`
+- **Descripción:** Iniciar sesión.
+- **Body Request:**
+  ```json
+  {
+    "email": "cliente@barboya.com",
+    "password": "Password123*"
+  }
+  ```
+- **Respuesta (200 OK):**
+  ```json
+  {
+    "access_token": "eyJhbGci...",
+    "token_type": "bearer"
+  }
+  ```
+  *(Establece cookie HttpOnly `refresh_token`)*
+
+### `POST /api/v1/auth/logout`
+- **Respuesta (200 OK):** `{ "message": "Sesión cerrada exitosamente" }`
+
+### `GET /api/v1/users/me`
+- **Autenticación:** Requerida (Cualquier rol).
+- **Respuesta (200 OK):** Objeto `UserRead`.
+
+---
+
+## 🍔 2. Comercios, Categorías & Productos (`/comercios`, `/categorias`, `/productos`, `/direcciones`)
+
+### `GET /api/v1/comercios`
+- **Respuesta (200 OK):** Lista de comercios activos.
+
+### `GET /api/v1/comercios/{id}`
+- **Respuesta (200 OK):** Detalle del comercio con su lista de productos.
+
+### `GET /api/v1/categorias`
+- **Respuesta (200 OK):** Lista de categorías de comida.
+
+### `POST /api/v1/comercios/me/productos`
+- **Autenticación:** Rol `COMERCIO`.
+- **Body Request:**
+  ```json
+  {
+    "nombre": "Hamburguesa Doble",
+    "descripcion": "Doble carne angus y queso",
+    "precio": 28000.00,
+    "disponible": true,
+    "categoria_id": "uuid-cat"
+  }
+  ```
+
+---
+
+## 📦 3. Pedidos, Pagos & Cupones (`/pedidos`, `/pagos`, `/cupones`)
+
+### `POST /api/v1/pedidos`
+- **Autenticación:** Rol `CLIENTE`.
+- **Descripción:** El servidor calcula el subtotal, costo de envío y total (nunca confía en cliente).
+- **Body Request:**
+  ```json
+  {
+    "comercio_id": "uuid-comercio",
+    "direccion_id": "uuid-direccion",
+    "metodo_pago": "TARJETA",
+    "cupon_codigo": "BARBOYA20",
+    "detalles": [
+      {
+        "producto_id": "uuid-prod",
+        "cantidad": 2
+      }
+    ]
+  }
+  ```
+
+### `GET /api/v1/pedidos`
+- **Descripción:** Lista pedidos según rol (cliente ve los suyos, comercio los de su local, repartidor sus entregas).
+
+### `PATCH /api/v1/pedidos/{id}/estado`
+- **Descripción:** Transición de estado sujeta a la máquina de estados estricta (`CREADO` → `ACEPTADO` → `PREPARANDO` → `LISTO` → `EN_CAMINO` → `ENTREGADO`).
+
+---
+
+## 🛵 4. Entregas & Repartidores (`/entregas`, `/vehiculos`)
+
+### `GET /api/v1/entregas/disponibles`
+- **Autenticación:** Rol `REPARTIDOR` (activo y aprobado).
+- **Respuesta:** Lista de pedidos con estado `LISTO` sin repartidor asignado.
+
+### `POST /api/v1/entregas/{pedido_id}/aceptar`
+- **Descripción:** Asigna pedido usando transacción con bloqueo (`SELECT FOR UPDATE SKIP LOCKED`).
+
+---
+
+## ⚡ 5. WebSockets
+
+- **`/api/v1/ws/pedidos/{id}?token=...`**: Emite eventos en tiempo real cuando cambia el estado del pedido.
+- **`/api/v1/ws/tracking/{pedido_id}?token=...`**: Canal de ubicación GPS en tiempo real entre Repartidor y Cliente.
