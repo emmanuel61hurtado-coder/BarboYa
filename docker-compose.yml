@@ -3,14 +3,11 @@ version: '3.8'
 services:
   postgres:
     image: postgres:16-alpine
-    container_name: barboya_postgres
     restart: always
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-barboya}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-barboyasecret}
       POSTGRES_DB: ${POSTGRES_DB:-barboya_db}
-    ports:
-      - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
@@ -23,7 +20,6 @@ services:
     build:
       context: ./backend
       dockerfile: Dockerfile
-    container_name: barboya_backend
     restart: always
     environment:
       - DATABASE_URL=${DATABASE_URL:-postgresql+asyncpg://barboya:barboyasecret@postgres:5432/barboya_db}
