@@ -1,12 +1,11 @@
-# BarboYa - App Web de Domicilios (Full Stack / Monorepo)
+# BarboYa - Backend API
 
-BarboYa es una plataforma de domicilios (tipo DiDi) mobile-first desarrollada con FastAPI (backend), React + Vite + Tailwind (frontend), PostgreSQL y WebSockets.
+BarboYa es el backend de una plataforma de domicilios (tipo DiDi) mobile-first desarrollada con **FastAPI**, **PostgreSQL** y **WebSockets**, lista para ser consumida por la aplicación móvil en **Flutter**.
 
 ## Estructura del Repositorio
 - `/backend`: FastAPI, SQLAlchemy 2.0 async, Pydantic v2, Alembic, WebSockets.
-- `/frontend`: React, Vite, TypeScript, Tailwind, Leaflet, PWA.
-- `/docker-compose.yml`: Orquestador de contenedores (Postgres, Backend, Frontend).
-- `/API_CONTRACT.md`: Contrato oficial de API y WebSockets.
+- `/docker-compose.yml`: Orquestador de contenedores (Postgres y Backend API).
+- `/API_CONTRACT.md`: Contrato oficial de API REST y WebSockets.
 
 ## Ejecución con Docker Compose
 ```bash
