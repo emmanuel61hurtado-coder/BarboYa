@@ -15,6 +15,9 @@ services:
       start_period: 10s
     restart: unless-stopped
 
+  # En Coolify: asigna el dominio SOLO al servicio `frontend`, puerto 80.
+  # El backend es interno (nginx hace proxy de /api/, /docs, /health y /ready hacia backend:8000).
+  # No asignes dominio al backend ni a postgres.
   backend:
     build:
       context: ./backend
@@ -31,6 +34,12 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://127.0.0.1:8000/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
     restart: unless-stopped
 
   frontend:
@@ -43,7 +52,14 @@ services:
     expose:
       - "80"
     depends_on:
-      - backend
+      backend:
+        condition: service_started
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:80/ > /dev/null 2>&1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
     restart: unless-stopped
 
 volumes:
