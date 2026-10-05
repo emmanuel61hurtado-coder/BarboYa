@@ -35,15 +35,13 @@ class Settings(BaseSettings):
     def validate_production_security(self):
         insecure_keys = [
             "supersecretkeychangemeinproduction",
-            "supersecretkeychangemeinproduction_barboya",
             "insecure_dev_key_only_must_be_overridden_in_production",
             "changeme",
             "secret",
-            "admin",
-            "123456",
         ]
         if self.ENVIRONMENT == "production":
-            if self.SECRET_KEY.lower() in insecure_keys or len(self.SECRET_KEY) < 32:
+            key_lower = self.SECRET_KEY.lower()
+            if any(bad in key_lower for bad in insecure_keys) or len(self.SECRET_KEY) < 32:
                 raise ValueError(
                     "CRITICAL SECURITY ALERT: In production, SECRET_KEY must be a secure, random string "
                     "of at least 32 characters (e.g. openssl rand -hex 32). "
@@ -56,7 +54,14 @@ class Settings(BaseSettings):
                 )
         return self
 
-    model_config = SettingsConfigDict(env_file=".env", extra="ignore")
+    model_config = SettingsConfigDict(
+        env_file=".env",
+        env_file_encoding="utf-8",
+        extra="ignore",
+        # In Docker, env vars come from the container environment, not .env file.
+        # This setting prevents crashes when .env is absent.
+        env_ignore_empty=True,
+    )
 
 
 settings = Settings()

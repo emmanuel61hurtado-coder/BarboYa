@@ -1,5 +1,6 @@
 from fastapi import FastAPI, Depends, status
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from app.core.config import settings
@@ -62,4 +63,7 @@ async def readiness_check(db: AsyncSession = Depends(get_db)):
         await db.execute(select(1))
         return {"status": "ready", "database": "connected"}
     except Exception as e:
-        return {"status": "not_ready", "error": str(e)}, status.HTTP_503_SERVICE_UNAVAILABLE
+        return JSONResponse(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            content={"status": "not_ready", "error": str(e)},
+        )

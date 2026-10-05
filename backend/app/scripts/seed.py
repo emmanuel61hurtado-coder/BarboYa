@@ -1,4 +1,5 @@
 import asyncio
+import logging
 from sqlalchemy.future import select
 from app.db.session import async_session_maker
 from app.models.user import User, UserRole, UserStatus
@@ -10,6 +11,8 @@ from app.core.security import get_password_hash
 from app.core.config import settings
 from datetime import datetime, timedelta
 from decimal import Decimal
+
+logger = logging.getLogger("barboya.seed")
 
 
 async def seed():
@@ -29,9 +32,9 @@ async def seed():
                         estado=UserStatus.ACTIVO
                     )
                     session.add(admin)
-                    print(f"Admin user seeded ({settings.ADMIN_EMAIL}).")
+                    logger.info(f"Admin user seeded ({settings.ADMIN_EMAIL}).")
             else:
-                print("Notice: ADMIN_PASSWORD not configured or too short. Skipping admin seeding.")
+                logger.warning("ADMIN_PASSWORD not configured or too short. Skipping admin seeding.")
 
             # Base system categories (essential catalog data)
             cats = ["Hamburguesas", "Pizza", "Sushi", "Mexicana", "Bebidas", "Postres", "Café"]
@@ -100,11 +103,13 @@ async def seed():
                         expiracion=datetime.utcnow() + timedelta(days=30)
                     )
                     session.add(cupon)
-                    print("Dev Coupon BARBOYA20 seeded.")
+                    logger.info("Dev Coupon BARBOYA20 seeded.")
 
-        await session.commit()
-        print("Database initialization / seed completed successfully.")
+        # session.begin() auto-commits on successful exit of the context manager
+        logger.info("Database initialization / seed completed successfully.")
 
 
 if __name__ == "__main__":
+    logging.basicConfig(level=logging.INFO)
     asyncio.run(seed())
+
