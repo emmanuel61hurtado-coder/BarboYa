@@ -52,6 +52,11 @@ app.include_router(pedidos_ws.router, prefix=api_prefix + "/ws")
 app.include_router(tracking_ws.router, prefix=api_prefix + "/ws")
 
 
+@app.get("/")
+async def root():
+    return {"mensaje": "BarboYa API funcionando", "docs": "/docs"}
+
+
 @app.get("/health")
 async def health_check():
     return {"status": "ok"}
