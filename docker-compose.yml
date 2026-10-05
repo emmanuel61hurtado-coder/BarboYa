@@ -1,7 +1,6 @@
 services:
   postgres:
     image: postgres:16-alpine
-    container_name: barboya_postgres
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-barboya}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-barboyasecret}
@@ -20,7 +19,6 @@ services:
     build:
       context: ./backend
       dockerfile: Dockerfile
-    container_name: barboya_backend
     environment:
       - DATABASE_URL=postgresql+asyncpg://${POSTGRES_USER:-barboya}:${POSTGRES_PASSWORD:-barboyasecret}@postgres:5432/${POSTGRES_DB:-barboya_db}
       - SECRET_KEY=${SECRET_KEY:-supersecretkeychangemeinproduction_barboya_2026}
@@ -28,8 +26,8 @@ services:
       - ALLOWED_ORIGINS=${ALLOWED_ORIGINS:-["*"]}
       - ADMIN_EMAIL=${ADMIN_EMAIL:-admin@barboya.com}
       - ADMIN_PASSWORD=${ADMIN_PASSWORD:-Admin123*}
-    ports:
-      - "8000:8000"
+    expose:
+      - "8000"
     depends_on:
       postgres:
         condition: service_healthy
@@ -42,9 +40,8 @@ services:
       args:
         VITE_API_URL: ${VITE_API_URL:-/api/v1}
         VITE_USE_MOCKS: ${VITE_USE_MOCKS:-false}
-    container_name: barboya_frontend
-    ports:
-      - "3000:80"
+    expose:
+      - "80"
     depends_on:
       - backend
     restart: unless-stopped
