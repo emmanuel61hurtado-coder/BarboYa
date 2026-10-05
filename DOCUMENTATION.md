@@ -115,7 +115,7 @@ docker compose up --build -d
 1. **Tipo de recurso**: Selecciona "Docker Compose".
 2. **Repositorio**: Apunta a tu repositorio Git.
 3. **Variables de entorno**: Copia las variables del `.env.example` en la pestaña de configuración.
-4. **Dominios**: Configura los dominios para frontend (puerto 80) y backend (puerto 8000).
+4. **Dominios**: Configura los dominios para frontend (puerto 80) y backend (puerto 8010).
 5. **Health Check**: Coolify usará automáticamente los healthchecks definidos en los Dockerfiles.
 
 ### 4.4. Estructura de Dockerfiles

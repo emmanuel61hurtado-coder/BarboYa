@@ -15,11 +15,11 @@ def main():
         venv_python = sys.executable
 
     print("Iniciando el backend de BarboYa con FastAPI (Uvicorn)...")
-    print("Servidor disponible en: http://127.0.0.1:8000")
-    print("Documentacion API (Swagger): http://127.0.0.1:8000/api/v1/docs")
+    print("Servidor disponible en: http://127.0.0.1:8010")
+    print("Documentacion API (Swagger): http://127.0.0.1:8010/api/v1/docs")
     print("-------------------------------------------------------")
 
-    cmd = [venv_python, "-m", "uvicorn", "app.main:app", "--reload", "--host", "127.0.0.1", "--port", "8000"]
+    cmd = [venv_python, "-m", "uvicorn", "app.main:app", "--reload", "--host", "127.0.0.1", "--port", "8010"]
     try:
         subprocess.run(cmd, cwd=backend_dir)
     except KeyboardInterrupt:
