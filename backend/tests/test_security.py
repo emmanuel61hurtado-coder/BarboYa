@@ -221,21 +221,99 @@ async def test_registro_no_devuelve_password(client):
     assert "password" not in r.text.lower()
 
 
-# ---------- vulnerabilidades conocidas (xfail strict: fallaran en cuanto se corrijan) ----------
-@pytest.mark.xfail(strict=True, reason="VULN: /auth/register permite autoasignarse rol ADMIN")
-async def test_registro_publico_no_debe_permitir_rol_admin(client):
+# ---------- escalada de privilegios ----------
+async def test_registro_publico_no_permite_rol_admin(client):
     r = await client.post("/api/v1/auth/register", json={
         "email": "evil-admin@barboya.com", "password": "Password123*",
         "nombre": "Evil", "telefono": "3000000000", "rol": "ADMIN",
     })
-    assert r.status_code in (400, 403, 422)
+    assert r.status_code == 403
+    assert r.json()["error"]["code"] == "FORBIDDEN_ROLE"
 
 
-@pytest.mark.xfail(strict=True, reason="VULN: get_current_user no valida el claim type=access")
-async def test_refresh_token_no_debe_servir_como_access_token(client, make_user):
+async def test_refresh_token_no_sirve_como_access_token(client, make_user):
     user, _ = await make_user()
     r = await client.get("/api/v1/users/me", headers={"Authorization": f"Bearer {create_refresh_token(user.id)}"})
     assert r.status_code == 401
+
+
+# ---------- WebSockets ----------
+@pytest.fixture
+async def pedido_ws(db_session, make_user):
+    """Pedido con cliente, repartidor, dueño de comercio y un usuario ajeno."""
+    from decimal import Decimal
+    from app.models.comercio import Comercio
+    from app.models.direccion import Direccion
+    from app.models.pedido import Pedido
+
+    cliente, _ = await make_user(UserRole.CLIENTE)
+    repartidor, _ = await make_user(UserRole.REPARTIDOR)
+    dueno, _ = await make_user(UserRole.COMERCIO)
+    ajeno, _ = await make_user(UserRole.CLIENTE)
+    admin, _ = await make_user(UserRole.ADMIN)
+    comercio = Comercio(user_id=dueno.id, nombre="C", direccion="x", lat=Decimal("1"), lng=Decimal("1"))
+    dire = Direccion(user_id=cliente.id, nombre="Casa", direccion="y", lat=Decimal("1"), lng=Decimal("1"))
+    db_session.add_all([comercio, dire])
+    await db_session.flush()
+    pedido = Pedido(
+        cliente_id=cliente.id, comercio_id=comercio.id, direccion_id=dire.id, repartidor_id=repartidor.id,
+        subtotal=Decimal("1"), costo_envio=Decimal("1"), total=Decimal("2"), metodo_pago="EFECTIVO",
+    )
+    db_session.add(pedido)
+    await db_session.commit()
+    return pedido, dict(cliente=cliente, repartidor=repartidor, dueno=dueno, ajeno=ajeno, admin=admin)
+
+
+async def test_ws_authenticate_acepta_solo_access_token_valido(db_session, make_user):
+    from app.routes.v1.ws.auth import authenticate_ws
+
+    user, _ = await make_user()
+    assert (await authenticate_ws(create_access_token(user.id), db_session)).id == user.id
+    assert await authenticate_ws(create_refresh_token(user.id), db_session) is None
+    assert await authenticate_ws("basura", db_session) is None
+    assert await authenticate_ws(create_access_token(user.id, timedelta(seconds=-5)), db_session) is None
+
+
+async def test_ws_authenticate_rechaza_usuario_bloqueado(db_session, make_user):
+    from app.routes.v1.ws.auth import authenticate_ws
+
+    user, _ = await make_user(estado=UserStatus.BLOQUEADO)
+    assert await authenticate_ws(create_access_token(user.id), db_session) is None
+
+
+async def test_ws_acceso_al_pedido_por_rol(db_session, pedido_ws):
+    from app.routes.v1.ws.auth import can_access_pedido
+
+    pedido, u = pedido_ws
+    for quien in ("cliente", "repartidor", "dueno", "admin"):
+        ok, _ = await can_access_pedido(u[quien], str(pedido.id), db_session)
+        assert ok, quien
+    ok, _ = await can_access_pedido(u["ajeno"], str(pedido.id), db_session)
+    assert not ok
+
+
+async def test_ws_pedido_inexistente_o_id_invalido_denegado(db_session, pedido_ws):
+    import uuid
+    from app.routes.v1.ws.auth import can_access_pedido
+
+    _, u = pedido_ws
+    assert (await can_access_pedido(u["admin"], str(uuid.uuid4()), db_session))[0] is False
+    assert (await can_access_pedido(u["admin"], "no-es-uuid", db_session))[0] is False
+
+
+@pytest.mark.parametrize("path", ["/api/v1/ws/pedidos/abc", "/api/v1/ws/tracking/abc"])
+def test_ws_rechaza_token_invalido_y_requiere_token(path):
+    from starlette.testclient import TestClient
+    from starlette.websockets import WebSocketDisconnect
+    from app.main import app
+
+    with TestClient(app) as tc:
+        with pytest.raises(WebSocketDisconnect):
+            with tc.websocket_connect(f"{path}?token=basura"):
+                pass
+        with pytest.raises(Exception):
+            with tc.websocket_connect(path):  # sin token: 403 por query obligatoria
+                pass
 
 
 # ---------- configuracion ----------

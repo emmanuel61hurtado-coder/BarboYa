@@ -20,6 +20,8 @@ async def get_current_user(
     token = credentials.credentials
     try:
         payload = jwt.decode(token, settings.SECRET_KEY, algorithms=["HS256"])
+        if payload.get("type") != "access":
+            raise DomainException("INVALID_TOKEN", "Tipo de token inválido", status.HTTP_401_UNAUTHORIZED)
         user_id = UUID(payload.get("sub"))
     except (JWTError, ValueError, TypeError, AttributeError):
         raise DomainException("INVALID_TOKEN", "Token inválido o expirado", status.HTTP_401_UNAUTHORIZED)
