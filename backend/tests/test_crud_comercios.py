@@ -71,7 +71,7 @@ async def test_get_comercio_not_found(client):
 async def test_create_comercio_requires_auth(client):
     """Sin token → 403."""
     res = await client.post("/api/v1/comercios", json=COMERCIO_PAYLOAD)
-    assert res.status_code == 403
+    assert res.status_code in (401, 403)  # FastAPI >=0.122 devuelve 401 sin credenciales
 
 
 @pytest.mark.asyncio

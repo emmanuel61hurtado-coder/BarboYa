@@ -58,7 +58,7 @@ async def test_create_direccion_success(client):
 @pytest.mark.asyncio
 async def test_create_direccion_unauthorized(client):
     res = await client.post("/api/v1/direcciones", json=DIRECCION_PAYLOAD)
-    assert res.status_code == 403
+    assert res.status_code in (401, 403)  # FastAPI >=0.122 devuelve 401 sin credenciales
 
 
 @pytest.mark.asyncio

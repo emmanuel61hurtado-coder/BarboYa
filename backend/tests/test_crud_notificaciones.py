@@ -40,4 +40,4 @@ async def test_list_notificaciones_empty(client):
 async def test_list_notificaciones_unauthorized(client):
     """Sin token → 403."""
     res = await client.get("/api/v1/notificaciones")
-    assert res.status_code == 403
+    assert res.status_code in (401, 403)  # FastAPI >=0.122 devuelve 401 sin credenciales

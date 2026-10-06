@@ -1,10 +1,7 @@
-import uuid
 from decimal import Decimal
 from datetime import datetime
 from app.models.user import User, UserRole, UserStatus
 from app.models.comercio import Comercio
-from app.models.producto import Producto
-from app.models.pedido import Pedido, EstadoPedido
 from app.models.cupon import Cupon
 
 
