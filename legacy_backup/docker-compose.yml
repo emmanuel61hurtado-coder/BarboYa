@@ -1,0 +1,66 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-barboya}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-barboyasecret}
+      POSTGRES_DB: ${POSTGRES_DB:-barboya_db}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-barboya} -d ${POSTGRES_DB:-barboya_db}"]
+      interval: 5s
+      timeout: 5
+      retries: 10
+      start_period: 10s
+    restart: unless-stopped
+
+  # En Coolify: asigna el dominio SOLO al servicio `frontend`, puerto 80.
+  # El backend es interno (nginx hace proxy de /api/, /docs, /health y /ready hacia backend:8010).
+  # No asignes dominio al backend ni a postgres.
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    environment:
+      - DATABASE_URL=postgresql+asyncpg://${POSTGRES_USER:-barboya}:${POSTGRES_PASSWORD:-barboyasecret}@postgres:5432/${POSTGRES_DB:-barboya_db}
+      - SECRET_KEY=${SECRET_KEY:-supersecretkeychangemeinproduction_barboya_2026}
+      - ENVIRONMENT=${ENVIRONMENT:-development}
+      - ALLOWED_ORIGINS=${ALLOWED_ORIGINS:-["*"]}
+      - ADMIN_EMAIL=${ADMIN_EMAIL:-admin@barboya.com}
+      - ADMIN_PASSWORD=${ADMIN_PASSWORD:-Admin123*}
+    expose:
+      - "8010"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://127.0.0.1:8010/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        VITE_API_URL: ${VITE_API_URL:-/api/v1}
+        VITE_USE_MOCKS: ${VITE_USE_MOCKS:-false}
+    expose:
+      - "80"
+    depends_on:
+      backend:
+        condition: service_started
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:80/ > /dev/null 2>&1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    restart: unless-stopped
+
+volumes:
+  postgres_data:

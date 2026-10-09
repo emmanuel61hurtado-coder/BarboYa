@@ -9,7 +9,7 @@ from app.db.session import get_db
 from app.routes.v1.routers import (
     auth, users, comercios, categorias, productos, direcciones,
     pedidos, pagos, entregas, calificaciones, vehiculos, cupones,
-    notificaciones, admin, reportes, viajes, envios
+    notificaciones, admin, reportes
 )
 from app.routes.v1.ws import pedidos_ws, tracking_ws
 
@@ -46,8 +46,6 @@ app.include_router(cupones.router, prefix=api_prefix)
 app.include_router(notificaciones.router, prefix=api_prefix)
 app.include_router(admin.router, prefix=api_prefix)
 app.include_router(reportes.router, prefix=api_prefix)
-app.include_router(viajes.router, prefix=api_prefix)
-app.include_router(envios.router, prefix=api_prefix)
 
 # WebSockets
 app.include_router(pedidos_ws.router, prefix=api_prefix + "/ws")
