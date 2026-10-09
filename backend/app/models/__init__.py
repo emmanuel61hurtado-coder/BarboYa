@@ -15,6 +15,8 @@ from app.models.calificacion import Calificacion
 from app.models.vehiculo import Vehiculo, TipoVehiculo
 from app.models.cupon import Cupon
 from app.models.notificacion import Notificacion
+from app.models.viaje import ViajePasajero, TipoServicioMove, EstadoViaje
+from app.models.envio import EnvioPaquete, TipoPaquete, EstadoEnvio
 
 __all__ = [
     "User",
@@ -37,4 +39,10 @@ __all__ = [
     "TipoVehiculo",
     "Cupon",
     "Notificacion",
+    "ViajePasajero",
+    "TipoServicioMove",
+    "EstadoViaje",
+    "EnvioPaquete",
+    "TipoPaquete",
+    "EstadoEnvio",
 ]

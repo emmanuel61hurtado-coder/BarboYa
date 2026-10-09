@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h2>Hola, {{ nombre }}!</h2>
+<p>{{ mensaje }}</p>
+
+{% if action_url %}
+<p style="text-align: center;">
+    <a href="{{ action_url }}" class="btn">{{ action_text | default("Ver en BarboYa") }}</a>
+</p>
+{% endif %}
+
+<p>Si tienes alguna pregunta, nuestro equipo de soporte está disponible las 24 horas.</p>
+{% endblock %}

@@ -1,5 +1,6 @@
 from fastapi import FastAPI, Depends, status
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from app.core.config import settings
@@ -8,7 +9,7 @@ from app.db.session import get_db
 from app.routes.v1.routers import (
     auth, users, comercios, categorias, productos, direcciones,
     pedidos, pagos, entregas, calificaciones, vehiculos, cupones,
-    notificaciones, admin, reportes
+    notificaciones, admin, reportes, viajes, envios
 )
 from app.routes.v1.ws import pedidos_ws, tracking_ws
 
@@ -45,10 +46,17 @@ app.include_router(cupones.router, prefix=api_prefix)
 app.include_router(notificaciones.router, prefix=api_prefix)
 app.include_router(admin.router, prefix=api_prefix)
 app.include_router(reportes.router, prefix=api_prefix)
+app.include_router(viajes.router, prefix=api_prefix)
+app.include_router(envios.router, prefix=api_prefix)
 
 # WebSockets
 app.include_router(pedidos_ws.router, prefix=api_prefix + "/ws")
 app.include_router(tracking_ws.router, prefix=api_prefix + "/ws")
+
+
+@app.get("/")
+async def root():
+    return {"mensaje": "BarboYa API funcionando", "docs": "/docs"}
 
 
 @app.get("/health")
@@ -62,4 +70,7 @@ async def readiness_check(db: AsyncSession = Depends(get_db)):
         await db.execute(select(1))
         return {"status": "ready", "database": "connected"}
     except Exception as e:
-        return {"status": "not_ready", "error": str(e)}, status.HTTP_503_SERVICE_UNAVAILABLE
+        return JSONResponse(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            content={"status": "not_ready", "error": str(e)},
+        )

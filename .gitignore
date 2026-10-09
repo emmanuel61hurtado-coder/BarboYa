@@ -10,8 +10,6 @@ build/
 node_modules/
 .pytest_cache/
 .ruff_cache/
-alembic/versions/*.py
-!alembic/versions/README
 .DS_Store
 coverage.xml
 .coverage
