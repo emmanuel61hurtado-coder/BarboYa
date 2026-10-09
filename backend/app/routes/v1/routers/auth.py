@@ -13,6 +13,9 @@ router = APIRouter(prefix="/auth", tags=["Auth"])
 
 @router.post("/register", response_model=UserRead, status_code=status.HTTP_201_CREATED)
 async def register(payload: RegisterRequest, db: AsyncSession = Depends(get_db)):
+    if payload.rol == UserRole.ADMIN:
+        raise DomainException("FORBIDDEN_ROLE", "No se puede registrar una cuenta de administrador", status.HTTP_403_FORBIDDEN)
+
     result = await db.execute(select(User).where(User.email == payload.email))
     if result.scalar_one_or_none():
         raise DomainException("EMAIL_ALREADY_EXISTS", "El correo ya está registrado", status.HTTP_409_CONFLICT)

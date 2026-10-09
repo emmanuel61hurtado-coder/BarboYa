@@ -3,10 +3,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from app.db.session import get_db
 from app.models.pago import Pago, EstadoPago
-from app.models.pedido import Pedido
 from app.schemas.pago import PagoRead, PagoCreate
-from app.core.exceptions import DomainException
-from app.deps import get_current_user
 
 router = APIRouter(prefix="/pagos", tags=["Pagos"])
 

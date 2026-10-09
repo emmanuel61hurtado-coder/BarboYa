@@ -1,13 +1,12 @@
 from fastapi import APIRouter, Depends, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
-from uuid import UUID
 from app.db.session import get_db
 from app.models.producto import Producto
 from app.models.comercio import Comercio
 from app.models.user import User, UserRole
-from app.schemas.producto import ProductoRead, ProductoCreate, ProductoUpdate
-from app.deps import require_role, get_current_user
+from app.schemas.producto import ProductoRead, ProductoCreate
+from app.deps import require_role
 from app.core.exceptions import DomainException
 
 router = APIRouter(prefix="", tags=["Productos"])

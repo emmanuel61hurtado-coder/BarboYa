@@ -4,7 +4,7 @@ from sqlalchemy.future import select
 from app.db.session import get_db
 from app.models.vehiculo import Vehiculo
 from app.models.user import User, UserRole
-from app.schemas.vehiculo import VehiculoRead, VehiculoCreate, VehiculoUpdate
+from app.schemas.vehiculo import VehiculoRead, VehiculoCreate
 from app.deps import require_role
 from app.core.exceptions import DomainException
 

@@ -6,8 +6,8 @@ from uuid import UUID
 from app.db.session import get_db
 from app.models.comercio import Comercio
 from app.models.user import User, UserRole
-from app.schemas.comercio import ComercioRead, ComercioCreate, ComercioUpdate
-from app.deps import get_current_user, require_role
+from app.schemas.comercio import ComercioRead, ComercioCreate
+from app.deps import require_role
 from app.core.exceptions import DomainException
 
 router = APIRouter(prefix="/comercios", tags=["Comercios"])

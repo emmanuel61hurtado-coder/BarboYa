@@ -7,9 +7,8 @@ Tests para:
   POST /vehiculos      - sin token → 403
 """
 import pytest
-from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
-from tests.conftest import TestingSessionLocal
+from conftest import TestingSessionLocal
 from app.models.user import User, UserStatus
 
 
@@ -54,7 +53,7 @@ VEHICULO_PAYLOAD = {"tipo": "MOTO", "placa": "ABC123", "modelo": "Honda CB190"}
 @pytest.mark.asyncio
 async def test_create_vehiculo_unauthorized(client):
     res = await client.post("/api/v1/vehiculos", json=VEHICULO_PAYLOAD)
-    assert res.status_code == 403
+    assert res.status_code in (401, 403)  # FastAPI >=0.122 devuelve 401 sin credenciales
 
 
 @pytest.mark.asyncio
