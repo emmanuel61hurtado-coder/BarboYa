@@ -16,26 +16,8 @@ class RegisterRequest(BaseModel):
     rol: UserRole
 
 
-class GoogleLoginRequest(BaseModel):
-    id_token: str
-
-
-class OTPRequest(BaseModel):
-    telefono: str
-
-
-class OTPVerifyRequest(BaseModel):
-    telefono: str
-    codigo: str
-
-
-class RefreshTokenRequest(BaseModel):
-    refresh_token: str
-
-
 class TokenResponse(BaseModel):
     access_token: str
-    refresh_token: str
     token_type: str = "bearer"
 
 

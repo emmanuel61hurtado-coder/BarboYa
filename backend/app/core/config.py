@@ -11,7 +11,6 @@ class Settings(BaseSettings):
     PROJECT_NAME: str = "BarboYa API"
     API_V1_STR: str = "/api/v1"
     DATABASE_URL: str = "postgresql+asyncpg://barboya:changeme@localhost:5432/barboya_db"
-    REDIS_URL: str = "redis://redis:6379/0"
     SECRET_KEY: str = "insecure_dev_key_only_must_be_overridden_in_production"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 15
     REFRESH_TOKEN_EXPIRE_DAYS: int = 7

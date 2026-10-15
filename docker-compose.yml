@@ -10,27 +10,20 @@ services:
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-barboya} -d ${POSTGRES_DB:-barboya_db}"]
       interval: 5s
-      timeout: 5s
+      timeout: 5
       retries: 10
       start_period: 10s
     restart: unless-stopped
 
-  redis:
-    image: redis:7-alpine
-    healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
-      interval: 5s
-      timeout: 5s
-      retries: 5
-    restart: unless-stopped
-
+  # En Coolify: asigna el dominio SOLO al servicio `frontend`, puerto 80.
+  # El backend es interno (nginx hace proxy de /api/, /docs, /health y /ready hacia backend:8010).
+  # No asignes dominio al backend ni a postgres.
   backend:
     build:
       context: ./backend
       dockerfile: Dockerfile
     environment:
       - DATABASE_URL=postgresql+asyncpg://${POSTGRES_USER:-barboya}:${POSTGRES_PASSWORD:-barboyasecret}@postgres:5432/${POSTGRES_DB:-barboya_db}
-      - REDIS_URL=redis://redis:6379/0
       - SECRET_KEY=${SECRET_KEY:-supersecretkeychangemeinproduction_barboya_2026}
       - ENVIRONMENT=${ENVIRONMENT:-development}
       - ALLOWED_ORIGINS=${ALLOWED_ORIGINS:-["*"]}
@@ -41,31 +34,12 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
-      redis:
-        condition: service_healthy
     healthcheck:
-      test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://127.0.0.1:8010/health')\""]
+      test: ["CMD-SHELL", "curl -f http://127.0.0.1:8010/health"]
       interval: 30s
       timeout: 5s
       retries: 3
       start_period: 30s
-    restart: unless-stopped
-
-  worker:
-    build:
-      context: ./backend
-      dockerfile: Dockerfile
-    environment:
-      - DATABASE_URL=postgresql+asyncpg://${POSTGRES_USER:-barboya}:${POSTGRES_PASSWORD:-barboyasecret}@postgres:5432/${POSTGRES_DB:-barboya_db}
-      - REDIS_URL=redis://redis:6379/0
-      - SECRET_KEY=${SECRET_KEY:-supersecretkeychangemeinproduction_barboya_2026}
-      - ENVIRONMENT=${ENVIRONMENT:-development}
-    command: ["celery", "-A", "app.core.celery_app.celery_app", "worker", "--loglevel=info"]
-    depends_on:
-      postgres:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
     restart: unless-stopped
 
   frontend:
@@ -81,7 +55,7 @@ services:
       backend:
         condition: service_started
     healthcheck:
-      test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://127.0.0.1:80/')\""]
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:80/ > /dev/null 2>&1"]
       interval: 30s
       timeout: 5s
       retries: 3
