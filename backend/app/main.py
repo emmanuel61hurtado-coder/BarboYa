@@ -5,6 +5,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from app.core.config import settings
 from app.core.exceptions import register_exception_handlers
+from app.core.redis import get_redis, redis_client
 from app.db.session import get_db
 from app.routes.v1.routers import (
     auth, users, comercios, categorias, productos, direcciones,
@@ -56,21 +57,37 @@ app.include_router(tracking_ws.router, prefix=api_prefix + "/ws")
 
 @app.get("/")
 async def root():
-    return {"mensaje": "BarboYa API funcionando", "docs": "/docs"}
+    return {"mensaje": "BarboYa Super-App API funcionando", "docs": "/docs"}
 
 
 @app.get("/health")
 async def health_check():
-    return {"status": "ok"}
+    return {"status": "ok", "service": "BarboYa Backend"}
 
 
 @app.get("/ready")
 async def readiness_check(db: AsyncSession = Depends(get_db)):
+    db_ok = False
+    redis_ok = False
+    error_msg = None
+
     try:
         await db.execute(select(1))
-        return {"status": "ready", "database": "connected"}
+        db_ok = True
     except Exception as e:
+        error_msg = f"Database error: {str(e)}"
+
+    try:
+        await redis_client.ping()
+        redis_ok = True
+    except Exception as e:
+        if not error_msg:
+            error_msg = f"Redis error: {str(e)}"
+
+    if db_ok and redis_ok:
+        return {"status": "ready", "database": "connected", "redis": "connected"}
+    else:
         return JSONResponse(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            content={"status": "not_ready", "error": str(e)},
+            content={"status": "not_ready", "error": error_msg},
         )
