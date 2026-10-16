@@ -1,5 +1,6 @@
 import uuid
-from datetime import datetime
+from datetime import datetime, time
+from decimal import Decimal
 from sqlalchemy import Column, String, DateTime, ForeignKey, Numeric, Boolean, Time, Integer, Enum as SQLEnum
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
@@ -106,12 +107,47 @@ class Cita(Base):
     cliente_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
     staff_id = Column(UUID(as_uuid=True), ForeignKey("staff_barberos.id", ondelete="CASCADE"), nullable=False)
     servicio_id = Column(UUID(as_uuid=True), ForeignKey("servicios_barberia.id", ondelete="CASCADE"), nullable=False)
+    combo_id = Column(UUID(as_uuid=True), ForeignKey("combos_servicios.id", ondelete="SET NULL"), nullable=True)
     fecha_hora = Column(DateTime, nullable=False, index=True)
+    duracion_total_minutos = Column(Integer, nullable=False, default=30)
+    buffer_minutos = Column(Integer, nullable=False, default=10)
     estado = Column(SQLEnum(EstadoCita), nullable=False, default=EstadoCita.PENDIENTE)
     notas = Column(String, nullable=True)
+    deposito_pagado = Column(Boolean, default=False, nullable=False)
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
 
     cliente = relationship("User")
     staff = relationship("StaffBarbero", back_populates="citas")
     servicio = relationship("ServicioBarberia", back_populates="citas")
+    combo = relationship("ComboServicios", back_populates="citas")
+
+
+class ComboServicios(Base):
+    __tablename__ = "combos_servicios"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
+    sede_id = Column(UUID(as_uuid=True), ForeignKey("sedes.id", ondelete="CASCADE"), nullable=False)
+    nombre = Column(String, nullable=False)
+    descripcion = Column(String, nullable=True)
+    precio_promocional = Column(Numeric(10, 2), nullable=False)
+    activo = Column(Boolean, default=True, nullable=False)
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+
+    citas = relationship("Cita", back_populates="combo")
+
+
+class ListaEsperaInteligente(Base):
+    __tablename__ = "lista_espera"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
+    cliente_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    staff_id = Column(UUID(as_uuid=True), ForeignKey("staff_barberos.id", ondelete="CASCADE"), nullable=False)
+    servicio_id = Column(UUID(as_uuid=True), ForeignKey("servicios_barberia.id", ondelete="CASCADE"), nullable=False)
+    fecha_deseada = Column(DateTime, nullable=False)
+    notificado = Column(Boolean, default=False, nullable=False)
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+
+    cliente = relationship("User")
+    staff = relationship("StaffBarbero")
+    servicio = relationship("ServicioBarberia")
