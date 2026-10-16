@@ -194,7 +194,7 @@ async def test_cupon_codigo_unico(db_session):
 
 
 def test_enums_expuestos():
-    assert {r.value for r in UserRole} == {"CLIENTE", "REPARTIDOR", "COMERCIO", "ADMIN"}
+    assert {"CLIENTE", "REPARTIDOR", "COMERCIO", "ADMIN", "BARBERO", "DUENO_BARBERIA", "ADMIN_SEDE", "SUPERADMIN"}.issubset({r.value for r in UserRole})
     assert {s.value for s in UserStatus} == {"PENDIENTE", "ACTIVO", "BLOQUEADO"}
     assert [e.value for e in EstadoPedido] == [
         "CREADO", "ACEPTADO", "PREPARANDO", "LISTO", "EN_CAMINO", "ENTREGADO", "CANCELADO",

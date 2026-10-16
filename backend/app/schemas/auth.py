@@ -1,6 +1,13 @@
 from pydantic import BaseModel, EmailStr
-from app.models.user import UserRole
-from uuid import UUID
+
+
+class Token(BaseModel):
+    access_token: str
+    token_type: str = "bearer"
+
+
+class TokenData(BaseModel):
+    user_id: str | None = None
 
 
 class LoginRequest(BaseModel):
@@ -13,19 +20,30 @@ class RegisterRequest(BaseModel):
     password: str
     nombre: str
     telefono: str
-    rol: UserRole
+    rol: str
+
+
+class GoogleLoginRequest(BaseModel):
+    id_token: str
+
+
+class OTPRequest(BaseModel):
+    telefono: str
+
+
+class OTPVerifyRequest(BaseModel):
+    telefono: str
+    codigo: str
+
+
+class RefreshTokenRequest(BaseModel):
+    refresh_token: str
 
 
 class TokenResponse(BaseModel):
     access_token: str
+    refresh_token: str
     token_type: str = "bearer"
-
-
-Token = TokenResponse
-
-
-class TokenData(BaseModel):
-    user_id: UUID | None = None
 
 
 class ForgotPasswordRequest(BaseModel):
