@@ -7,32 +7,16 @@ from sqlalchemy.ext.asyncio import async_engine_from_config
 
 from alembic import context
 from app.core.config import settings
-from app.db.base import Base
-
-# Import all models to ensure they are registered with Base.metadata
-from app.models.user import User
-from app.models.comercio import Comercio
-from app.models.categoria import Categoria
-from app.models.producto import Producto
-from app.models.direccion import Direccion
-from app.models.pedido import Pedido
-from app.models.detalle_pedido import DetallePedido
-from app.models.pago import Pago
-from app.models.entrega import Entrega
-from app.models.calificacion import Calificacion
-from app.models.vehiculo import Vehiculo
-from app.models.cupon import Cupon
-from app.models.notificacion import Notificacion
+from app.core.database import Base
 
 config = context.config
 
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)
 
-config.set_main_option("sqlalchemy.url", settings.DATABASE_URL.replace("postgresql+asyncpg://", "postgresql+psycopg2://"))
-
 target_metadata = Base.metadata
 
+config.set_main_option("sqlalchemy.url", settings.DATABASE_URL)
 
 def run_migrations_offline() -> None:
     url = config.get_main_option("sqlalchemy.url")
@@ -46,17 +30,15 @@ def run_migrations_offline() -> None:
     with context.begin_transaction():
         context.run_migrations()
 
-
 def do_run_migrations(connection: Connection) -> None:
     context.configure(connection=connection, target_metadata=target_metadata)
 
     with context.begin_transaction():
         context.run_migrations()
 
-
 async def run_async_migrations() -> None:
     connectable = async_engine_from_config(
-        config.get_section(config.config_ini_section, {}),
+        config.get_section(config.config_section_name, {}),
         prefix="sqlalchemy.",
         poolclass=pool.NullPool,
     )
@@ -66,12 +48,11 @@ async def run_async_migrations() -> None:
 
     await connectable.dispose()
 
-
 def run_migrations_online() -> None:
     asyncio.run(run_async_migrations())
 
-
-if context.is_offline_mode():
-    run_migrations_offline()
-else:
-    run_migrations_online()
+if __name__ == "__main__":
+    if context.is_offline_mode():
+        run_migrations_offline()
+    else:
+        run_migrations_online()

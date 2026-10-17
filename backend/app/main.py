@@ -1,65 +1,51 @@
-from fastapi import FastAPI, Depends, status
+from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.future import select
-from app.core.config import settings
-from app.core.exceptions import register_exception_handlers
-from app.db.session import get_db
-from app.routes.v1.routers import (
-    auth, users, comercios, categorias, productos, direcciones,
-    pedidos, pagos, entregas, calificaciones, vehiculos, cupones,
-    notificaciones, admin, reportes
-)
-from app.routes.v1.ws import pedidos_ws, tracking_ws
+
+from app.api.auth import router as auth_router
+from app.api.notifications import router as notifications_router
+from app.api.payments import router as payments_router
+from app.api.services import router as services_router
+from app.api.transport import router as transport_router
+from app.api.users import router as users_router
+from app.core.config import configure_logging, settings
+
+configure_logging()
+
+docs_enabled = settings.ENVIRONMENT != "production" or settings.ENABLE_DOCS
 
 app = FastAPI(
     title=settings.PROJECT_NAME,
-    openapi_url=f"{settings.API_V1_STR}/openapi.json",
-    docs_url=f"{settings.API_V1_STR}/docs",
+    version="2.0.0",
+    docs_url="/docs" if docs_enabled else None,
+    redoc_url="/redoc" if docs_enabled else None,
+    openapi_url=f"{settings.API_V1_STR}/openapi.json" if docs_enabled else None,
 )
 
-register_exception_handlers(app)
-
+allow_credentials = "*" not in settings.ALLOWED_ORIGINS
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.ALLOWED_ORIGINS,
-    allow_credentials=True,
+    allow_credentials=allow_credentials,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# Include v1 routers
-api_prefix = settings.API_V1_STR
-app.include_router(auth.router, prefix=api_prefix)
-app.include_router(users.router, prefix=api_prefix)
-app.include_router(comercios.router, prefix=api_prefix)
-app.include_router(categorias.router, prefix=api_prefix)
-app.include_router(productos.router, prefix=api_prefix)
-app.include_router(direcciones.router, prefix=api_prefix)
-app.include_router(pedidos.router, prefix=api_prefix)
-app.include_router(pagos.router, prefix=api_prefix)
-app.include_router(entregas.router, prefix=api_prefix)
-app.include_router(calificaciones.router, prefix=api_prefix)
-app.include_router(vehiculos.router, prefix=api_prefix)
-app.include_router(cupones.router, prefix=api_prefix)
-app.include_router(notificaciones.router, prefix=api_prefix)
-app.include_router(admin.router, prefix=api_prefix)
-app.include_router(reportes.router, prefix=api_prefix)
+app.include_router(auth_router, prefix=settings.API_V1_STR)
+app.include_router(users_router, prefix=settings.API_V1_STR)
+app.include_router(services_router, prefix=settings.API_V1_STR)
+app.include_router(transport_router, prefix=settings.API_V1_STR)
+app.include_router(notifications_router, prefix=settings.API_V1_STR)
+app.include_router(payments_router, prefix=settings.API_V1_STR)
 
-# WebSockets
-app.include_router(pedidos_ws.router, prefix=api_prefix + "/ws")
-app.include_router(tracking_ws.router, prefix=api_prefix + "/ws")
-
+@app.get("/")
+async def root():
+    return {
+        "mensaje": "BarboYa Súper App API funcionando",
+        "docs": "/docs" if docs_enabled else "disabled in production",
+        "environment": settings.ENVIRONMENT,
+    }
 
 @app.get("/health")
 async def health_check():
-    return {"status": "ok"}
+    return {"status": "ok", "service": "BarboYa Backend"}
 
-
-@app.get("/ready")
-async def readiness_check(db: AsyncSession = Depends(get_db)):
-    try:
-        await db.execute(select(1))
-        return {"status": "ready", "database": "connected"}
-    except Exception as e:
-        return {"status": "not_ready", "error": str(e)}, status.HTTP_503_SERVICE_UNAVAILABLE

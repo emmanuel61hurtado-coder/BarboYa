@@ -1,17 +1,56 @@
+# Environment variables & secrets
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.cert
+
+# Python virtual environments & packages
+.venv/
+venv/
+ENV/
+env/
+*.egg-info/
+dist/
+build/
+eggs/
+parts/
+var/
+sdist/
+develop-eggs/
+.installed.cfg
+lib/
+lib64/
+
+# Byte-compiled / optimized files
 __pycache__/
 *.py[cod]
 *$py.class
-.venv/
-venv/
-env/
-.env
-dist/
-build/
-node_modules/
+
+# Testing & Linting
 .pytest_cache/
 .ruff_cache/
-alembic/versions/*.py
-!alembic/versions/README
-.DS_Store
-coverage.xml
+.mypy_cache/
 .coverage
+htmlcov/
+coverage.xml
+
+# Docker volumes / persistence
+postgres_data/
+redis_data/
+
+# OS generated files
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+
+# Mobile / Flutter
+mobile/.flutter-plugins
+mobile/.flutter-plugins-dependencies
+mobile/.dart_tool/
+mobile/build/
+mobile/.packages
+mobile/.pub-cache/
+mobile/.pub/
