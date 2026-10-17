@@ -1,9 +1,10 @@
 import json
 import logging
 import sys
-from typing import List, Union
+
 from pydantic import field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
 
 def configure_logging():
     logging.basicConfig(
@@ -21,19 +22,19 @@ class Settings(BaseSettings):
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 15
     REFRESH_TOKEN_EXPIRE_DAYS: int = 7
     ENVIRONMENT: str = "development"
-    ALLOWED_ORIGINS: List[str] = ["*"]
+    ALLOWED_ORIGINS: list[str] = ["*"]
     ENABLE_TRANSPORT_PEOPLE: bool = False
     ADMIN_EMAIL: str = "admin@barboya.com"
     ADMIN_PASSWORD: str = ""
 
     @field_validator("ALLOWED_ORIGINS", mode="before")
     @classmethod
-    def assemble_cors_origins(cls, v: Union[str, List[str]]) -> List[str]:
+    def assemble_cors_origins(cls, v: str | list[str]) -> list[str]:
         if isinstance(v, str):
             if v.startswith("[") and v.endswith("]"):
                 try:
                     return json.loads(v)
-                except Exception:
+                except (ValueError, TypeError, json.JSONDecodeError):
                     pass
             return [i.strip() for i in v.split(",") if i.strip()]
         return v
