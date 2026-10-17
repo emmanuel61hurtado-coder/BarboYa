@@ -1,10 +1,11 @@
 import enum
 import uuid
 
-from app.core.database import Base, TimestampMixin
 from sqlalchemy import Boolean, String
 from sqlalchemy import Enum as SQLEnum
 from sqlalchemy.orm import Mapped, mapped_column
+
+from app.core.database import Base, TimestampMixin
 
 
 class UserRole(str, enum.Enum):

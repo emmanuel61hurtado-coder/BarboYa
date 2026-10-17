@@ -16,7 +16,7 @@ def configure_logging():
 class Settings(BaseSettings):
     PROJECT_NAME: str = "BarboYa Súper App API"
     API_V1_STR: str = "/api/v1"
-    DATABASE_URL: str = "postgresql+asyncpg://barboya:barboyasecret@localhost:5432/barboya_db"
+    DATABASE_URL: str = "postgresql+asyncpg://postgres:postgres@localhost:5432/barboya_dev"
     REDIS_URL: str = "redis://localhost:6379/0"
     SECRET_KEY: str = "insecure_dev_key_only_must_be_overridden_in_production_with_at_least_32_chars"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 15
@@ -24,8 +24,10 @@ class Settings(BaseSettings):
     ENVIRONMENT: str = "development"
     ALLOWED_ORIGINS: list[str] = ["*"]
     ENABLE_TRANSPORT_PEOPLE: bool = False
+    ENABLE_DOCS: bool = False
     ADMIN_EMAIL: str = "admin@barboya.com"
     ADMIN_PASSWORD: str = ""
+    PORT: int = 8000
 
     @field_validator("ALLOWED_ORIGINS", mode="before")
     @classmethod
@@ -50,7 +52,11 @@ class Settings(BaseSettings):
         if self.ENVIRONMENT == "production":
             key_lower = self.SECRET_KEY.lower()
             if any(bad in key_lower for bad in insecure_keys) or len(self.SECRET_KEY) < 32:
-                raise ValueError("CRITICAL SECURITY ALERT: In production, SECRET_KEY must be >= 32 chars.")
+                raise ValueError("CRITICAL SECURITY ALERT: In production, SECRET_KEY must be >= 32 chars and not use default keys.")
+            if "barboyasecret" in self.DATABASE_URL.lower():
+                raise ValueError("CRITICAL SECURITY ALERT: Default database password cannot be used in production.")
+            if "*" in self.ALLOWED_ORIGINS:
+                raise ValueError("CRITICAL SECURITY ALERT: Wildcard CORS ('*') is not allowed in production.")
         return self
 
     model_config = SettingsConfigDict(
