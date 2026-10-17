@@ -1,1 +1,0 @@
-# BarboYa Core package

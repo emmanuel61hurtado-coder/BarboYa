@@ -1,1 +1,0 @@
-# BarboYa Templates package

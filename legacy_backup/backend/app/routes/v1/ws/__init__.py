@@ -1,1 +1,0 @@
-# BarboYa WebSocket routes package
