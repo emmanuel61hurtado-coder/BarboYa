@@ -1,62 +1,57 @@
 version: "3.8"
 
 services:
-  postgres:
-    image: postgis/postgis:16-3.4
+  db:
+    image: postgres:15-alpine
+    container_name: barboya_db
     environment:
-      POSTGRES_USER: ${POSTGRES_USER:-barboya}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-barboyasecret}
-      POSTGRES_DB: ${POSTGRES_DB:-barboya_db}
+      POSTGRES_USER: barboya
+      POSTGRES_PASSWORD: barboyasecret
+      POSTGRES_DB: barboya_db
     ports:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-barboya} -d ${POSTGRES_DB:-barboya_db}"]
+      test: ["CMD-SHELL", "pg_isready -U barboya -d barboya_db"]
       interval: 5s
       timeout: 5s
-      retries: 10
-      start_period: 10s
-    restart: unless-stopped
+      retries: 5
 
   redis:
     image: redis:7-alpine
+    container_name: barboya_redis
     ports:
       - "6379:6379"
+    volumes:
+      - redis_data:/data
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 5s
       timeout: 5s
       retries: 5
-    restart: unless-stopped
 
   backend:
     build:
       context: ./backend
       dockerfile: Dockerfile
-    environment:
-      - DATABASE_URL=postgresql+asyncpg://${POSTGRES_USER:-barboya}:${POSTGRES_PASSWORD:-barboyasecret}@postgres:5432/${POSTGRES_DB:-barboya_db}
-      - REDIS_URL=redis://redis:6379/0
-      - SECRET_KEY=${SECRET_KEY:-insecure_dev_key_only_must_be_overridden_in_production_with_at_least_32_chars}
-      - ENVIRONMENT=${ENVIRONMENT:-development}
-      - ALLOWED_ORIGINS=${ALLOWED_ORIGINS:-["*"]}
-      - ENABLE_TRANSPORT_PEOPLE=${ENABLE_TRANSPORT_PEOPLE:-false}
-    expose:
-      - "8010"
+    container_name: barboya_backend
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+    volumes:
+      - ./backend:/app
     ports:
-      - "8010:8010"
+      - "8000:8000"
+    environment:
+      - DATABASE_URL=postgresql+asyncpg://barboya:barboyasecret@db:5432/barboya_db
+      - REDIS_URL=redis://redis:6379/0
+      - ENVIRONMENT=development
+      - SECRET_KEY=supersecretkeychangemeinproductionsecureatleast32chars
     depends_on:
-      postgres:
+      db:
         condition: service_healthy
       redis:
         condition: service_healthy
-    healthcheck:
-      test: ["CMD-SHELL", "curl -f http://127.0.0.1:8010/health || exit 1"]
-      interval: 30s
-      timeout: 5s
-      retries: 3
-      start_period: 30s
-    restart: unless-stopped
 
 volumes:
   postgres_data:
+  redis_data:
