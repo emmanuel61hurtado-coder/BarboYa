@@ -1,5 +1,4 @@
-from fastapi import FastAPI, status
-from fastapi.responses import JSONResponse
+from fastapi import FastAPI
 from app.core.config import settings, configure_logging
 
 configure_logging()
