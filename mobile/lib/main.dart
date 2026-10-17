@@ -1,5 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:barboya_mobile/core/theme/neon_theme.dart';
+import 'package:barboya_mobile/features/map/map_screen.dart';
+import 'package:barboya_mobile/features/services/services_screen.dart';
+import 'package:barboya_mobile/features/wallet/wallet_screen.dart';
+import 'package:barboya_mobile/features/auth/profile_screen.dart';
 
 void main() {
   runApp(const BarboYaApp());
@@ -30,10 +34,10 @@ class _MainHomeScreenState extends State<MainHomeScreen> {
   int _currentIndex = 0;
 
   final List<Widget> _screens = [
-    const Center(child: Text('🗺️ Mapa Ciudad Virtual (Ciudad Neón)', style: TextStyle(fontSize: 18))),
-    const Center(child: Text('🛠️ Catálogo de Servicios y Profesionales', style: TextStyle(fontSize: 18))),
-    const Center(child: Text('💰 Billetera y Pagos BarboYa', style: TextStyle(fontSize: 18))),
-    const Center(child: Text('👤 Perfil y Configuración', style: TextStyle(fontSize: 18))),
+    const MapScreen(),
+    const ServicesScreen(),
+    const WalletScreen(),
+    const ProfileScreen(),
   ];
 
   @override
@@ -60,3 +64,5 @@ class _MainHomeScreenState extends State<MainHomeScreen> {
     );
   }
 }
+
+
