@@ -9,7 +9,7 @@ class ApiClient {
   );
   final FlutterSecureStorage _storage = const FlutterSecureStorage();
 
-  Future<Map<String, dynamic>> get(String endpoint) async {
+  Future<dynamic> get(String endpoint) async {
     final token = await _storage.read(key: 'access_token');
     final response = await http.get(
       Uri.parse('$baseUrl$endpoint'),
@@ -26,7 +26,7 @@ class ApiClient {
     }
   }
 
-  Future<Map<String, dynamic>> post(String endpoint, Map<String, dynamic> data) async {
+  Future<dynamic> post(String endpoint, Map<String, dynamic> data) async {
     final token = await _storage.read(key: 'access_token');
     final response = await http.post(
       Uri.parse('$baseUrl$endpoint'),

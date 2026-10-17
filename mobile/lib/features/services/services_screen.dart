@@ -24,7 +24,9 @@ class _ServicesScreenState extends State<ServicesScreen> {
     try {
       final data = await _apiClient.get('/services/');
       setState(() {
-        _services = data;
+        if (data is List) {
+          _services = data;
+        }
         _isLoading = false;
       });
     } catch (e) {

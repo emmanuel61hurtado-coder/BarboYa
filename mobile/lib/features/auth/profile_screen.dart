@@ -29,7 +29,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
     try {
       final data = await _apiClient.get('/users/me');
       setState(() {
-        _profile = data;
+        if (data is Map<String, dynamic>) {
+          _profile = data;
+        } else if (data is Map) {
+          _profile = Map<String, dynamic>.from(data);
+        }
         _isLoading = false;
       });
     } catch (e) {

@@ -57,7 +57,7 @@ class _WalletScreenState extends State<WalletScreen> {
                 children: [
                   const Text('Saldo Actual BarboYa Pay', style: TextStyle(color: NeonTheme.textMuted, fontSize: 16)),
                   const SizedBox(height: 12),
-                  Text('\$_balance COP', style: const TextStyle(color: NeonTheme.primaryCyan, fontSize: 36, fontWeight: FontWeight.bold)),
+                  Text('$$balance COP', style: const TextStyle(color: NeonTheme.primaryCyan, fontSize: 36, fontWeight: FontWeight.bold)),
                 ],
               ),
             ),
