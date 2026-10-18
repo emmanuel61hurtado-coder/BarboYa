@@ -1,69 +1,42 @@
-import json
-import logging
-import sys
+from functools import lru_cache
 
-from pydantic import field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
-def configure_logging():
-    logging.basicConfig(
-        format="%(message)s",
-        stream=sys.stdout,
-        level=logging.INFO,
-    )
-
 class Settings(BaseSettings):
-    PROJECT_NAME: str = "BarboYa Súper App API"
-    API_V1_STR: str = "/api/v1"
-    DATABASE_URL: str = "postgresql+asyncpg://postgres:postgres@localhost:5432/barboya_dev"
-    REDIS_URL: str = "redis://localhost:6379/0"
-    SECRET_KEY: str = "insecure_dev_key_only_must_be_overridden_in_production_with_at_least_32_chars"
-    ACCESS_TOKEN_EXPIRE_MINUTES: int = 15
-    REFRESH_TOKEN_EXPIRE_DAYS: int = 7
-    ENVIRONMENT: str = "development"
-    ALLOWED_ORIGINS: list[str] = ["*"]
-    ENABLE_TRANSPORT_PEOPLE: bool = False
-    ENABLE_DOCS: bool = False
-    ADMIN_EMAIL: str = "admin@barboya.com"
-    ADMIN_PASSWORD: str = ""
-    PORT: int = 8000
+    model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
-    @field_validator("ALLOWED_ORIGINS", mode="before")
-    @classmethod
-    def assemble_cors_origins(cls, v: str | list[str]) -> list[str]:
-        if isinstance(v, str):
-            if v.startswith("[") and v.endswith("]"):
-                try:
-                    return json.loads(v)
-                except (ValueError, TypeError, json.JSONDecodeError):
-                    pass
-            return [i.strip() for i in v.split(",") if i.strip()]
-        return v
+    app_name: str = "Barboya API"
+    environment: str = "development"
 
-    @model_validator(mode="after")
-    def validate_production_security(self):
-        insecure_keys = [
-            "supersecretkeychangemeinproduction",
-            "insecure_dev_key_only_must_be_overridden_in_production",
-            "changeme",
-            "secret",
-        ]
-        if self.ENVIRONMENT == "production":
-            key_lower = self.SECRET_KEY.lower()
-            if any(bad in key_lower for bad in insecure_keys) or len(self.SECRET_KEY) < 32:
-                raise ValueError("CRITICAL SECURITY ALERT: In production, SECRET_KEY must be >= 32 chars and not use default keys.")
-            if "barboyasecret" in self.DATABASE_URL.lower():
-                raise ValueError("CRITICAL SECURITY ALERT: Default database password cannot be used in production.")
-            if "*" in self.ALLOWED_ORIGINS:
-                raise ValueError("CRITICAL SECURITY ALERT: Wildcard CORS ('*') is not allowed in production.")
-        return self
+    database_url: str = "postgresql+asyncpg://barboya:barboya@localhost:5432/barboya"
+    redis_url: str = "redis://localhost:6379/0"
 
-    model_config = SettingsConfigDict(
-        env_file=".env",
-        env_file_encoding="utf-8",
-        extra="ignore",
-        env_ignore_empty=True,
-    )
+    jwt_secret: str = "CAMBIAR-EN-PRODUCCION"
+    jwt_algorithm: str = "HS256"
+    jwt_expire_minutes: int = 60 * 24
 
-settings = Settings()
+    cors_origins: list[str] = ["*"]
+
+    # Tarifas de suscripción (COP)
+    price_daily_cop: int = 3_000
+    price_weekly_cop: int = 15_000
+    price_monthly_cop: int = 50_000
+
+    # Fee por carrera por defecto (COP)
+    default_trip_fee_cop: int = 300
+
+    # Seguridad / operación
+    stopped_alert_seconds: int = 180
+    face_check_interval_minutes: int = 240
+    offer_ttl_seconds: int = 120
+
+    # Storage (S3 o Supabase compatible con S3)
+    s3_bucket: str = "barboya-media"
+    s3_endpoint_url: str | None = None
+    s3_region: str = "us-east-1"
+
+
+@lru_cache
+def get_settings() -> Settings:
+    return Settings()

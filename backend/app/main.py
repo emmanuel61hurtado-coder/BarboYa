@@ -1,51 +1,47 @@
+from contextlib import asynccontextmanager
+
+import redis.asyncio as aioredis
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.api.auth import router as auth_router
-from app.api.notifications import router as notifications_router
-from app.api.payments import router as payments_router
-from app.api.services import router as services_router
-from app.api.transport import router as transport_router
-from app.api.users import router as users_router
-from app.core.config import configure_logging, settings
+from app.core.config import get_settings
+from app.routers import auth, trips, wallet, ws
+from app.websockets.manager import manager
 
-configure_logging()
+settings = get_settings()
 
-docs_enabled = settings.ENVIRONMENT != "production" or settings.ENABLE_DOCS
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    client = aioredis.from_url(settings.redis_url)
+    await manager.attach_redis(client)
+    yield
+    await client.aclose()
+
 
 app = FastAPI(
-    title=settings.PROJECT_NAME,
-    version="2.0.0",
-    docs_url="/docs" if docs_enabled else None,
-    redoc_url="/redoc" if docs_enabled else None,
-    openapi_url=f"{settings.API_V1_STR}/openapi.json" if docs_enabled else None,
+    title=settings.app_name,
+    description="Movilidad, mensajería y domicilios locales de Barbosa, Santander.",
+    version="0.1.0",
+    lifespan=lifespan,
 )
 
-allow_credentials = "*" not in settings.ALLOWED_ORIGINS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=settings.ALLOWED_ORIGINS,
-    allow_credentials=allow_credentials,
+    allow_origins=settings.cors_origins,
+    allow_credentials=False,  # con "*" no se permiten credenciales; en prod listar orígenes
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-app.include_router(auth_router, prefix=settings.API_V1_STR)
-app.include_router(users_router, prefix=settings.API_V1_STR)
-app.include_router(services_router, prefix=settings.API_V1_STR)
-app.include_router(transport_router, prefix=settings.API_V1_STR)
-app.include_router(notifications_router, prefix=settings.API_V1_STR)
-app.include_router(payments_router, prefix=settings.API_V1_STR)
+app.include_router(auth.router)
+app.include_router(trips.router)
+app.include_router(trips.public_router)
+app.include_router(wallet.router)
+app.include_router(wallet.admin)
+app.include_router(ws.router)
 
-@app.get("/")
-async def root():
-    return {
-        "mensaje": "BarboYa Súper App API funcionando",
-        "docs": "/docs" if docs_enabled else "disabled in production",
-        "environment": settings.ENVIRONMENT,
-    }
 
-@app.get("/health")
-async def health_check():
-    return {"status": "ok", "service": "BarboYa Backend"}
-
+@app.get("/health", tags=["meta"])
+async def health():
+    return {"status": "ok", "app": "Barboya"}

@@ -1,68 +1,41 @@
 import 'package:flutter/material.dart';
-import 'package:barboya_mobile/core/theme/neon_theme.dart';
-import 'package:barboya_mobile/features/map/map_screen.dart';
-import 'package:barboya_mobile/features/services/services_screen.dart';
-import 'package:barboya_mobile/features/wallet/wallet_screen.dart';
-import 'package:barboya_mobile/features/auth/profile_screen.dart';
+
+import 'core/network/api_client.dart';
+import 'core/theme/app_theme.dart';
+import 'features/auth/presentation/login_page.dart';
+import 'features/home/presentation/pages/home_page.dart';
 
 void main() {
-  runApp(const BarboYaApp());
+  runApp(const BarboyaApp());
 }
 
-class BarboYaApp extends StatelessWidget {
-  const BarboYaApp({super.key});
+class BarboyaApp extends StatefulWidget {
+  const BarboyaApp({super.key});
+
+  @override
+  State<BarboyaApp> createState() => _BarboyaAppState();
+}
+
+class _BarboyaAppState extends State<BarboyaApp> {
+  // Cambia baseUrl a la IP/dominio de tu backend (emulador Android: 10.0.2.2).
+  final ApiClient _api = ApiClient();
+  bool _loggedIn = false;
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'BarboYa Súper App',
+      title: 'Barboya',
       debugShowCheckedModeBanner: false,
-      theme: NeonTheme.darkTheme,
-      home: const MainHomeScreen(),
+      theme: BarboyaTheme.light(),
+      home: _loggedIn
+          ? HomePage(api: _api)
+          : LoginPage(
+              api: _api,
+              onLoggedIn: (token, role) => setState(() {
+                _api.token = token;
+                _loggedIn = true;
+              }),
+            ),
     );
   }
 }
-
-class MainHomeScreen extends StatefulWidget {
-  const MainHomeScreen({super.key});
-
-  @override
-  State<MainHomeScreen> createState() => _MainHomeScreenState();
-}
-
-class _MainHomeScreenState extends State<MainHomeScreen> {
-  int _currentIndex = 0;
-
-  final List<Widget> _screens = [
-    const MapScreen(),
-    const ServicesScreen(),
-    const WalletScreen(),
-    const ProfileScreen(),
-  ];
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('BARBOYA V2'),
-      ),
-      body: _screens[_currentIndex],
-      bottomNavigationBar: BottomNavigationBar(
-        currentIndex: _currentIndex,
-        onTap: (index) => setState(() => _currentIndex = index),
-        type: BottomNavigationBarType.fixed,
-        backgroundColor: NeonTheme.surfaceDark,
-        selectedItemColor: NeonTheme.primaryCyan,
-        unselectedItemColor: NeonTheme.textMuted,
-        items: const [
-          BottomNavigationBarItem(icon: Icon(Icons.map), label: 'Mapa'),
-          BottomNavigationBarItem(icon: Icon(Icons.room_service), label: 'Servicios'),
-          BottomNavigationBarItem(icon: Icon(Icons.account_balance_wallet), label: 'Billetera'),
-          BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Perfil'),
-        ],
-      ),
-    );
-  }
-}
-
-

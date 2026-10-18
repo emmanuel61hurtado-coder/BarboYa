@@ -1,92 +1,35 @@
-version: "3.8"
-
 services:
   db:
-    image: postgres:15-alpine
-    container_name: barboya_db
-    restart: unless-stopped
+    image: postgis/postgis:16-3.4
     environment:
-      POSTGRES_USER: ${POSTGRES_USER:-barboya}
-      POSTGRES_PASSWORD: "${POSTGRES_PASSWORD:?Error: POSTGRES_PASSWORD must be defined}"
-      POSTGRES_DB: ${POSTGRES_DB:-barboya_db}
+      POSTGRES_USER: barboya
+      POSTGRES_PASSWORD: barboya
+      POSTGRES_DB: barboya
+    ports: ["5432:5432"]
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - pgdata:/var/lib/postgresql/data
+      - ./database/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-barboya} -d ${POSTGRES_DB:-barboya_db}"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-      start_period: 10s
-    networks:
-      - barboya_network
-    # In production/Coolify, DB ports should NOT be exposed to the public internet.
-    # To expose locally for debugging, uncomment or define DB_PORT in .env:
-    # ports:
-    #   - "127.0.0.1:${DB_PORT:-5432}:5432"
+      test: ["CMD-SHELL", "pg_isready -U barboya"]
+      interval: 5s
+      retries: 10
 
   redis:
     image: redis:7-alpine
-    container_name: barboya_redis
-    restart: unless-stopped
-    command: >
-      sh -c '
-        if [ -n "$$REDIS_PASSWORD" ]; then
-          exec redis-server --requirepass "$$REDIS_PASSWORD"
-        else
-          exec redis-server
-        fi
-      '
-    environment:
-      REDIS_PASSWORD: ${REDIS_PASSWORD:-}
-    volumes:
-      - redis_data:/data
-    healthcheck:
-      test: >
-        sh -c '
-          if [ -n "$$REDIS_PASSWORD" ]; then
-            redis-cli -a "$$REDIS_PASSWORD" ping | grep -q PONG
-          else
-            redis-cli ping | grep -q PONG
-          fi
-        '
-      interval: 10s
-      timeout: 5s
-      retries: 5
-      start_period: 5s
-    networks:
-      - barboya_network
-    # In production/Coolify, Redis ports should NOT be exposed to the public internet.
-    # ports:
-    #   - "127.0.0.1:${REDIS_PORT:-6379}:6379"
+    ports: ["6379:6379"]
 
-  backend:
-    build:
-      context: ./backend
-      dockerfile: Dockerfile
-    container_name: barboya_backend
-    restart: unless-stopped
-    ports:
-      - "${PORT:-8000}:8000"
+  api:
+    build: ./backend
+    env_file: ./backend/.env.example
     environment:
-      - DATABASE_URL=${DATABASE_URL:-postgresql+asyncpg://${POSTGRES_USER:-barboya}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-barboya_db}}
-      - REDIS_URL=${REDIS_URL:-redis://redis:6379/0}
-      - ENVIRONMENT=${ENVIRONMENT:-production}
-      - SECRET_KEY="${SECRET_KEY:?Error: SECRET_KEY must be defined}"
-      - ALLOWED_ORIGINS=${ALLOWED_ORIGINS:-*}
-      - RUN_MIGRATIONS=${RUN_MIGRATIONS:-true}
-      - PORT=8000
+      DATABASE_URL: postgresql+asyncpg://barboya:barboya@db:5432/barboya
+      REDIS_URL: redis://redis:6379/0
+    ports: ["8000:8000"]
     depends_on:
       db:
         condition: service_healthy
       redis:
-        condition: service_healthy
-    networks:
-      - barboya_network
+        condition: service_started
 
 volumes:
-  postgres_data:
-  redis_data:
-
-networks:
-  barboya_network:
-    driver: bridge
+  pgdata:
