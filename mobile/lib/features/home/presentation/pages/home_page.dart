@@ -40,7 +40,7 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
   _Mode _mode = _Mode.transport;
-  LocalPlace _pickup = _places.first; // GPS: sustituir por geolocator cuando esté integrado
+  final LocalPlace _pickup = _places.first; // GPS: sustituir por geolocator cuando esté integrado
   LocalPlace? _dropoff;
   final _dropCtrl = TextEditingController();
 
