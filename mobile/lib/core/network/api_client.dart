@@ -1,5 +1,4 @@
-import 'dart:convert';
-
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 
 class ApiException implements Exception {
@@ -14,9 +13,10 @@ class ApiException implements Exception {
 }
 
 /// Cliente REST mínimo. Cambia [baseUrl] por la IP/dominio de tu backend
-/// (en emulador Android, el host local es 10.0.2.2).
+/// (en emulador Android, el host local es 10.0.2.2; en web/desktop es localhost).
 class ApiClient {
-  ApiClient({this.baseUrl = 'http://10.0.2.2:8000', this.token});
+  ApiClient({String? baseUrl, this.token})
+      : baseUrl = baseUrl ?? (kIsWeb ? 'http://localhost:8000' : 'http://10.0.2.2:8000');
 
   final String baseUrl;
   String? token;
