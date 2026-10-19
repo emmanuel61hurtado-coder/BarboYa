@@ -68,6 +68,7 @@ class TripCreateIn(BaseModel):
     offered_fare_cop: int = Field(gt=0, le=500_000)
     payment_method: PaymentMethod = PaymentMethod.cash
     package_notes: str | None = None
+    prefer_female_driver: bool = False
     started_via_whatsapp: bool = False
 
 
@@ -88,6 +89,7 @@ class TripOut(BaseModel):
 class TripCreatedOut(TripOut):
     confirmation_pin: str   # solo lo ve el cliente que creó el viaje
     share_url: str
+    female_drivers_nearby: int = 0
 
 
 class DriverOfferIn(BaseModel):

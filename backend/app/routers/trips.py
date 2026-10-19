@@ -60,18 +60,23 @@ async def create_trip(
         suggested_fare_cop=q["suggested_fare_cop"],
         offered_fare_cop=data.offered_fare_cop,
         payment_method=data.payment_method,
+        prefer_female_driver=data.prefer_female_driver,
         confirmation_pin=f"{secrets.randbelow(10_000):04d}",
         share_token=secrets.token_urlsafe(16),
     )
     session.add(trip)
     await session.flush()
 
-    # Conductores online cercanos (PostGIS) -> solo se avisa a quien puede aceptar.
+    # Conductores online cercanos (PostGIS) -> filtro de seguridad por género si la clienta lo solicitó
     stmt = select(DriverProfile).where(
         DriverProfile.is_online.is_(True),
         DriverProfile.is_verified.is_(True),
         func.ST_DWithin(DriverProfile.current_location, _point(data.pickup.lat, data.pickup.lng), NEARBY_RADIUS_M),
     )
+    if data.prefer_female_driver:
+        # Validación de conductora verificada en backend
+        stmt = stmt.where(DriverProfile.is_female_driver.is_(True))
+
     drivers = (await session.execute(stmt)).scalars().all()
     eligible: list[UUID] = []
     for d in drivers:
@@ -93,11 +98,13 @@ async def create_trip(
             "offered_fare_cop": data.offered_fare_cop,
             "suggested_fare_cop": q["suggested_fare_cop"],
             "payment_method": data.payment_method.value,
+            "prefer_female_driver": data.prefer_female_driver,
         },
     )
     out = TripCreatedOut.model_validate(trip, from_attributes=True)
     out.confirmation_pin = trip.confirmation_pin
     out.share_url = f"/track/{trip.share_token}"
+    out.female_drivers_nearby = len(eligible) if data.prefer_female_driver else 0
     return out
 
 
