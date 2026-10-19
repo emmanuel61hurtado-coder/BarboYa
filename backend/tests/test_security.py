@@ -54,3 +54,19 @@ def test_webhook_signature_verification():
 
     response_invalid = client.post("/webhooks/payments", content=body, headers={"x-signature": "invalid_sig"})
     assert response_invalid.status_code == 401
+
+
+def test_list_merchants():
+    response = client.get("/merchants")
+    assert response.status_code == 200
+    assert isinstance(response.json(), list)
+
+
+def test_driver_location_requires_driver_role():
+    response = client.post("/drivers/location", json={"lat": 5.9333, "lng": -73.6208, "is_online": True})
+    assert response.status_code == 401
+
+
+def test_admin_stats_requires_admin_auth():
+    response = client.get("/admin/dashboard/stats")
+    assert response.status_code == 401

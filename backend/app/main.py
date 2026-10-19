@@ -8,7 +8,7 @@ from starlette.requests import Request
 from starlette.responses import Response
 
 from app.core.config import get_settings
-from app.routers import auth, security, trips, wallet, webhooks, ws
+from app.routers import admin, auth, drivers, merchants, security, trips, wallet, webhooks, ws
 from app.websockets.manager import manager
 
 settings = get_settings()
@@ -55,6 +55,10 @@ app.include_router(trips.router)
 app.include_router(trips.public_router)
 app.include_router(wallet.router)
 app.include_router(wallet.admin)
+app.include_router(admin.router)
+app.include_router(merchants.router)
+app.include_router(merchants.orders_router)
+app.include_router(drivers.router)
 app.include_router(security.router)
 app.include_router(webhooks.router)
 app.include_router(ws.router)
