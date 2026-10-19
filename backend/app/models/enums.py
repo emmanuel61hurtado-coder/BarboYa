@@ -75,6 +75,26 @@ class TripStatus(str, enum.Enum):
     expired = "expired"
 
 
+class MerchantCategory(str, enum.Enum):
+    restaurant = "restaurant"
+    pharmacy = "pharmacy"
+    grocery = "grocery"
+    bakery = "bakery"
+    hardware = "hardware"
+    other = "other"
+
+
+class OrderStatus(str, enum.Enum):
+    placed = "placed"
+    accepted = "accepted"
+    preparing = "preparing"
+    ready = "ready"
+    picked_up = "picked_up"
+    delivered = "delivered"
+    cancelled = "cancelled"
+    rejected = "rejected"
+
+
 class SecurityEventType(str, enum.Enum):
     sos = "sos"
     stopped_too_long = "stopped_too_long"
