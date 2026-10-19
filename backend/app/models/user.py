@@ -7,7 +7,7 @@ from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.database import Base
-from app.models.enums import BillingScheme, UserRole, VehicleType
+from app.models.enums import BillingScheme, Gender, UserRole, VehicleType, VerificationStatus
 
 
 class User(Base):
@@ -20,6 +20,7 @@ class User(Base):
     email: Mapped[str | None] = mapped_column(String, unique=True)
     password_hash: Mapped[str] = mapped_column(Text)
     avatar_url: Mapped[str | None] = mapped_column(Text)
+    gender: Mapped[Gender | None] = mapped_column(Enum(Gender, name="user_gender"), nullable=True)
     default_address_note: Mapped[str | None] = mapped_column(Text)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
@@ -30,7 +31,7 @@ class User(Base):
 class DriverProfile(Base):
     """Perfil del conductor/repartidor.
 
-    Aquí viven el saldo prepago (bolsa) y el estado de la suscripción.
+    Aquí viven el saldo prepago (bolsa), verificación periódica y suscripción.
     Los importes están en COP enteros para evitar errores de coma flotante.
     """
 
@@ -43,8 +44,26 @@ class DriverProfile(Base):
     vehicle_type: Mapped[VehicleType] = mapped_column(Enum(VehicleType, name="vehicle_type"))
     vehicle_plate: Mapped[str] = mapped_column(String, unique=True)
     vehicle_description: Mapped[str | None] = mapped_column(Text)
+    vehicle_brand: Mapped[str | None] = mapped_column(String, nullable=True)
+    vehicle_model: Mapped[str | None] = mapped_column(String, nullable=True)
+    vehicle_color: Mapped[str | None] = mapped_column(String, nullable=True)
+
     document_id: Mapped[str] = mapped_column(String, unique=True)
+    license_doc_url: Mapped[str | None] = mapped_column(Text, nullable=True)
+    soat_doc_url: Mapped[str | None] = mapped_column(Text, nullable=True)
+    soat_expires_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    tech_doc_url: Mapped[str | None] = mapped_column(Text, nullable=True)
+    tech_expires_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     selfie_reference_url: Mapped[str | None] = mapped_column(Text)
+
+    verification_status: Mapped[VerificationStatus] = mapped_column(
+        Enum(VerificationStatus, name="verification_status"), default=VerificationStatus.pending
+    )
+    is_verified: Mapped[bool] = mapped_column(Boolean, default=False)
+    is_female_driver: Mapped[bool] = mapped_column(Boolean, default=False)
+    rejection_reason: Mapped[str | None] = mapped_column(Text, nullable=True)
+    verified_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    verified_by: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), nullable=True)
 
     billing_scheme: Mapped[BillingScheme] = mapped_column(
         Enum(BillingScheme, name="billing_scheme"), default=BillingScheme.per_trip_fee
@@ -56,7 +75,6 @@ class DriverProfile(Base):
     subscription_expires_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
 
     is_online: Mapped[bool] = mapped_column(Boolean, default=False)
-    is_verified: Mapped[bool] = mapped_column(Boolean, default=False)
     face_check_due: Mapped[bool] = mapped_column(Boolean, default=False)
     last_face_check_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
 

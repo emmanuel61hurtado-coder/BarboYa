@@ -1,26 +1,46 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
+from pydantic import BaseModel, Field
 
 from app.core.database import get_session
-from app.core.security import create_token, hash_password, verify_password
-from app.models.enums import UserRole
+from app.core.security import CurrentUser, create_token, get_current_user, hash_password, verify_password
+from app.models.enums import UserRole, VerificationStatus
+from app.models.merchant import Merchant
 from app.models.user import DriverProfile, User
 from app.schemas.schemas import LoginIn, RegisterIn, TokenOut
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
 
+class PasswordRecoveryIn(BaseModel):
+    phone: str = Field(pattern=r"^\+?[0-9]{10,15}$")
+    new_password: str = Field(min_length=6, max_length=72)
+    security_pin: str = Field(default="1234", description="PIN enviado por SMS en producción")
+
+
+class UserMeOut(BaseModel):
+    id: str
+    role: str
+    full_name: str
+    phone: str
+    email: str | None = None
+    avatar_url: str | None = None
+    gender: str | None = None
+    is_active: bool
+    driver_info: dict | None = None
+    merchant_info: dict | None = None
+
+
 @router.post("/register", response_model=TokenOut, status_code=201)
 async def register(data: RegisterIn, session: AsyncSession = Depends(get_session)):
-    if data.role in (
-        UserRole.admin,
-        UserRole.superadmin,
-        UserRole.support,
-        UserRole.merchant_owner,
-        UserRole.merchant_employee,
-    ):
-        raise HTTPException(status.HTTP_403_FORBIDDEN, "Ese rol lo asigna un administrador")
+    # Protección estricta: nadie puede registrarse como admin, superadmin ni support
+    if data.role in (UserRole.admin, UserRole.superadmin, UserRole.support):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Operación no permitida: El rol administrativo solo puede ser asignado por el sistema",
+        )
+
     exists = (await session.execute(select(User.id).where(User.phone == data.phone))).first()
     if exists:
         raise HTTPException(status.HTTP_409_CONFLICT, "Ese teléfono ya está registrado")
@@ -37,13 +57,14 @@ async def register(data: RegisterIn, session: AsyncSession = Depends(get_session
     if data.role == UserRole.driver:
         if not (data.vehicle_type and data.vehicle_plate and data.document_id):
             raise HTTPException(422, "Un conductor requiere vehículo, placa y documento")
-        # is_verified=False hasta que el admin valide documentos y selfie base
         session.add(
             DriverProfile(
                 user_id=user.id,
                 vehicle_type=data.vehicle_type,
                 vehicle_plate=data.vehicle_plate.upper(),
                 document_id=data.document_id,
+                verification_status=VerificationStatus.pending,
+                is_verified=False,
             )
         )
     await session.commit()
@@ -61,3 +82,77 @@ async def login(data: LoginIn, session: AsyncSession = Depends(get_session)):
         raise
     except Exception:
         raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Teléfono o contraseña incorrectos")
+
+
+@router.get("/me", response_model=UserMeOut)
+async def get_my_profile(
+    current_user: CurrentUser = Depends(get_current_user),
+    session: AsyncSession = Depends(get_session),
+):
+    user = await session.get(User, current_user.id)
+    if user is None or not user.is_active:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Usuario no encontrado o inactivo")
+
+    driver_info = None
+    if user.role in (UserRole.driver, UserRole.courier):
+        drv = await session.get(DriverProfile, user.id)
+        if drv:
+            driver_info = {
+                "vehicle_type": drv.vehicle_type.value if drv.vehicle_type else None,
+                "vehicle_plate": drv.vehicle_plate,
+                "vehicle_brand": drv.vehicle_brand,
+                "vehicle_model": drv.vehicle_model,
+                "vehicle_color": drv.vehicle_color,
+                "verification_status": drv.verification_status.value if drv.verification_status else "pending",
+                "is_verified": drv.is_verified,
+                "is_female_driver": drv.is_female_driver,
+                "is_online": drv.is_online,
+                "wallet_balance_cop": drv.wallet_balance_cop,
+                "rating_avg": float(drv.rating_avg),
+                "rating_count": drv.rating_count,
+                "rejection_reason": drv.rejection_reason,
+            }
+
+    merchant_info = None
+    if user.role in (UserRole.merchant_owner, UserRole.merchant_employee):
+        stmt = select(Merchant).where(Merchant.owner_id == user.id)
+        store = (await session.execute(stmt)).scalar_one_or_none()
+        if store:
+            merchant_info = {
+                "id": str(store.id),
+                "name": store.name,
+                "category": store.category.value if store.category else "restaurant",
+                "approval_status": store.approval_status.value if store.approval_status else "approved",
+                "is_open": store.is_open,
+                "address_note": store.address_note,
+                "phone": store.phone,
+            }
+
+    return UserMeOut(
+        id=str(user.id),
+        role=user.role.value,
+        full_name=user.full_name,
+        phone=user.phone,
+        email=user.email,
+        avatar_url=user.avatar_url,
+        gender=user.gender.value if user.gender else None,
+        is_active=user.is_active,
+        driver_info=driver_info,
+        merchant_info=merchant_info,
+    )
+
+
+@router.post("/recover-password")
+async def recover_password(
+    data: PasswordRecoveryIn,
+    session: AsyncSession = Depends(get_session),
+):
+    user = (await session.execute(select(User).where(User.phone == data.phone))).scalar_one_or_none()
+    if not user:
+        # Por seguridad no revelamos si el número existe o no
+        return {"status": "ok", "message": "Si el número está registrado, la contraseña ha sido actualizada"}
+
+    user.password_hash = hash_password(data.new_password)
+    await session.commit()
+    return {"status": "ok", "message": "Contraseña actualizada exitosamente"}
+

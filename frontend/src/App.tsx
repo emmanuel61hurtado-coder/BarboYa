@@ -173,22 +173,83 @@ export default function App() {
                 {serviceMode === 'package' && <PackageView onShowToast={showToast} />}
               </div>
 
-              {/* Right Column: Hologram Live Map (7 cols) */}
-              <div className="lg:col-span-7 w-full space-y-4">
-                <InteractiveMap
-                  origin={origin}
-                  destination={destination}
-                  selectedVehicle={serviceMode === 'move' ? 'moto' : 'car'}
-                  onSelectLocation={(loc, type) => {
-                    if (type === 'dest') {
-                      setDestination(loc)
-                      showToast(`🎯 Destino fijado: ${loc}`)
-                    } else {
-                      setOrigin(loc)
-                      showToast(`📍 Origen fijado: ${loc}`)
-                    }
-                  }}
-                />
+              {/* Right Column: Live Map (Real or Hologram) (7 cols) */}
+              <div className="lg:col-span-7 w-full space-y-3">
+                {/* Map Type Switcher */}
+                <div className="flex items-center justify-between px-1">
+                  <div className="flex items-center space-x-2">
+                    <span className="text-xs font-mono text-slate-400">MODO MAPA:</span>
+                    <div className="flex items-center bg-nexus-900/90 rounded-xl p-1 border border-slate-800">
+                      <button
+                        onClick={() => {
+                          setMapType('real')
+                          sound.tick()
+                        }}
+                        className={`px-3 py-1 rounded-lg text-xs font-bold transition flex items-center space-x-1.5 ${
+                          mapType === 'real'
+                            ? 'bg-gradient-to-r from-cyan-500/20 to-brand-500/20 text-cyan-300 border border-cyan-500/40 shadow-sm'
+                            : 'text-slate-400 hover:text-white'
+                        }`}
+                      >
+                        <span>🗺️</span>
+                        <span>Mapa Real Barbosa</span>
+                        <span className="text-[10px] bg-cyan-500/20 text-cyan-300 px-1.5 py-0.2 rounded font-mono">EN VIVO</span>
+                      </button>
+
+                      <button
+                        onClick={() => {
+                          setMapType('hologram')
+                          sound.tick()
+                        }}
+                        className={`px-3 py-1 rounded-lg text-xs font-bold transition flex items-center space-x-1.5 ${
+                          mapType === 'hologram'
+                            ? 'bg-gradient-to-r from-cyan-500/20 to-brand-500/20 text-cyan-300 border border-cyan-500/40 shadow-sm'
+                            : 'text-slate-400 hover:text-white'
+                        }`}
+                      >
+                        <span>📡</span>
+                        <span>Radar Táctico</span>
+                      </button>
+                    </div>
+                  </div>
+
+                  <span className="text-[11px] font-mono text-neon-emerald hidden sm:inline">
+                    ● Geocerca 3.0 km activa
+                  </span>
+                </div>
+
+                {/* Render active map */}
+                {mapType === 'real' ? (
+                  <RealMap
+                    origin={origin}
+                    destination={destination}
+                    selectedVehicle={serviceMode === 'move' ? 'moto' : 'car'}
+                    onSelectLocation={(loc, type) => {
+                      if (type === 'dest') {
+                        setDestination(loc)
+                        showToast(`🎯 Destino fijado: ${loc}`)
+                      } else {
+                        setOrigin(loc)
+                        showToast(`📍 Origen fijado: ${loc}`)
+                      }
+                    }}
+                  />
+                ) : (
+                  <InteractiveMap
+                    origin={origin}
+                    destination={destination}
+                    selectedVehicle={serviceMode === 'move' ? 'moto' : 'car'}
+                    onSelectLocation={(loc, type) => {
+                      if (type === 'dest') {
+                        setDestination(loc)
+                        showToast(`🎯 Destino fijado: ${loc}`)
+                      } else {
+                        setOrigin(loc)
+                        showToast(`📍 Origen fijado: ${loc}`)
+                      }
+                    }}
+                  />
+                )}
 
                 {/* Quick Info Bar below map */}
                 <div className="glass-surface p-3.5 rounded-xl border border-slate-800/80 flex flex-wrap items-center justify-between gap-3 text-xs text-slate-400">

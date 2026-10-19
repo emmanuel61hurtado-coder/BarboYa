@@ -36,6 +36,7 @@ class Trip(Base):
         Enum(PaymentMethod, name="payment_method"), default=PaymentMethod.cash
     )
     confirmation_pin: Mapped[str] = mapped_column(String(4))
+    prefer_female_driver: Mapped[bool] = mapped_column(Boolean, default=False)
     pin_verified_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     delivery_proof_url: Mapped[str | None] = mapped_column(Text)
     share_token: Mapped[str | None] = mapped_column(String, unique=True)

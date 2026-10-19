@@ -143,4 +143,10 @@
   color: #ffffff !important;
 }
 
+/* Dark mode filter for OpenStreetMap tiles (100% Free, NO API KEY, No Watermarks) */
+.dark-map-tiles {
+  filter: invert(100%) hue-rotate(180deg) brightness(85%) contrast(95%) saturate(30%) !important;
+}
+
+
 

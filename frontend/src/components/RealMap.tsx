@@ -258,12 +258,13 @@ export const RealMap: React.FC<RealMapProps> = ({
       >
         <FlyTo center={mapCenter} />
 
-        {/* Dynamic Tile Layer based on active map style */}
+        {/* Dynamic Tile Layer based on active map style (100% Free, No Watermark, No API Key) */}
         {mapStyle === 'dark' && (
           <TileLayer
             key="dark-tiles"
-            url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
-            attribution='&copy; CARTO &copy; OpenStreetMap'
+            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+            className="dark-map-tiles"
+            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
             maxZoom={19}
           />
         )}

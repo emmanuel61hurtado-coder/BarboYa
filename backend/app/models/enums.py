@@ -84,15 +84,42 @@ class MerchantCategory(str, enum.Enum):
     other = "other"
 
 
+class Gender(str, enum.Enum):
+    female = "female"
+    male = "male"
+    other = "other"
+
+
+class VerificationStatus(str, enum.Enum):
+    pending = "pending"
+    under_review = "under_review"
+    verified = "verified"
+    needs_update = "needs_update"
+    rejected = "rejected"
+    suspended = "suspended"
+
+
+class MerchantStatus(str, enum.Enum):
+    pending_approval = "pending_approval"
+    approved = "approved"
+    rejected = "rejected"
+    suspended = "suspended"
+
+
 class OrderStatus(str, enum.Enum):
     placed = "placed"
+    pending_confirmation = "pending_confirmation"
     accepted = "accepted"
+    rejected = "rejected"
     preparing = "preparing"
     ready = "ready"
+    courier_search = "courier_search"
+    courier_assigned = "courier_assigned"
+    courier_heading_to_merchant = "courier_heading_to_merchant"
     picked_up = "picked_up"
+    in_transit = "in_transit"
     delivered = "delivered"
     cancelled = "cancelled"
-    rejected = "rejected"
 
 
 class SecurityEventType(str, enum.Enum):
