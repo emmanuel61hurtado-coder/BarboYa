@@ -52,7 +52,12 @@ async def register(data: RegisterIn, session: AsyncSession = Depends(get_session
 
 @router.post("/login", response_model=TokenOut)
 async def login(data: LoginIn, session: AsyncSession = Depends(get_session)):
-    user = (await session.execute(select(User).where(User.phone == data.phone))).scalar_one_or_none()
-    if not user or not verify_password(data.password, user.password_hash) or not user.is_active:
+    try:
+        user = (await session.execute(select(User).where(User.phone == data.phone))).scalar_one_or_none()
+        if not user or not verify_password(data.password, user.password_hash) or not user.is_active:
+            raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Teléfono o contraseña incorrectos")
+        return TokenOut(access_token=create_token(user.id, user.role.value), role=user.role, user_id=user.id)
+    except HTTPException:
+        raise
+    except Exception:
         raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Teléfono o contraseña incorrectos")
-    return TokenOut(access_token=create_token(user.id, user.role.value), role=user.role, user_id=user.id)
