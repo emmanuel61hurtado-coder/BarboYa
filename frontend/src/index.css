@@ -94,3 +94,53 @@
   }
 }
 
+/* ───────────────────── LEAFLET FUTURISTIC DARK THEME ───────────────────── */
+.leaflet-container {
+  font-family: 'Outfit', sans-serif !important;
+  background-color: #07090e !important;
+}
+
+.leaflet-popup-content-wrapper {
+  background: rgba(13, 18, 31, 0.95) !important;
+  backdrop-filter: blur(16px) !important;
+  border: 1px solid rgba(0, 242, 254, 0.35) !important;
+  border-radius: 14px !important;
+  color: #f1f5f9 !important;
+  box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.8), 0 0 15px rgba(0, 242, 254, 0.2) !important;
+}
+
+.leaflet-popup-tip {
+  background: rgba(13, 18, 31, 0.95) !important;
+  border: 1px solid rgba(0, 242, 254, 0.35) !important;
+}
+
+.leaflet-popup-close-button {
+  color: #94a3b8 !important;
+  padding: 6px !important;
+}
+
+.leaflet-popup-close-button:hover {
+  color: #00F2FE !important;
+}
+
+.leaflet-bar {
+  border: 1px solid rgba(0, 242, 254, 0.2) !important;
+  border-radius: 12px !important;
+  overflow: hidden !important;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.6) !important;
+}
+
+.leaflet-bar a {
+  background-color: rgba(13, 18, 31, 0.85) !important;
+  backdrop-filter: blur(8px) !important;
+  color: #00F2FE !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
+  transition: all 0.2s ease !important;
+}
+
+.leaflet-bar a:hover {
+  background-color: rgba(0, 242, 254, 0.25) !important;
+  color: #ffffff !important;
+}
+
+

@@ -314,7 +314,7 @@ export const MoveView: React.FC<MoveViewProps> = ({ onShowToast, onUpdateOriginD
                           <div className="font-bold text-sm text-white flex items-center space-x-1">
                             <span>{offer.driverName}</span>
                             {offer.verified && (
-                              <UserCheck className="w-3.5 h-3.5 text-cyan-400" title="Conductor Verificado" />
+                              <span title="Conductor Verificado"><UserCheck className="w-3.5 h-3.5 text-cyan-400" /></span>
                             )}
                           </div>
                           <div className="text-[11px] text-slate-400">
