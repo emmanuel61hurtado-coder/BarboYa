@@ -1,3 +1,96 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+@layer base {
+  :root {
+    color-scheme: dark;
+  }
+
+  body {
+    background-color: #07090e;
+    color: #e2e8f0;
+    font-family: 'Outfit', system-ui, sans-serif;
+  }
+}
+
+/* Custom Cyber & Nexus Design Utilities */
+.cyber-grid {
+  background-image: 
+    linear-gradient(to right, rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+  background-size: 32px 32px;
+}
+
+.cyber-grid-dense {
+  background-image: 
+    linear-gradient(to right, rgba(0, 242, 254, 0.06) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(0, 242, 254, 0.06) 1px, transparent 1px);
+  background-size: 16px 16px;
+}
+
+.glass-surface {
+  background: rgba(13, 17, 26, 0.72);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.glass-surface-elevated {
+  background: rgba(19, 25, 38, 0.85);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(0, 242, 254, 0.2);
+}
+
+.glass-surface-active {
+  background: rgba(23, 31, 48, 0.95);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 1px solid rgba(0, 229, 163, 0.35);
+}
+
+.luminous-border-cyan {
+  border: 1px solid rgba(0, 242, 254, 0.3);
+  box-shadow: inset 0 0 12px rgba(0, 242, 254, 0.08), 0 0 15px rgba(0, 242, 254, 0.15);
+}
+
+.luminous-border-brand {
+  border: 1px solid rgba(249, 115, 22, 0.35);
+  box-shadow: inset 0 0 12px rgba(249, 115, 22, 0.08), 0 0 15px rgba(249, 115, 22, 0.15);
+}
+
+.luminous-border-emerald {
+  border: 1px solid rgba(0, 229, 163, 0.35);
+  box-shadow: inset 0 0 12px rgba(0, 229, 163, 0.08), 0 0 15px rgba(0, 229, 163, 0.15);
+}
+
+/* Custom Scrollbar for Sleek Tech Feel */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: #07090e;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #1e293b;
+  border-radius: 9999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #00F2FE;
+}
+
+/* Reduced Motion Support */
+@media (prefers-reduced-motion: reduce) {
+  *, ::before, ::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
