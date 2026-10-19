@@ -4,8 +4,12 @@ import enum
 class UserRole(str, enum.Enum):
     customer = "customer"
     driver = "driver"
+    courier = "courier"
     merchant_owner = "merchant_owner"
+    merchant_employee = "merchant_employee"
+    support = "support"
     admin = "admin"
+    superadmin = "superadmin"
 
 
 class VehicleType(str, enum.Enum):
@@ -69,3 +73,14 @@ class TripStatus(str, enum.Enum):
     cancelled_by_customer = "cancelled_by_customer"
     cancelled_by_driver = "cancelled_by_driver"
     expired = "expired"
+
+
+class SecurityEventType(str, enum.Enum):
+    sos = "sos"
+    stopped_too_long = "stopped_too_long"
+    are_you_ok_sent = "are_you_ok_sent"
+    are_you_ok_ack = "are_you_ok_ack"
+    face_check_requested = "face_check_requested"
+    face_check_passed = "face_check_passed"
+    face_check_failed = "face_check_failed"
+    share_link_created = "share_link_created"

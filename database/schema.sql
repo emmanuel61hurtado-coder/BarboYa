@@ -10,7 +10,7 @@ CREATE EXTENSION IF NOT EXISTS pg_trgm;    -- búsqueda por texto en referencias
 -- ---------------------------------------------------------------------
 -- ENUM TYPES
 -- ---------------------------------------------------------------------
-CREATE TYPE user_role AS ENUM ('customer', 'driver', 'merchant_owner', 'admin');
+CREATE TYPE user_role AS ENUM ('customer', 'driver', 'courier', 'merchant_owner', 'merchant_employee', 'support', 'admin', 'superadmin');
 CREATE TYPE vehicle_type AS ENUM ('moto', 'car', 'bicycle');
 CREATE TYPE billing_scheme AS ENUM ('subscription', 'per_trip_fee');
 CREATE TYPE subscription_plan AS ENUM ('daily', 'weekly', 'monthly');

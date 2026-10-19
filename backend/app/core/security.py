@@ -9,7 +9,7 @@ from passlib.context import CryptContext
 from app.core.config import get_settings
 
 settings = get_settings()
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+pwd_context = CryptContext(schemes=["argon2", "bcrypt"], deprecated="auto")
 bearer = HTTPBearer(auto_error=False)
 
 
@@ -22,9 +22,18 @@ def verify_password(raw: str, hashed: str) -> bool:
 
 
 def create_token(user_id: UUID, role: str) -> str:
-    exp = datetime.now(timezone.utc) + timedelta(minutes=settings.jwt_expire_minutes)
+    now = datetime.now(timezone.utc)
+    exp = now + timedelta(minutes=settings.jwt_expire_minutes)
+    payload = {
+        "sub": str(user_id),
+        "role": role,
+        "iss": settings.jwt_issuer,
+        "aud": settings.jwt_audience,
+        "iat": now,
+        "exp": exp,
+    }
     return jwt.encode(
-        {"sub": str(user_id), "role": role, "exp": exp},
+        payload,
         settings.jwt_secret,
         algorithm=settings.jwt_algorithm,
     )
@@ -32,9 +41,21 @@ def create_token(user_id: UUID, role: str) -> str:
 
 def decode_token(token: str) -> dict:
     try:
-        return jwt.decode(token, settings.jwt_secret, algorithms=[settings.jwt_algorithm])
+        return jwt.decode(
+            token,
+            settings.jwt_secret,
+            algorithms=[settings.jwt_algorithm],
+            options={
+                "verify_signature": True,
+                "verify_exp": True,
+                "verify_iss": True,
+                "verify_aud": True,
+            },
+            issuer=settings.jwt_issuer,
+            audience=settings.jwt_audience,
+        )
     except JWTError as exc:
-        raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Token inválido") from exc
+        raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Token inválido o expirado") from exc
 
 
 class CurrentUser:

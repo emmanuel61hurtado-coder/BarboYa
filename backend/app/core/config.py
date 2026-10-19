@@ -15,6 +15,8 @@ class Settings(BaseSettings):
     jwt_secret: str = "CAMBIAR-EN-PRODUCCION"
     jwt_algorithm: str = "HS256"
     jwt_expire_minutes: int = 60 * 24
+    jwt_issuer: str = "barboya-auth"
+    jwt_audience: str = "barboya-api"
 
     cors_origins: list[str] = ["*"]
 

@@ -13,7 +13,13 @@ router = APIRouter(prefix="/auth", tags=["auth"])
 
 @router.post("/register", response_model=TokenOut, status_code=201)
 async def register(data: RegisterIn, session: AsyncSession = Depends(get_session)):
-    if data.role in (UserRole.admin, UserRole.merchant_owner):
+    if data.role in (
+        UserRole.admin,
+        UserRole.superadmin,
+        UserRole.support,
+        UserRole.merchant_owner,
+        UserRole.merchant_employee,
+    ):
         raise HTTPException(status.HTTP_403_FORBIDDEN, "Ese rol lo asigna un administrador")
     exists = (await session.execute(select(User.id).where(User.phone == data.phone))).first()
     if exists:
