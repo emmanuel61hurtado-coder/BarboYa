@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
 import { 
-  Car, Bike, MapPin, DollarSign, ArrowRight, ShieldCheck, 
+  Car, Bike, MapPin, DollarSign, ArrowRight, ShieldCheck, Shield,
   Sparkles, Clock, Check, X, Phone, Share2, AlertCircle, RefreshCw, ChevronRight, UserCheck
 } from 'lucide-react'
 import { VehicleType, DriverOffer, TripState } from '../types'
@@ -37,6 +37,7 @@ const SAMPLE_OFFERS: DriverOffer[] = [
     proposedPriceCop: 5500,
     photoUrl: 'https://images.unsplash.com/photo-1580489944761-15a19d654956?w=120&auto=format&fit=crop&q=80',
     verified: true,
+    isFemale: true,
   },
   {
     id: 'off-3',
@@ -58,11 +59,20 @@ export const MoveView: React.FC<MoveViewProps> = ({ onShowToast, onUpdateOriginD
   const [origin, setOrigin] = useState<string>('Parque Emilio Valenzuela')
   const [destination, setDestination] = useState<string>('Terminal de Transportes de Barbosa')
   const [priceCop, setPriceCop] = useState<number>(6000)
+  const [preferFemaleDriver, setPreferFemaleDriver] = useState<boolean>(false)
   const [tripState, setTripState] = useState<TripState>('idle')
   const [acceptedDriver, setAcceptedDriver] = useState<DriverOffer | null>(null)
   const [counterInputId, setCounterInputId] = useState<string | null>(null)
   const [counterPrice, setCounterPrice] = useState<number>(5500)
   const [tripProgress, setTripProgress] = useState<number>(35)
+
+  // Filtrado de ofertas según preferencia
+  const availableOffers = SAMPLE_OFFERS.filter((offer: DriverOffer) => {
+    if (preferFemaleDriver) {
+      return offer.isFemale === true
+    }
+    return true
+  })
 
   const handleAdjustPrice = (delta: number) => {
     const next = Math.max(3000, priceCop + delta)
@@ -73,13 +83,21 @@ export const MoveView: React.FC<MoveViewProps> = ({ onShowToast, onUpdateOriginD
   const handleRequestTrip = () => {
     sound.tick()
     setTripState('searching')
-    onShowToast("⚡ Transmitiendo solicitud vía WebSockets a conductores cercanos...")
+    onShowToast(
+      preferFemaleDriver
+        ? "⚡ Buscando conductoras verificadas disponibles en Barbosa..."
+        : "⚡ Transmitiendo solicitud vía WebSockets a conductores cercanos..."
+    )
     
     // Simulate real-time responses from PostGIS radius
     setTimeout(() => {
       setTripState('offers_received')
       sound.success()
-      onShowToast("🔔 3 conductores han respondido a tu solicitud.")
+      if (preferFemaleDriver) {
+        onShowToast("🔔 Conductora verificada encontrada en tu sector.")
+      } else {
+        onShowToast("🔔 3 conductores han respondido a tu solicitud.")
+      }
     }, 1800)
   }
 
@@ -260,6 +278,45 @@ export const MoveView: React.FC<MoveViewProps> = ({ onShowToast, onUpdateOriginD
             </div>
           </div>
 
+          {/* Preferencia: Conductora Mujer (Modulo 4) */}
+          <div className="p-3.5 rounded-xl bg-nexus-950/80 border border-slate-800 flex items-center justify-between transition hover:border-pink-500/40">
+            <div className="flex items-center space-x-3">
+              <div className={`p-2 rounded-xl transition ${preferFemaleDriver ? 'bg-pink-500/20 text-pink-400 border border-pink-500/40' : 'bg-slate-800 text-slate-400'}`}>
+                <Shield className="w-4 h-4" />
+              </div>
+              <div>
+                <div className="text-xs font-bold text-white flex items-center space-x-1.5">
+                  <span>Preferir conductora mujer</span>
+                  <span className="text-[9px] font-mono bg-pink-500/20 text-pink-300 px-1.5 py-0.2 rounded font-normal">
+                    Voluntario
+                  </span>
+                </div>
+                <div className="text-[10px] text-slate-400">
+                  Prioriza conductoras verificadas por el sistema de seguridad
+                </div>
+              </div>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => {
+                const next = !preferFemaleDriver
+                setPreferFemaleDriver(next)
+                sound.tick()
+                onShowToast(next ? "🌸 Preferencia de conductora mujer activada" : "Filtro de género desactivado")
+              }}
+              className={`w-11 h-6 rounded-full transition-colors relative p-0.5 ${
+                preferFemaleDriver ? 'bg-pink-500' : 'bg-slate-700'
+              }`}
+            >
+              <div
+                className={`w-5 h-5 rounded-full bg-white shadow-md transform transition-transform ${
+                  preferFemaleDriver ? 'translate-x-5' : 'translate-x-0'
+                }`}
+              />
+            </button>
+          </div>
+
           {/* Action Button: Solicitud */}
           {tripState === 'idle' && (
             <button
@@ -274,7 +331,9 @@ export const MoveView: React.FC<MoveViewProps> = ({ onShowToast, onUpdateOriginD
           {tripState === 'searching' && (
             <div className="p-4 rounded-xl bg-nexus-950 border border-cyan-500/30 flex items-center justify-center space-x-3 text-cyan-300">
               <RefreshCw className="w-5 h-5 animate-spin" />
-              <span className="text-sm font-semibold font-mono">Buscando conductores en Barbosa (Radio 3km)...</span>
+              <span className="text-sm font-semibold font-mono">
+                {preferFemaleDriver ? 'Buscando conductoras verificadas en Barbosa...' : 'Buscando conductores en Barbosa (Radio 3km)...'}
+              </span>
             </div>
           )}
 
@@ -284,7 +343,7 @@ export const MoveView: React.FC<MoveViewProps> = ({ onShowToast, onUpdateOriginD
               <div className="flex items-center justify-between text-xs">
                 <span className="font-bold text-white flex items-center space-x-1.5">
                   <span className="w-2 h-2 rounded-full bg-neon-emerald animate-pulse" />
-                  <span>Ofertas de Conductores ({SAMPLE_OFFERS.length})</span>
+                  <span>Ofertas de Conductores ({availableOffers.length})</span>
                 </span>
                 <button
                   onClick={() => {
@@ -297,46 +356,74 @@ export const MoveView: React.FC<MoveViewProps> = ({ onShowToast, onUpdateOriginD
                 </button>
               </div>
 
-              <div className="space-y-2.5">
-                {SAMPLE_OFFERS.map((offer) => (
-                  <div
-                    key={offer.id}
-                    className="p-3.5 rounded-xl bg-nexus-950/90 border border-slate-800 hover:border-cyan-500/40 transition-all duration-200 space-y-2.5"
-                  >
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center space-x-2.5">
-                        <img
-                          src={offer.photoUrl}
-                          alt={offer.driverName}
-                          className="w-10 h-10 rounded-full object-cover ring-2 ring-cyan-500/40"
-                        />
-                        <div>
-                          <div className="font-bold text-sm text-white flex items-center space-x-1">
-                            <span>{offer.driverName}</span>
-                            {offer.verified && (
-                              <span title="Conductor Verificado"><UserCheck className="w-3.5 h-3.5 text-cyan-400" /></span>
-                            )}
+              {/* Si no hay ofertas con el filtro activo */}
+              {availableOffers.length === 0 ? (
+                <div className="p-4 rounded-xl bg-nexus-950/90 border border-amber-500/30 text-center space-y-2.5">
+                  <p className="text-xs text-amber-200">
+                    En este momento no hay conductoras mujeres disponibles cerca de tu ubicación.
+                  </p>
+                  <div className="flex items-center justify-center space-x-2">
+                    <button
+                      onClick={() => {
+                        setPreferFemaleDriver(false)
+                        sound.tick()
+                      }}
+                      className="px-3 py-1.5 rounded-lg bg-slate-800 text-xs text-cyan-300 hover:bg-slate-700"
+                    >
+                      Ver todos los conductores
+                    </button>
+                    <button
+                      onClick={() => setTripState('idle')}
+                      className="px-3 py-1.5 rounded-lg bg-slate-900 text-xs text-slate-400 hover:text-white"
+                    >
+                      Cancelar
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-2.5">
+                  {availableOffers.map((offer: DriverOffer) => (
+                    <div
+                      key={offer.id}
+                      className="p-3.5 rounded-xl bg-nexus-950/90 border border-slate-800 hover:border-cyan-500/40 transition-all duration-200 space-y-2.5"
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center space-x-2.5">
+                          <img
+                            src={offer.photoUrl}
+                            alt={offer.driverName}
+                            className="w-10 h-10 rounded-full object-cover ring-2 ring-cyan-500/40"
+                          />
+                          <div>
+                            <div className="font-bold text-sm text-white flex items-center space-x-1">
+                              <span>{offer.driverName}</span>
+                              {offer.verified && (
+                                <span title="Conductor Verificado"><UserCheck className="w-3.5 h-3.5 text-cyan-400" /></span>
+                              )}
+                              {offer.isFemale && (
+                                <span className="text-[10px] bg-pink-500/20 text-pink-300 px-1 rounded font-mono">Mujer</span>
+                              )}
+                            </div>
+                            <div className="text-[11px] text-slate-400">
+                              {offer.vehicle} · <span className="font-mono text-cyan-300">{offer.plate}</span>
+                            </div>
                           </div>
-                          <div className="text-[11px] text-slate-400">
-                            {offer.vehicle} · <span className="font-mono text-cyan-300">{offer.plate}</span>
+                        </div>
+
+                        <div className="text-right">
+                          <div className="font-display font-black text-lg text-neon-emerald">
+                            $ {offer.proposedPriceCop.toLocaleString('es-CO')}
+                          </div>
+                          <div className="text-[10px] text-slate-400 font-mono">
+                            ★ {offer.rating} ({offer.tripsCount} v.)
                           </div>
                         </div>
                       </div>
 
-                      <div className="text-right">
-                        <div className="font-display font-black text-lg text-neon-emerald">
-                          $ {offer.proposedPriceCop.toLocaleString('es-CO')}
-                        </div>
-                        <div className="text-[10px] text-slate-400 font-mono">
-                          ★ {offer.rating} ({offer.tripsCount} v.)
-                        </div>
+                      <div className="flex items-center justify-between text-[11px] text-slate-400 border-t border-slate-900 pt-2 font-mono">
+                        <span>Llegada estimada: <strong className="text-white">{offer.etaMinutes} min</strong></span>
+                        <span>Distancia: <strong className="text-white">{offer.distanceKm} km</strong></span>
                       </div>
-                    </div>
-
-                    <div className="flex items-center justify-between text-[11px] text-slate-400 border-t border-slate-900 pt-2 font-mono">
-                      <span>Llegada estimada: <strong className="text-white">{offer.etaMinutes} min</strong></span>
-                      <span>Distancia: <strong className="text-white">{offer.distanceKm} km</strong></span>
-                    </div>
 
                     {/* Actions: Accept or Counter-Offer */}
                     {counterInputId === offer.id ? (
@@ -385,8 +472,9 @@ export const MoveView: React.FC<MoveViewProps> = ({ onShowToast, onUpdateOriginD
                   </div>
                 ))}
               </div>
-            </div>
-          )}
+            )}
+          </div>
+        )}
         </div>
       )}
 

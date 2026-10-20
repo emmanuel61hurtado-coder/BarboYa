@@ -99,3 +99,35 @@ def test_admin_can_access_verification_pipeline():
         assert isinstance(res.json(), list)
     finally:
         app.dependency_overrides.pop(get_session, None)
+
+
+def test_role_based_login_rejection():
+    """Si un usuario cliente intenta iniciar sesión seleccionando rol Conductor o Admin, se rechaza con 403."""
+    from app.models.enums import UserRole
+    from app.core.security import hash_password
+
+    mock_session = AsyncMock()
+    mock_user = MagicMock()
+    mock_user.role = UserRole.customer
+    mock_user.is_active = True
+    mock_user.password_hash = hash_password("Password123!")
+
+    exec_result = MagicMock()
+    exec_result.scalar_one_or_none.return_value = mock_user
+    mock_session.execute = AsyncMock(return_value=exec_result)
+
+    async def override_get_session():
+        yield mock_session
+
+    app.dependency_overrides[get_session] = override_get_session
+    try:
+        res = client.post("/auth/login", json={
+            "phone": "+573009999999",
+            "password": "Password123!",
+            "expected_role": "admin"
+        })
+        assert res.status_code == 403
+        assert "no pertenece al perfil de Administrador" in res.json()["detail"]
+    finally:
+        app.dependency_overrides.pop(get_session, None)
+

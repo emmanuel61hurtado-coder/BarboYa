@@ -1,21 +1,24 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { 
   Car, Utensils, Package, ShieldAlert, Sparkles, 
   MapPin, AlertTriangle, Radio, Navigation2, CheckCircle2, 
-  User, Store, ShieldCheck, Heart
+  User, Store, ShieldCheck, Heart, Lock, KeyRound
 } from 'lucide-react'
-import { AppTab, ServiceMode } from './types'
+import { AppTab, ServiceMode, UserRole, UserSession } from './types'
 import { Navbar } from './components/Navbar'
 import { InteractiveMap } from './components/InteractiveMap'
 import { RealMap } from './components/RealMap'
 import { MoveView } from './components/MoveView'
 import { FoodView } from './components/FoodView'
 import { PackageView } from './components/PackageView'
+import { OrderTrackingView } from './components/OrderTrackingView'
 import { DriverPanel } from './components/DriverPanel'
 import { MerchantPanel } from './components/MerchantPanel'
 import { AdminPanel } from './components/AdminPanel'
 import { SosModal } from './components/SosModal'
+import { AuthModal } from './components/AuthModal'
 import { sound } from './utils/sound'
+import { api } from './utils/api'
 
 export default function App() {
   const [activeTab, setActiveTab] = useState<AppTab>('client')
@@ -26,9 +29,26 @@ export default function App() {
   const [audioEnabled, setAudioEnabled] = useState<boolean>(true)
   const [mapType, setMapType] = useState<'real' | 'hologram'>('real')
 
+  // Auth Session State
+  const [session, setSession] = useState<UserSession | null>(null)
+  const [authModalOpen, setAuthModalOpen] = useState<boolean>(false)
+  const [authInitialRole, setAuthInitialRole] = useState<UserRole>('customer')
+
   // Map route state shared between MoveView and Maps
   const [origin, setOrigin] = useState<string>('Parque Emilio Valenzuela')
   const [destination, setDestination] = useState<string>('Terminal de Transportes de Barbosa')
+
+  // Cargar sesión persistida al inicio
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem('barboya_user_session')
+      if (stored) {
+        setSession(JSON.parse(stored))
+      }
+    } catch {
+      // Ignore parse errors
+    }
+  }, [])
 
   const showToast = (msg: string) => {
     setToast(msg)
@@ -40,6 +60,20 @@ export default function App() {
   const handleTriggerSOS = () => {
     setSosOpen(true)
     setSosBannerActive(true)
+  }
+
+  const handleOpenAuth = (role: UserRole = 'customer') => {
+    setAuthInitialRole(role)
+    setAuthModalOpen(true)
+  }
+
+  const handleLogout = () => {
+    api.logout()
+    setSession(null)
+    if (activeTab === 'admin') {
+      setActiveTab('client')
+    }
+    showToast('👋 Sesión cerrada exitosamente')
   }
 
   return (
@@ -55,68 +89,65 @@ export default function App() {
         onTriggerSOS={handleTriggerSOS}
         audioEnabled={audioEnabled}
         setAudioEnabled={setAudioEnabled}
+        session={session}
+        onOpenAuth={handleOpenAuth}
+        onLogout={handleLogout}
+        onShowToast={showToast}
       />
 
       {/* Critical SOS Active Banner */}
       {sosBannerActive && (
-        <div className="bg-gradient-to-r from-red-600 via-rose-700 to-red-600 text-white px-4 py-2.5 text-xs font-mono font-bold flex flex-wrap justify-between items-center gap-2 border-b border-red-400 shadow-rose-glow animate-pulse">
+        <div className="bg-gradient-to-r from-red-600 via-rose-600 to-red-700 text-white px-4 py-2 flex items-center justify-between text-xs font-mono font-bold shadow-rose-glow animate-pulse z-40">
           <div className="flex items-center space-x-2">
-            <ShieldAlert className="w-4 h-4 text-white" />
-            <span>🚨 ALERTA SOS ACTIVA EN BARBOSA: Operador enlazado y monitoreando coordenadas GPS.</span>
+            <ShieldAlert className="w-4 h-4 animate-bounce" />
+            <span>ALERTA TÁCTICA ACTIVA: Red de emergencia de Barbosa enlazada. Coordenadas transmitidas.</span>
           </div>
           <button
-            onClick={() => {
-              setSosBannerActive(false)
-              sound.tick()
-            }}
-            className="underline bg-red-950/80 px-2.5 py-1 rounded border border-red-400 text-slate-200 hover:text-white"
+            onClick={() => setSosBannerActive(false)}
+            className="underline hover:text-slate-200 text-[11px] cursor-pointer"
           >
-            Desactivar / Cerrar Alerta
+            Desactivar Banner
           </button>
         </div>
       )}
 
-      {/* Floating Tactical Toast */}
+      {/* Toast Notification Floating Pill */}
       {toast && (
-        <div className="fixed bottom-5 right-5 z-50 glass-surface-elevated text-white px-4 py-3 rounded-2xl shadow-cyan-glow border border-cyan-400/40 flex items-center space-x-3 max-w-sm animate-float-slow">
-          <div className="p-1.5 rounded-lg bg-cyan-500/20 text-cyan-300">
-            <Radio className="w-4 h-4 animate-ping" />
-          </div>
-          <p className="text-xs font-medium leading-snug">{toast}</p>
+        <div className="fixed bottom-6 right-6 z-50 glass-surface-elevated border border-cyan-400/50 text-white px-4 py-3 rounded-2xl shadow-cyan-glow flex items-center space-x-3 text-xs animate-slide-up">
+          <Sparkles className="w-4 h-4 text-cyan-300 animate-spin" />
+          <span className="font-medium">{toast}</span>
         </div>
       )}
 
-      {/* Main Container */}
-      <main className="flex-1 max-w-7xl w-full mx-auto px-3 sm:px-6 py-4 sm:py-6 space-y-6">
+      {/* Main Content Arena */}
+      <main className="flex-1 max-w-7xl w-full mx-auto px-3 sm:px-6 py-5 sm:py-6 space-y-6">
         {/* ======================= CLIENT VIEW ======================= */}
         {activeTab === 'client' && (
           <div className="space-y-6">
-            {/* Hero Welcome Banner */}
-            <div className="glass-surface p-4 sm:p-5 rounded-2xl border border-slate-800/80 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+            {/* Top Submenu: Service Switcher (Move vs Food vs Package vs Tracking) */}
+            <div className="flex flex-wrap items-center justify-between gap-3">
               <div>
-                <div className="flex items-center space-x-2">
-                  <h1 className="font-display font-black text-xl sm:text-2xl text-white tracking-wide">
-                    BARBO<span className="text-cyan-glow">YA</span> NEXUS
-                  </h1>
-                  <span className="text-[10px] font-mono bg-cyan-500/10 text-cyan-300 border border-cyan-400/30 px-2 py-0.5 rounded-full">
-                    SISTEMA ACTIVO
+                <h1 className="text-2xl sm:text-3xl font-display font-black text-white tracking-wide flex items-center space-x-2">
+                  <span>Hola, {session ? session.fullName.split(' ')[0] : 'Barbosa'}</span>
+                  <span className="text-xs bg-cyan-500/20 text-cyan-300 font-mono px-2 py-0.5 rounded-full border border-cyan-500/30">
+                    SANTANDER
                   </span>
-                </div>
-                <p className="text-xs text-slate-400 mt-1 max-w-xl">
-                  Plataforma integral de movilidad inteligente, gastronomía local y logística urbana en Barbosa, Santander.
+                </h1>
+                <p className="text-xs text-slate-400 font-medium">
+                  Movilidad sin comisiones abusivas, restaurantes locales y mensajería en tiempo real.
                 </p>
               </div>
 
-              {/* Service Modes Selector */}
-              <div className="grid grid-cols-3 gap-2 w-full md:w-auto">
+              {/* Sub-modes Toggle */}
+              <div className="flex items-center space-x-1.5 bg-nexus-900/90 p-1 rounded-2xl border border-slate-800 shadow-inner">
                 <button
                   onClick={() => {
                     setServiceMode('move')
                     sound.tick()
                   }}
-                  className={`px-3 py-2.5 rounded-xl border flex flex-col items-center justify-center space-y-1 transition-all ${
+                  className={`px-3 py-2 rounded-xl border flex items-center space-x-1.5 transition-all ${
                     serviceMode === 'move'
-                      ? 'bg-cyan-500/15 border-cyan-400 text-cyan-300 shadow-cyan-glow-sm luminous-border-cyan font-bold'
+                      ? 'bg-cyan-500/15 border-cyan-500 text-cyan-300 shadow-cyan-glow font-bold'
                       : 'bg-nexus-950/70 border-slate-800 text-slate-400 hover:text-white hover:border-slate-700'
                   }`}
                 >
@@ -129,9 +160,9 @@ export default function App() {
                     setServiceMode('food')
                     sound.tick()
                   }}
-                  className={`px-3 py-2.5 rounded-xl border flex flex-col items-center justify-center space-y-1 transition-all ${
+                  className={`px-3 py-2 rounded-xl border flex items-center space-x-1.5 transition-all ${
                     serviceMode === 'food'
-                      ? 'bg-brand-500/15 border-brand-500 text-brand-400 shadow-brand-glow luminous-border-brand font-bold'
+                      ? 'bg-brand-500/15 border-brand-500 text-brand-400 shadow-brand-glow font-bold'
                       : 'bg-nexus-950/70 border-slate-800 text-slate-400 hover:text-white hover:border-slate-700'
                   }`}
                 >
@@ -144,19 +175,34 @@ export default function App() {
                     setServiceMode('package')
                     sound.tick()
                   }}
-                  className={`px-3 py-2.5 rounded-xl border flex flex-col items-center justify-center space-y-1 transition-all ${
+                  className={`px-3 py-2 rounded-xl border flex items-center space-x-1.5 transition-all ${
                     serviceMode === 'package'
-                      ? 'bg-neon-emerald/15 border-neon-emerald text-neon-emerald shadow-emerald-glow luminous-border-emerald font-bold'
+                      ? 'bg-neon-emerald/15 border-neon-emerald text-neon-emerald shadow-emerald-glow font-bold'
                       : 'bg-nexus-950/70 border-slate-800 text-slate-400 hover:text-white hover:border-slate-700'
                   }`}
                 >
                   <Package className="w-4 h-4" />
                   <span className="text-[11px] font-mono">Envíos</span>
                 </button>
+
+                <button
+                  onClick={() => {
+                    setServiceMode('tracking')
+                    sound.tick()
+                  }}
+                  className={`px-3 py-2 rounded-xl border flex items-center space-x-1.5 transition-all ${
+                    serviceMode === 'tracking'
+                      ? 'bg-purple-500/15 border-purple-500 text-purple-300 shadow-purple-500/20 font-bold'
+                      : 'bg-nexus-950/70 border-slate-800 text-slate-400 hover:text-white hover:border-slate-700'
+                  }`}
+                >
+                  <Navigation2 className="w-4 h-4" />
+                  <span className="text-[11px] font-mono">Seguimiento</span>
+                </button>
               </div>
             </div>
 
-            {/* Dynamic Grid: Service Action + Interactive Hologram Map */}
+            {/* Dynamic Grid: Service Action + Interactive Live Map */}
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
               {/* Left Column: Active Service Interaction (5 cols) */}
               <div className="lg:col-span-5 w-full">
@@ -171,6 +217,7 @@ export default function App() {
                 )}
                 {serviceMode === 'food' && <FoodView onShowToast={showToast} />}
                 {serviceMode === 'package' && <PackageView onShowToast={showToast} />}
+                {serviceMode === 'tracking' && <OrderTrackingView onShowToast={showToast} />}
               </div>
 
               {/* Right Column: Live Map (Real or Hologram) (7 cols) */}
@@ -276,9 +323,42 @@ export default function App() {
         {/* ======================= MERCHANT VIEW ======================= */}
         {activeTab === 'merchant' && <MerchantPanel onShowToast={showToast} />}
 
-        {/* ======================= ADMIN VIEW ======================= */}
-        {activeTab === 'admin' && <AdminPanel onShowToast={showToast} />}
+        {/* ======================= ADMIN VIEW (PROTECTED) ======================= */}
+        {activeTab === 'admin' && (
+          session?.role === 'admin' || session?.role === 'superadmin' ? (
+            <AdminPanel onShowToast={showToast} />
+          ) : (
+            <div className="glass-surface-elevated p-8 rounded-3xl border border-purple-500/40 text-center max-w-lg mx-auto space-y-4 shadow-2xl animate-fade-in my-12">
+              <div className="w-16 h-16 rounded-2xl bg-purple-500/20 border border-purple-500/40 text-purple-300 flex items-center justify-center mx-auto text-2xl font-black">
+                <Lock className="w-8 h-8" />
+              </div>
+              <h2 className="text-2xl font-black text-white tracking-wide">ÁREA ADMINISTRATIVA RESTRINGIDA</h2>
+              <p className="text-xs text-slate-400 leading-relaxed">
+                El centro de control de BarboYa requiere verificación de privilegios en el servidor.
+                Ningún usuario puede obtener acceso administrativo simplemente modificando el cliente web.
+              </p>
+              <button
+                onClick={() => handleOpenAuth('admin')}
+                className="py-2.5 px-6 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs uppercase tracking-wider transition shadow-lg flex items-center justify-center space-x-2 mx-auto"
+              >
+                <KeyRound className="w-4 h-4" />
+                <span>Ingresar con Cuenta de Administrador</span>
+              </button>
+            </div>
+          )
+        )}
       </main>
+
+      {/* Authentication Modal */}
+      <AuthModal
+        isOpen={authModalOpen}
+        onClose={() => setAuthModalOpen(false)}
+        initialRole={authInitialRole}
+        onSuccess={(newSession) => {
+          setSession(newSession)
+          showToast(`✨ Bienvenido a BarboYa, ${newSession.fullName}`)
+        }}
+      />
 
       {/* SOS Protocol Emergency Modal */}
       <SosModal

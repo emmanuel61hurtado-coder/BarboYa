@@ -107,10 +107,14 @@ class ApiService {
     return res
   }
 
-  async login(phone: string, password: string): Promise<{ access_token: string; role: string; user_id: string }> {
+  async login(phone: string, password: string, expectedRole?: string): Promise<{ access_token: string; role: string; user_id: string }> {
+    const payload: any = { phone, password }
+    if (expectedRole) {
+      payload.expected_role = expectedRole
+    }
     const res = await this.request<{ access_token: string; role: string; user_id: string }>('/auth/login', {
       method: 'POST',
-      body: JSON.stringify({ phone, password }),
+      body: JSON.stringify(payload),
     })
     this.setToken(res.access_token)
     return res

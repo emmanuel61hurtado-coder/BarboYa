@@ -1,6 +1,6 @@
 import React from 'react'
-import { ShieldAlert, Volume2, VolumeX, Sparkles, User, Car, Store, ShieldCheck, MapPin } from 'lucide-react'
-import { AppTab } from '../types'
+import { ShieldAlert, Volume2, VolumeX, Sparkles, User, Car, Store, ShieldCheck, MapPin, LogIn, LogOut } from 'lucide-react'
+import { AppTab, UserRole, UserSession } from '../types'
 import { sound } from '../utils/sound'
 
 interface NavbarProps {
@@ -9,6 +9,10 @@ interface NavbarProps {
   onTriggerSOS: () => void
   audioEnabled: boolean
   setAudioEnabled: (val: boolean) => void
+  session: UserSession | null
+  onOpenAuth: (role?: UserRole) => void
+  onLogout: () => void
+  onShowToast: (msg: string) => void
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
@@ -16,9 +20,22 @@ export const Navbar: React.FC<NavbarProps> = ({
   setActiveTab,
   onTriggerSOS,
   audioEnabled,
-  setAudioEnabled
+  setAudioEnabled,
+  session,
+  onOpenAuth,
+  onLogout,
+  onShowToast,
 }) => {
   const handleTabChange = (tab: AppTab) => {
+    // Protección estricta de Admin en Frontend y Backend
+    if (tab === 'admin') {
+      if (!session || (session.role !== 'admin' && session.role !== 'superadmin')) {
+        sound.alert()
+        onShowToast('🔒 Acceso Denegado: Esta área está restringida exclusivamente a administradores autorizados.')
+        onOpenAuth('admin')
+        return
+      }
+    }
     setActiveTab(tab)
     sound.tick()
   }
@@ -108,8 +125,52 @@ export const Navbar: React.FC<NavbarProps> = ({
           </button>
         </nav>
 
-        {/* Right Action Icons: Audio Toggle & Tactical SOS */}
+        {/* Right Action Icons: Session, Audio Toggle & Tactical SOS */}
         <div className="flex items-center space-x-2">
+          {/* User Session Info or Login CTA */}
+          {session ? (
+            <div className="flex items-center space-x-1.5 bg-nexus-900/80 border border-slate-800 rounded-xl px-2.5 py-1 text-xs">
+              <div className="flex items-center space-x-1.5">
+                <span className="w-2 h-2 rounded-full bg-cyan-glow animate-pulse" />
+                <span className="font-bold text-white text-xs max-w-[90px] truncate">
+                  {session.fullName.split(' ')[0]}
+                </span>
+                <span className={`text-[9px] font-mono px-1.5 py-0.2 rounded font-bold uppercase ${
+                  session.role === 'admin' || session.role === 'superadmin'
+                    ? 'bg-purple-500/20 text-purple-300 border border-purple-500/40'
+                    : session.role === 'driver' || session.role === 'courier'
+                    ? 'bg-neon-emerald/20 text-neon-emerald border border-neon-emerald/40'
+                    : session.role === 'merchant_owner'
+                    ? 'bg-brand-500/20 text-brand-300 border border-brand-500/40'
+                    : 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40'
+                }`}>
+                  {session.role === 'merchant_owner' ? 'Tienda' : session.role}
+                </span>
+              </div>
+              <button
+                onClick={() => {
+                  sound.tick()
+                  onLogout()
+                }}
+                className="p-1 text-slate-400 hover:text-rose-400 transition ml-1"
+                title="Cerrar Sesión"
+              >
+                <LogOut className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          ) : (
+            <button
+              onClick={() => {
+                sound.tick()
+                onOpenAuth('customer')
+              }}
+              className="py-1.5 px-3 rounded-xl bg-cyan-500/15 hover:bg-cyan-500/25 border border-cyan-500/30 text-cyan-300 text-xs font-semibold flex items-center space-x-1.5 transition active:scale-95"
+            >
+              <LogIn className="w-3.5 h-3.5" />
+              <span>Ingresar</span>
+            </button>
+          )}
+
           {/* Sound Synthesizer Toggle */}
           <button
             onClick={() => {

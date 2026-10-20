@@ -34,6 +34,7 @@ class RegisterIn(BaseModel):
 class LoginIn(BaseModel):
     phone: str
     password: str
+    expected_role: UserRole | None = None
 
 
 class TokenOut(BaseModel):

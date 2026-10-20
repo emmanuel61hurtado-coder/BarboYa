@@ -77,6 +77,31 @@ async def login(data: LoginIn, session: AsyncSession = Depends(get_session)):
         user = (await session.execute(select(User).where(User.phone == data.phone))).scalar_one_or_none()
         if not user or not verify_password(data.password, user.password_hash) or not user.is_active:
             raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Teléfono o contraseña incorrectos")
+
+        # Validación de inicio de sesión por roles
+        if data.expected_role:
+            allowed = [data.expected_role]
+            if data.expected_role == UserRole.admin:
+                allowed.append(UserRole.superadmin)
+            elif data.expected_role == UserRole.driver:
+                allowed.append(UserRole.courier)
+            elif data.expected_role == UserRole.merchant_owner:
+                allowed.append(UserRole.merchant_employee)
+
+            if user.role not in allowed:
+                role_names = {
+                    UserRole.customer: "Cliente",
+                    UserRole.driver: "Conductor / Repartidor",
+                    UserRole.merchant_owner: "Comercio",
+                    UserRole.admin: "Administrador",
+                }
+                expected_name = role_names.get(data.expected_role, data.expected_role.value)
+                actual_name = role_names.get(user.role, user.role.value)
+                raise HTTPException(
+                    status.HTTP_403_FORBIDDEN,
+                    f"Esta cuenta no pertenece al perfil de {expected_name}. Tu cuenta está registrada como {actual_name}.",
+                )
+
         return TokenOut(access_token=create_token(user.id, user.role.value), role=user.role, user_id=user.id)
     except HTTPException:
         raise
