@@ -357,6 +357,16 @@ export default function App() {
         onSuccess={(newSession) => {
           setSession(newSession)
           showToast(`✨ Bienvenido a BarboYa, ${newSession.fullName}`)
+          // Redirección inteligente según el rol autenticado
+          if (newSession.role === 'admin' || newSession.role === 'superadmin') {
+            setActiveTab('admin')
+          } else if (newSession.role === 'driver' || newSession.role === 'courier') {
+            setActiveTab('driver')
+          } else if (newSession.role === 'merchant_owner' || newSession.role === 'merchant_employee') {
+            setActiveTab('merchant')
+          } else {
+            setActiveTab('client')
+          }
         }}
       />
 
