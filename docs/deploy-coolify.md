@@ -27,3 +27,16 @@ Este documento describe el procedimiento para desplegar la plataforma **BarboYa*
 
 4. **Verificación (Health Check):**
    - Comprobar que el endpoint `/health` responda correctamente (`{"status": "ok", "app": "Barboya"}`).
+
+## Solución de errores
+
+### `Error: no service selected`
+
+El archivo Compose de este repositorio define los servicios `db`, `redis` y `api`.
+Este error también se ha reportado en Coolify cuando está activada la opción
+**Consistent Container Names** en recursos conectados a Git. Desactiva esa opción
+en la configuración del recurso y vuelve a desplegar. Si tu instalación de Coolify
+es antigua, actualízala a una versión que incluya la corrección (el problema fue
+resuelto en `v4.0.0-beta.240`).
+
+Referencia: [coollabsio/coolify#1852](https://github.com/coollabsio/coolify/issues/1852).
