@@ -94,6 +94,34 @@ guardó una copia vacía/desactualizada del compose. Verifica en orden:
 5. No uses *profiles* ni *anchors/alias* YAML: el parser de Coolify no los
    soporta y el servicio queda fuera de la selección.
 
+### `Bind for 0.0.0.0:8000 failed: port is already allocated`
+Otro contenedor del servidor ya tiene publicado el puerto host `8000` (normalmente
+un `api` de un despliegue anterior que quedó vivo, porque Coolify crea los
+contenedores con sufijo de timestamp y no siempre borra el anterior).
+
+1. Identifica el ocupante:
+   ```bash
+   docker ps -a --format 'table {{.Names}}\t{{.Status}}\t{{.Ports}}' | grep -E '8000|api'
+   ```
+2. Elimínalo (solo el que pertenezca a este proyecto):
+   ```bash
+   docker rm -f <contenedor-ocupante>
+   ```
+   Si es un despliegue antiguo de BarboYa, también puedes limpiar el proyecto completo:
+   ```bash
+   cd /ruta/al/repositorio && docker compose -p zwhptn6phuccflyg7q157eta down --remove-orphans
+   ```
+3. Vuelve a desplegar.
+4. Si el puerto 8000 está ocupado por otro servicio que no puedes tocar, publica
+   la API en otro puerto: define `API_PORT=8080` en las variables de entorno de
+   Coolify y actualiza el **puerto del dominio** en Coolify al mismo valor
+   (el compose usa `"${API_PORT:-8000}:8000"`).
+
+> Recomendación de Coolify: no publicar puertos (`ports:`) salvo que un cliente
+> externo necesite conexión directa. Con el proxy, el dominio debe apuntar al
+> **puerto interno** del contenedor (`https://app.barboya.co:8000`), y así
+> nunca hay colisiones de puertos en el servidor.
+
 ### `dependency failed to start: container db ... is unhealthy`
 El contenedor de PostgreSQL no pasó el healthcheck (`pg_isready`).
 
