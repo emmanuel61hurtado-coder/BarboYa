@@ -80,15 +80,21 @@ async def get_session() -> AsyncIterator[AsyncSession]:
 # ──────────────────────── TABLE CREATION (SQLite Dev) ────────────────────────
 
 async def init_db():
-    """Create all tables. Only meant for SQLite dev mode."""
-    if not _using_sqlite:
-        return
+    """Crea/verifica el esquema.
 
+    - SQLite (dev): `create_all` sobre las tablas definidas en los modelos.
+    - PostgreSQL (producción): sincroniza tipos ENUM, tablas y columnas con los
+      modelos, de modo que la base siempre quede alineada aunque
+      `database/schema.sql` haya fallado en el initdb del contenedor.
+    """
     # Import all models so Base.metadata knows about them
     import app.models  # noqa: F401
-    import app.models.merchant  # noqa: F401
-    import app.models.trip  # noqa: F401
-    import app.models.zone  # noqa: F401
+
+    if not _using_sqlite:
+        from app.core.schema_sync import sync_schema
+
+        await sync_schema(engine)
+        return
 
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)

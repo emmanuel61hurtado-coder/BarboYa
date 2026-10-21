@@ -1,5 +1,7 @@
 from functools import lru_cache
+from urllib.parse import quote_plus
 
+from pydantic import model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -9,7 +11,15 @@ class Settings(BaseSettings):
     app_name: str = "Barboya API"
     environment: str = "development"
 
-    database_url: str = "postgresql+asyncpg://barboya:barboya@localhost:5432/barboya"
+    database_url: str = ""
+
+    # Partes de la URL de PostgreSQL (se usan si DATABASE_URL no viene definida)
+    postgres_user: str = "barboya"
+    postgres_password: str = "barboya"
+    postgres_host: str = "localhost"
+    postgres_port: int = 5432
+    postgres_db: str = "barboya"
+
     redis_url: str = "redis://localhost:6379/0"
 
     # SQLite fallback for local development without Docker/PostgreSQL
@@ -41,6 +51,18 @@ class Settings(BaseSettings):
     s3_bucket: str = "barboya-media"
     s3_endpoint_url: str | None = None
     s3_region: str = "us-east-1"
+
+    @model_validator(mode="after")
+    def _build_database_url(self) -> "Settings":
+        """Si no viene DATABASE_URL, se arma con las variables POSTGRES_*."""
+        if not self.database_url:
+            user = quote_plus(self.postgres_user)
+            password = quote_plus(self.postgres_password)
+            self.database_url = (
+                f"postgresql+asyncpg://{user}:{password}"
+                f"@{self.postgres_host}:{self.postgres_port}/{self.postgres_db}"
+            )
+        return self
 
 
 @lru_cache

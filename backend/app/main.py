@@ -35,12 +35,19 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Create tables if using SQLite dev mode
+    # Create tables / synchronize the schema with the SQLAlchemy models
     from app.core.database import init_db
     from app.core.demo_data import seed_demo_customer
 
-    await init_db()
-    await seed_demo_customer()
+    try:
+        await init_db()
+    except Exception as err:
+        print(f"[BarboYa] Aviso: no se pudo sincronizar el esquema al iniciar ({err}). La API arranca igual.")
+
+    try:
+        await seed_demo_customer()
+    except Exception as err:
+        print(f"[BarboYa] Aviso: no se pudo sembrar el cliente demo ({err}).")
 
     client = None
     try:
