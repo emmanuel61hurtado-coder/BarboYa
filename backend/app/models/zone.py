@@ -1,21 +1,20 @@
 import uuid
 
-from geoalchemy2 import Geometry
 from sqlalchemy import Boolean, Enum, Integer, Numeric, Text, Time
-from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.core.database import Base
+from app.core.compat_types import GUID, GeoMultiPolygon
 from app.models.enums import BillingScheme
 
 
 class Zone(Base):
     __tablename__ = "zones"
 
-    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    id: Mapped[uuid.UUID] = mapped_column(GUID(), primary_key=True, default=uuid.uuid4)
     name: Mapped[str] = mapped_column(Text, unique=True)
     is_urban: Mapped[bool] = mapped_column(Boolean, default=True)
-    boundary = mapped_column(Geometry("MULTIPOLYGON", srid=4326))
+    boundary = mapped_column(GeoMultiPolygon(), nullable=True)
     base_fare_cop: Mapped[int] = mapped_column(Integer)
     per_km_cop: Mapped[int] = mapped_column(Integer, default=0)
     night_surcharge_pct: Mapped[float] = mapped_column(Numeric(5, 2), default=0)

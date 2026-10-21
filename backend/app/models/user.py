@@ -1,19 +1,18 @@
 import uuid
 from datetime import datetime
 
-from geoalchemy2 import Geography
 from sqlalchemy import Boolean, CheckConstraint, DateTime, Enum, ForeignKey, Integer, Numeric, String, Text, func
-from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.database import Base
+from app.core.compat_types import GUID, GeoPoint
 from app.models.enums import BillingScheme, Gender, UserRole, VehicleType, VerificationStatus
 
 
 class User(Base):
     __tablename__ = "users"
 
-    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    id: Mapped[uuid.UUID] = mapped_column(GUID(), primary_key=True, default=uuid.uuid4)
     role: Mapped[UserRole] = mapped_column(Enum(UserRole, name="user_role"), default=UserRole.customer)
     full_name: Mapped[str] = mapped_column(Text)
     phone: Mapped[str] = mapped_column(String, unique=True)
@@ -39,7 +38,7 @@ class DriverProfile(Base):
     __table_args__ = (CheckConstraint("wallet_balance_cop >= 0", name="ck_wallet_non_negative"),)
 
     user_id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), primary_key=True
+        GUID(), ForeignKey("users.id", ondelete="CASCADE"), primary_key=True
     )
     vehicle_type: Mapped[VehicleType] = mapped_column(Enum(VehicleType, name="vehicle_type"))
     vehicle_plate: Mapped[str] = mapped_column(String, unique=True)
@@ -63,7 +62,7 @@ class DriverProfile(Base):
     is_female_driver: Mapped[bool] = mapped_column(Boolean, default=False)
     rejection_reason: Mapped[str | None] = mapped_column(Text, nullable=True)
     verified_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
-    verified_by: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), nullable=True)
+    verified_by: Mapped[uuid.UUID | None] = mapped_column(GUID(), nullable=True)
 
     billing_scheme: Mapped[BillingScheme] = mapped_column(
         Enum(BillingScheme, name="billing_scheme"), default=BillingScheme.per_trip_fee
@@ -80,7 +79,7 @@ class DriverProfile(Base):
 
     rating_avg: Mapped[float] = mapped_column(Numeric(3, 2), default=5.0)
     rating_count: Mapped[int] = mapped_column(Integer, default=0)
-    current_location = mapped_column(Geography("POINT", srid=4326), nullable=True)
+    current_location = mapped_column(GeoPoint(), nullable=True)
 
     user: Mapped[User] = relationship(back_populates="driver_profile")
 

@@ -32,6 +32,10 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    # Create tables if using SQLite dev mode
+    from app.core.database import init_db
+    await init_db()
+
     client = None
     try:
         client = aioredis.from_url(settings.redis_url)

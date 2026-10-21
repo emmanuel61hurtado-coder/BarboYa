@@ -12,6 +12,10 @@ class Settings(BaseSettings):
     database_url: str = "postgresql+asyncpg://barboya:barboya@localhost:5432/barboya"
     redis_url: str = "redis://localhost:6379/0"
 
+    # SQLite fallback for local development without Docker/PostgreSQL
+    use_sqlite: bool = True  # auto-fallback when PostgreSQL is unreachable
+    sqlite_url: str = "sqlite+aiosqlite:///./barboya_dev.db"
+
     jwt_secret: str = "CAMBIAR-EN-PRODUCCION"
     jwt_algorithm: str = "HS256"
     jwt_expire_minutes: int = 60 * 24
