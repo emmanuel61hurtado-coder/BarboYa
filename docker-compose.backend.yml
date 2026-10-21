@@ -4,7 +4,7 @@ services:
     restart: unless-stopped
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-barboya}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-barboya}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Define POSTGRES_PASSWORD en las variables de entorno de Coolify}
       POSTGRES_DB: ${POSTGRES_DB:-barboya}
     volumes:
       - pgdata:/var/lib/postgresql/data
@@ -40,15 +40,15 @@ services:
       # Si no se define DATABASE_URL, la API la arma con POSTGRES_* (ver config.py)
       DATABASE_URL: ${DATABASE_URL:-}
       POSTGRES_USER: ${POSTGRES_USER:-barboya}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-barboya}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Define POSTGRES_PASSWORD en las variables de entorno de Coolify}
       POSTGRES_HOST: ${POSTGRES_HOST:-db}
       POSTGRES_DB: ${POSTGRES_DB:-barboya}
       REDIS_URL: ${REDIS_URL:-redis://redis:6379/0}
       USE_SQLITE: "false"
       JWT_SECRET: "${JWT_SECRET:?Define JWT_SECRET en las variables de entorno de Coolify}"
-      CORS_ORIGINS: '${CORS_ORIGINS:-["*"]}'
-    ports:
-      - "${API_PORT:-8000}:8000"
+      CORS_ORIGINS: '${CORS_ORIGINS:?Define CORS_ORIGINS con el dominio de la aplicacion}'
+    expose:
+      - "8000"
     depends_on:
       db:
         # La API reintenta la sincronizacion del esquema en segundo plano:

@@ -28,8 +28,10 @@ Coolify  ->  docker compose  ->  db      (postgis/postgis:16-3.4, volumen pgdata
 1. En Coolify: **+ New** → **Application** → **Docker Compose** (no "Dockerfile").
 2. Selecciona el repositorio y la rama `main`.
 3. En **General → Docker Compose**:
-   - **Docker Compose Location**: `/docker-compose.yml`
-     (`docker-compose.backend.yml` es un alias idéntico; usa solo uno).
+   - **Docker Compose Location**: `/docker-compose.backend.yml`
+     (esta variante expone la API solo dentro de la red Docker para evitar
+     colisiones en el puerto host; `docker-compose.yml` conserva el puerto
+     publicado para desarrollo local).
    - Pulsa **Load Compose File** / **Reload** y verifica que aparezcan los
      servicios **db**, **redis** y **api** con sus toggles activos.
    - **Base Directory**: `/`.
@@ -40,32 +42,44 @@ En **Environment Variables** define:
 
 | Variable | Obligatoria | Ejemplo |
 |---|---|---|
-| `JWT_SECRET` | **Sí** | cadena aleatoria de 64+ caracteres |
-| `POSTGRES_PASSWORD` | Sí (prod) | `UnaClaveLargaYUnica` |
+| `JWT_SECRET` | **Sí** | secreto aleatorio de 64+ caracteres |
+| `POSTGRES_PASSWORD` | **Sí** | contraseña aleatoria y única |
 | `DATABASE_URL` | Opcional | `postgresql+asyncpg://barboya:UnaClaveLargaYUnica@db:5432/barboya` |
 | `POSTGRES_USER` / `POSTGRES_DB` | Opcional | `barboya` (por defecto) |
 | `REDIS_URL` | Opcional | `redis://redis:6379/0` |
-| `CORS_ORIGINS` | Sí | `["https://app.barboya.co"]` |
+| `CORS_ORIGINS` | **Sí** | `["https://app.barboya.co"]` |
 | `ENVIRONMENT` | Opcional | `production` |
-| `API_PORT` | Opcional | `8000` |
 
+- Genera dos secretos distintos (por ejemplo, `openssl rand -hex 32`) y
+  guárdalos como `JWT_SECRET` y `POSTGRES_PASSWORD` en **Environment Variables**
+  de Coolify. No los subas al repositorio ni reutilices los ejemplos de `.env.example`.
+- Sustituye `app.barboya.co` en `CORS_ORIGINS` por el dominio real del frontend,
+  manteniendo el formato de lista JSON.
 - Si **no** defines `DATABASE_URL`, la API la arma con `POSTGRES_USER`,
   `POSTGRES_PASSWORD`, `POSTGRES_HOST` y `POSTGRES_DB` (ver `backend/app/core/config.py`),
   así que basta con definir `POSTGRES_PASSWORD`.
+- `API_PORT` solo afecta `docker-compose.yml` para desarrollo local; Coolify usa
+  el puerto interno `8000` sin publicar un puerto del host.
 - `docker-compose.yml` ya fija `USE_SQLITE=false` (PostgreSQL + PostGIS).
 - `JWT_SECRET` no tiene valor por defecto: si falta, el despliegue se detiene con
   un mensaje explícito en lugar de arrancar con un secreto inseguro.
 
 ## 3. Desplegar
+En la configuración de dominio del servicio **api** en Coolify, indica el
+dominio público y el puerto interno de destino **8000** (sin añadir `:8000` a
+la URL pública). Guarda los cambios y pulsa **Deploy**.
+
 Coolify clona el repo, construye `backend/Dockerfile` (compila React y copia
 `dist/` dentro de la imagen) y levanta `db`, `redis` y `api`.
 
 ### Si el despliegue anterior falló dejando un volumen `pgdata` a medias
-Borra el volumen para empezar limpio (por consola SSH del servidor):
+No borres el volumen si contiene datos que necesitas: primero haz una copia de
+seguridad. Solo si es un despliegue nuevo y los datos son descartables, identifica
+y elimina el volumen específico del proyecto por consola SSH:
 
 ```bash
 docker volume ls | grep pgdata
-docker volume rm <proyecto>_pgdata      # ej. zwhptn6phuccflyg7q157eta_pgdata
+docker volume rm <proyecto>_pgdata      # solo si confirmaste que puedes perder esos datos
 ```
 
 Vuelve a desplegar: la base se inicializa y la API alinea el esquema.
@@ -83,14 +97,14 @@ Este mensaje lo emite **Docker Compose** (`runUp`) cuando el proyecto YAML que
 leyó tiene **cero servicios**. En Coolify casi siempre significa que el recurso
 guardó una copia vacía/desactualizada del compose. Verifica en orden:
 
-1. **Compose Location** correcto (`/docker-compose.yml`) y pulsa
+1. **Compose Location** correcto (`/docker-compose.backend.yml`) y pulsa
    **Load Compose File**. Deben listarse `db`, `redis`, `api`.
 2. Que el recurso sea de tipo **Docker Compose**, no *Application → Dockerfile*.
 3. Revisa que el archivo no tenga **BOM UTF-8** (Coolify/YAML lo interpreta mal).
    En Windows: guardar como *UTF-8 sin BOM* (los bytes deben iniciar en
    `73 65 72 76 69 63 65 73 3A` = `services:`).
 4. Si el recurso quedó corrupto, bórralo y créalo de nuevo apuntando a
-   `/docker-compose.yml`; la copia en la base de datos de Coolify se regenera.
+   `/docker-compose.backend.yml`; la copia en la base de datos de Coolify se regenera.
 5. No uses *profiles* ni *anchors/alias* YAML: el parser de Coolify no los
    soporta y el servicio queda fuera de la selección.
 
@@ -112,15 +126,14 @@ contenedores con sufijo de timestamp y no siempre borra el anterior).
    cd /ruta/al/repositorio && docker compose -p zwhptn6phuccflyg7q157eta down --remove-orphans
    ```
 3. Vuelve a desplegar.
-4. Si el puerto 8000 está ocupado por otro servicio que no puedes tocar, publica
-   la API en otro puerto: define `API_PORT=8080` en las variables de entorno de
-   Coolify y actualiza el **puerto del dominio** en Coolify al mismo valor
-   (el compose usa `"${API_PORT:-8000}:8000"`).
+4. Si el contenedor anterior es de este proyecto y ya no se necesita, detenlo
+   desde Coolify. No elimines contenedores de otros servicios.
 
-> Recomendación de Coolify: no publicar puertos (`ports:`) salvo que un cliente
-> externo necesite conexión directa. Con el proxy, el dominio debe apuntar al
-> **puerto interno** del contenedor (`https://app.barboya.co:8000`), y así
-> nunca hay colisiones de puertos en el servidor.
+> La variante `docker-compose.backend.yml` no publica puertos del host; Coolify
+> enruta el dominio al servicio `api` por su puerto interno `8000`. La URL
+> pública usa el dominio normal (por ejemplo, `https://app.barboya.co`); define
+> `8000` como puerto de destino del servicio en la configuración del dominio
+> de Coolify, no como puerto público.
 
 ### `dependency failed to start: container db ... is unhealthy`
 El contenedor de PostgreSQL no pasó el healthcheck (`pg_isready`).
