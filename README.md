@@ -19,8 +19,12 @@ barboya/
 ```bash
 docker compose up --build        # PostGIS, Redis, API y React en :8000
 # Sin Docker: construir React y luego iniciar FastAPI
-cd frontend && npm ci && npm run build
-cd ../backend && pip install -r requirements.txt && uvicorn app.main:app --reload
+cd frontend
+npm ci
+npm run build
+cd ../backend
+pip install -r requirements.txt
+uvicorn app.main:app --reload
 ```
 FastAPI sirve el build de React y la API desde el mismo origen. En desarrollo, Vite
 se ejecuta con `cd frontend && npm run dev` y redirige `/api` al backend en `:8000`.

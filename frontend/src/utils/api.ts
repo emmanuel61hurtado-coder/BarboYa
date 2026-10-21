@@ -4,7 +4,11 @@
  * Handles JWT tokens, authentication state, and full platform endpoints
  */
 
-const API_BASE_URL = import.meta.env.DEV ? '/api' : ''
+const API_BASE_URL = import.meta.env.DEV
+  ? '/api'
+  : typeof window !== 'undefined' && window.location.port && window.location.port !== '8000'
+    ? 'http://localhost:8000'
+    : ''
 
 export interface AuthSession {
   token: string
