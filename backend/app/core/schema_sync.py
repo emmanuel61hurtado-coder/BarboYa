@@ -2,10 +2,11 @@
 
 Se ejecuta al arrancar la API (ver `app.core.database.init_db`) y es idempotente:
 
-1. Crea los tipos ENUM que falten y agrega los valores que falten.
-2. Crea las tablas que falten (`Base.metadata.create_all`).
-3. Agrega las columnas que falten en tablas existentes.
-4. Siembra las zonas base de Barbosa cuando la tabla `zones` está vacía.
+1. Activa las extensiones necesarias (postgis, pgcrypto).
+2. Crea los tipos ENUM que falten y agrega los valores que falten.
+3. Crea las tablas que falten (`Base.metadata.create_all`).
+4. Agrega las columnas que falten en tablas existentes.
+5. Siembra las zonas base de Barbosa cuando la tabla `zones` está vacía.
 
 De esta forma el despliegue en Docker/Coolify no depende de que
 `database/schema.sql` se haya aplicado sin errores: la base siempre termina
@@ -15,9 +16,10 @@ coincidiendo con los modelos.
 from __future__ import annotations
 
 import logging
+from enum import Enum
 
 from sqlalchemy import Enum as SAEnum
-from sqlalchemy import text
+from sqlalchemy import Text, text
 from sqlalchemy.dialects import postgresql
 from sqlalchemy.ext.asyncio import AsyncConnection, AsyncEngine
 
@@ -59,6 +61,8 @@ def _column_ddl(col) -> str:
     col_type = col.type
     if isinstance(col_type, SAEnum):
         return col_type.name
+    if isinstance(col_type, Text):
+        return "TEXT"
     impl = col_type.dialect_impl(_DIALECT)
     return str(impl.compile(_DIALECT))
 
@@ -69,6 +73,8 @@ def _default_literal(col) -> str | None:
     if default is None or not default.is_scalar:
         return None
     arg = default.arg
+    if isinstance(arg, Enum):
+        arg = arg.value
     if isinstance(arg, bool):
         return "TRUE" if arg else "FALSE"
     if isinstance(arg, (int, float)):
@@ -78,7 +84,31 @@ def _default_literal(col) -> str | None:
     return None
 
 
-async def _sync_enums(conn: AsyncConnection) -> None:
+def _model_enums() -> dict[str, list[str]]:
+    """Tipos ENUM usados por los modelos: {nombre_pg: [valores]}."""
+    enums: dict[str, list[str]] = {}
+    for table in Base.metadata.tables.values():
+        for col in table.columns:
+            col_type = col.type
+            if not isinstance(col_type, SAEnum):
+                continue
+            enum_cls = col_type.enum_class
+            if enum_cls is None:
+                continue
+            enums.setdefault(col_type.name, [item.value for item in enum_cls])
+    return enums
+
+
+async def _ensure_extensions(conn: AsyncConnection) -> None:
+    """PostGIS y pgcrypto son necesarios para las columnas geoespaciales."""
+    for extension in ("postgis", "pgcrypto"):
+        try:
+            await conn.execute(text(f"CREATE EXTENSION IF NOT EXISTS {extension}"))
+        except Exception as err:  # sin permisos o imagen sin la extension
+            log.warning("No se pudo activar la extension %s: %s", extension, err)
+
+
+async def _existing_enum_values(conn: AsyncConnection) -> dict[str, set[str]]:
     rows = (
         await conn.execute(
             text(
@@ -88,38 +118,43 @@ async def _sync_enums(conn: AsyncConnection) -> None:
             )
         )
     ).all()
-
     existing: dict[str, set[str]] = {}
     for name, value in rows:
         existing.setdefault(name, set()).add(value)
+    return existing
 
-    seen: set[str] = set()
-    for table in Base.metadata.tables.values():
-        for col in table.columns:
-            col_type = col.type
-            if not isinstance(col_type, SAEnum):
-                continue
-            name = col_type.name
-            if name in seen:
-                continue
-            seen.add(name)
 
-            enum_cls = col_type.enum_class
-            values = [item.value for item in enum_cls] if enum_cls else []
-            if not values:
-                continue
+async def _create_missing_enum_types(conn: AsyncConnection, existing: dict[str, set[str]]) -> None:
+    for name, values in _model_enums().items():
+        if name in existing or not values:
+            continue
+        literal = ", ".join(_quote(v) for v in values)
+        await conn.execute(text(f'CREATE TYPE "{name}" AS ENUM ({literal})'))
+        log.info("Tipo ENUM creado: %s%s", name, values)
 
-            have = existing.get(name)
-            if not have:
-                literal = ", ".join(_quote(v) for v in values)
-                await conn.execute(text(f'CREATE TYPE "{name}" AS ENUM ({literal})'))
-                log.info("Tipo ENUM creado: %s%s", name, values)
-                continue
 
-            for value in values:
-                if value not in have:
-                    await conn.execute(text(f"ALTER TYPE \"{name}\" ADD VALUE IF NOT EXISTS {_quote(value)}"))
-                    log.info("Valor ENUM agregado: %s.%s", name, value)
+async def _add_missing_enum_values(engine: AsyncEngine, existing: dict[str, set[str]]) -> None:
+    """Agrega valores a los ENUM existentes.
+
+    Se ejecuta en autocommit: PostgreSQL no permite usar un valor nuevo
+    dentro de la misma transacción en la que se agregó.
+    """
+    statements = []
+    for name, values in _model_enums().items():
+        have = existing.get(name)
+        if not have:
+            continue
+        for value in values:
+            if value not in have:
+                statements.append(f'ALTER TYPE "{name}" ADD VALUE IF NOT EXISTS {_quote(value)}')
+                log.info("Valor ENUM agregado: %s.%s", name, value)
+
+    if not statements:
+        return
+
+    async with engine.connect().execution_options(isolation_level="AUTOCOMMIT") as conn:
+        for statement in statements:
+            await conn.execute(text(statement))
 
 
 async def _sync_columns(conn: AsyncConnection) -> None:
@@ -174,22 +209,18 @@ async def _seed_zones(conn: AsyncConnection) -> None:
     log.info("Zonas base de Barbosa sembradas")
 
 
-async def _ensure_extensions(conn: AsyncConnection) -> None:
-    """PostGIS y pgcrypto son necesarios para las columnas geoespaciales."""
-    for extension in ("postgis", "pgcrypto"):
-        try:
-            await conn.execute(text(f"CREATE EXTENSION IF NOT EXISTS {extension}"))
-        except Exception as err:  # sin permisos o imagen sin la extension
-            log.warning("No se pudo activar la extension %s: %s", extension, err)
-
-
 async def sync_schema(engine: AsyncEngine) -> None:
     """Alinea la base de datos PostgreSQL con los modelos SQLAlchemy."""
     import app.models  # noqa: F401  (registra todas las tablas en Base.metadata)
 
     async with engine.begin() as conn:
         await _ensure_extensions(conn)
-        await _sync_enums(conn)
+        existing = await _existing_enum_values(conn)
+        await _create_missing_enum_types(conn, existing)
+
+    await _add_missing_enum_values(engine, existing)
+
+    async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
         await _sync_columns(conn)
         await _seed_zones(conn)
