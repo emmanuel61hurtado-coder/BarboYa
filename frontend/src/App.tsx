@@ -33,6 +33,7 @@ export default function App() {
 
   // Auth Session State
   const [session, setSession] = useState<UserSession | null>(null)
+  const [isLoadingSession, setIsLoadingSession] = useState<boolean>(true)
   const [authModalOpen, setAuthModalOpen] = useState<boolean>(false)
   const [authInitialRole, setAuthInitialRole] = useState<UserRole>('customer')
 
@@ -45,10 +46,22 @@ export default function App() {
     try {
       const stored = localStorage.getItem('barboya_user_session')
       if (stored) {
-        setSession(JSON.parse(stored))
+        const parsed = JSON.parse(stored)
+        setSession(parsed)
+        if (parsed.role === 'admin' || parsed.role === 'superadmin') {
+          setActiveTab('admin')
+        } else if (parsed.role === 'driver' || parsed.role === 'courier') {
+          setActiveTab('driver')
+        } else if (parsed.role === 'merchant_owner' || parsed.role === 'merchant_employee') {
+          setActiveTab('merchant')
+        } else {
+          setActiveTab('client')
+        }
       }
     } catch {
       // Ignore parse errors
+    } finally {
+      setIsLoadingSession(false)
     }
   }, [])
 
@@ -72,19 +85,127 @@ export default function App() {
   const handleLogout = () => {
     api.logout()
     setSession(null)
-    if (activeTab === 'admin') {
-      setActiveTab('client')
-    }
+    setActiveTab('client')
     showToast('👋 Sesión cerrada exitosamente')
   }
 
+  const handleAuthSuccess = (newSession: UserSession) => {
+    setSession(newSession)
+    showToast(`✨ Bienvenido a BarboYa, ${newSession.fullName}`)
+    if (newSession.role === 'admin' || newSession.role === 'superadmin') {
+      setActiveTab('admin')
+    } else if (newSession.role === 'driver' || newSession.role === 'courier') {
+      setActiveTab('driver')
+    } else if (newSession.role === 'merchant_owner' || newSession.role === 'merchant_employee') {
+      setActiveTab('merchant')
+    } else {
+      setActiveTab('client')
+    }
+  }
+
+  // 1. Pantalla de carga mientras se verifica la sesión
+  if (isLoadingSession) {
+    return (
+      <div className="min-h-screen bg-[#090d16] flex items-center justify-center text-slate-400">
+        <div className="flex flex-col items-center space-y-3">
+          <div className="w-14 h-14 rounded-2xl bg-gradient-to-tr from-sky-500 to-emerald-500 p-0.5 animate-pulse">
+            <div className="w-full h-full bg-slate-950 rounded-[14px] flex items-center justify-center font-bold text-white text-2xl">
+              B
+            </div>
+          </div>
+          <span className="text-xs font-mono text-sky-400 tracking-wider">VERIFICANDO CREDENCIALES BARBOYA...</span>
+        </div>
+      </div>
+    )
+  }
+
+  // 2. PUERTA DE ENTRADA OBLIGATORIA (Si no ha iniciado sesión ni creado cuenta)
+  if (!session) {
+    return (
+      <div className="min-h-screen bg-[#090d16] text-slate-100 flex flex-col font-sans selection:bg-sky-500/30 selection:text-sky-200 relative overflow-x-hidden">
+        {/* Ambient Radial Lighting Effects */}
+        <div className="fixed top-0 left-1/3 w-[650px] h-[650px] bg-sky-500/5 blur-[180px] rounded-full pointer-events-none -z-10" />
+        <div className="fixed bottom-10 right-1/4 w-[550px] h-[550px] bg-emerald-500/5 blur-[160px] rounded-full pointer-events-none -z-10" />
+
+        {/* Minimal Executive Header for Auth Gateway */}
+        <header className="sticky top-0 z-50 pro-surface border-b border-slate-800/80">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 py-3 flex items-center justify-between">
+            <div className="flex items-center space-x-3">
+              <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-sky-500 via-indigo-600 to-emerald-500 p-0.5 shadow-lg">
+                <div className="w-full h-full bg-slate-950 rounded-[14px] flex items-center justify-center font-display font-black text-white text-xl">
+                  B
+                </div>
+              </div>
+              <div>
+                <div className="flex items-center space-x-2">
+                  <span className="font-display font-black text-xl tracking-wider text-white">
+                    BARBO<span className="text-sky-400">YA</span>
+                  </span>
+                  <span className="px-2 py-0.5 rounded-full text-[9px] font-mono font-bold bg-sky-500/10 text-sky-400 border border-sky-500/20">
+                    SANTANDER
+                  </span>
+                </div>
+                <div className="flex items-center space-x-1 text-[10px] text-slate-400 font-mono">
+                  <MapPin className="w-2.5 h-2.5 text-sky-400" />
+                  <span>Barbosa, Santander · Acceso Exclusivo Requerido</span>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex items-center space-x-3">
+              {/* Tactical SOS Button */}
+              <button
+                onClick={handleTriggerSOS}
+                className="bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-500 hover:to-rose-500 text-white px-3 py-1.5 rounded-xl font-bold text-xs flex items-center space-x-1.5 shadow-md border border-red-400/30 cursor-pointer active:scale-95 transition"
+              >
+                <ShieldAlert className="w-4 h-4 text-white" />
+                <span className="font-mono">SOS</span>
+              </button>
+            </div>
+          </div>
+        </header>
+
+        {/* Toast Notification */}
+        {toast && (
+          <div className="fixed bottom-6 right-6 z-50 pro-surface-elevated border border-sky-500/50 text-white px-4 py-3 rounded-2xl shadow-xl flex items-center space-x-3 text-xs animate-slide-up">
+            <Sparkles className="w-4 h-4 text-sky-400 animate-spin" />
+            <span className="font-medium">{toast}</span>
+          </div>
+        )}
+
+        {/* Auth Dashboard Container (MANDATORY TO ENTER) */}
+        <main className="flex-1 max-w-6xl w-full mx-auto px-4 sm:px-6 py-6 sm:py-10 flex items-center justify-center">
+          <AuthDashboard
+            initialMode="login"
+            initialRole={authInitialRole}
+            onSuccess={handleAuthSuccess}
+            isModal={false}
+          />
+        </main>
+
+        {/* SOS Emergency Modal */}
+        <SosModal
+          isOpen={sosOpen}
+          onClose={() => setSosOpen(false)}
+          onShowToast={showToast}
+        />
+
+        {/* Footer */}
+        <footer className="pro-surface border-t border-slate-800/80 py-4 text-slate-500 text-xs text-center font-mono">
+          © 2026 BarboYa. Plataforma de Movilidad, Comercio y Logística de Barbosa Santander. Acceso Seguro Requerido.
+        </footer>
+      </div>
+    )
+  }
+
+  // 3. PLATAFORMA COMPLETA DESBLOQUEADA (Solo usuarios autenticados)
   return (
     <div className="min-h-screen bg-[#090d16] text-slate-100 flex flex-col font-sans selection:bg-sky-500/30 selection:text-sky-200 relative overflow-x-hidden">
       {/* Ambient Radial Lighting Effects */}
       <div className="fixed top-0 left-1/3 w-[650px] h-[650px] bg-sky-500/5 blur-[180px] rounded-full pointer-events-none -z-10" />
       <div className="fixed bottom-10 right-1/4 w-[550px] h-[550px] bg-emerald-500/5 blur-[160px] rounded-full pointer-events-none -z-10" />
 
-      {/* Futuristic Navbar */}
+      {/* Main Navbar with Authenticated User Profile */}
       <Navbar
         activeTab={activeTab}
         setActiveTab={setActiveTab}
@@ -115,8 +236,8 @@ export default function App() {
 
       {/* Toast Notification Floating Pill */}
       {toast && (
-        <div className="fixed bottom-6 right-6 z-50 glass-surface-elevated border border-cyan-400/50 text-white px-4 py-3 rounded-2xl shadow-cyan-glow flex items-center space-x-3 text-xs animate-slide-up">
-          <Sparkles className="w-4 h-4 text-cyan-300 animate-spin" />
+        <div className="fixed bottom-6 right-6 z-50 pro-surface-elevated border border-sky-500/50 text-white px-4 py-3 rounded-2xl shadow-xl flex items-center space-x-3 text-xs animate-slide-up">
+          <Sparkles className="w-4 h-4 text-sky-400 animate-spin" />
           <span className="font-medium">{toast}</span>
         </div>
       )}

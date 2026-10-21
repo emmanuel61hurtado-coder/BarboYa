@@ -122,18 +122,6 @@ export const Navbar: React.FC<NavbarProps> = ({
             <ShieldCheck className="w-3.5 h-3.5" />
             <span>Admin</span>
           </button>
-
-          <button
-            onClick={() => handleTabChange('auth')}
-            className={`px-3 sm:px-4 py-1.5 rounded-xl font-medium text-xs sm:text-sm flex items-center space-x-1.5 transition-all duration-200 ${
-              activeTab === 'auth'
-                ? 'bg-indigo-500/15 text-indigo-300 border border-indigo-400/50 shadow-sm font-semibold'
-                : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/40'
-            }`}
-          >
-            <LogIn className="w-3.5 h-3.5" />
-            <span>Portal Acceso</span>
-          </button>
         </nav>
 
         {/* Right Action Icons: Session, Audio Toggle & Tactical SOS */}

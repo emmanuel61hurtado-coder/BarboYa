@@ -27,10 +27,18 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    client = aioredis.from_url(settings.redis_url)
-    await manager.attach_redis(client)
+    client = None
+    try:
+        client = aioredis.from_url(settings.redis_url)
+        await manager.attach_redis(client)
+    except Exception as err:
+        print(f"[BarboYa] Redis no disponible ({err}). Continuando servidor FastAPI en memoria...")
     yield
-    await client.aclose()
+    if client:
+        try:
+            await client.aclose()
+        except Exception:
+            pass
 
 
 app = FastAPI(
