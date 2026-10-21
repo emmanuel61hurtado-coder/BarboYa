@@ -24,8 +24,13 @@ CREATE TYPE trip_status AS ENUM (
     'completed', 'cancelled_by_customer', 'cancelled_by_driver', 'expired'
 );
 CREATE TYPE merchant_category AS ENUM ('restaurant', 'pharmacy', 'grocery', 'bakery', 'hardware', 'other');
+CREATE TYPE user_gender AS ENUM ('female', 'male', 'other');
+CREATE TYPE verification_status AS ENUM ('pending', 'under_review', 'verified', 'needs_update', 'rejected', 'suspended');
+CREATE TYPE merchant_status AS ENUM ('pending_approval', 'approved', 'rejected', 'suspended');
 CREATE TYPE order_status AS ENUM (
-    'placed', 'accepted', 'preparing', 'ready', 'picked_up', 'delivered', 'cancelled', 'rejected'
+    'placed', 'pending_confirmation', 'accepted', 'rejected', 'preparing', 'ready',
+    'courier_search', 'courier_assigned', 'courier_heading_to_merchant',
+    'picked_up', 'in_transit', 'delivered', 'cancelled'
 );
 CREATE TYPE security_event_type AS ENUM (
     'sos', 'stopped_too_long', 'are_you_ok_sent', 'are_you_ok_ack',
@@ -64,6 +69,7 @@ CREATE TABLE users (
     email           TEXT UNIQUE,
     password_hash   TEXT NOT NULL,
     avatar_url      TEXT,
+    gender          user_gender,
     default_address_note TEXT,                                -- "frente al Parque Principal"
     last_location   GEOGRAPHY(Point, 4326),
     is_active       BOOLEAN NOT NULL DEFAULT TRUE,
@@ -81,9 +87,20 @@ CREATE TABLE driver_profiles (
     vehicle_type        vehicle_type NOT NULL,
     vehicle_plate       TEXT NOT NULL UNIQUE,
     vehicle_description TEXT,                                 -- "Honda CB125 roja"
+    vehicle_brand       TEXT,
+    vehicle_model       TEXT,
+    vehicle_color       TEXT,
     document_id         TEXT NOT NULL UNIQUE,                 -- cédula
     license_doc_url     TEXT,
+    soat_doc_url        TEXT,
+    soat_expires_at     TIMESTAMPTZ,
+    tech_doc_url        TEXT,
+    tech_expires_at     TIMESTAMPTZ,
     selfie_reference_url TEXT,                                -- foto base para verificación facial
+    verification_status verification_status NOT NULL DEFAULT 'pending',
+    rejection_reason    TEXT,
+    verified_at         TIMESTAMPTZ,
+    verified_by         UUID REFERENCES users(id),
     billing_scheme      billing_scheme NOT NULL DEFAULT 'per_trip_fee',
     -- Billetera prepago (esquema fee por carrera). COP enteros, sin decimales.
     wallet_balance_cop  INTEGER NOT NULL DEFAULT 0 CHECK (wallet_balance_cop >= 0),
@@ -93,6 +110,7 @@ CREATE TABLE driver_profiles (
     subscription_expires_at TIMESTAMPTZ,
     is_online           BOOLEAN NOT NULL DEFAULT FALSE,
     is_verified         BOOLEAN NOT NULL DEFAULT FALSE,
+    is_female_driver    BOOLEAN NOT NULL DEFAULT FALSE,
     last_face_check_at  TIMESTAMPTZ,
     face_check_due      BOOLEAN NOT NULL DEFAULT FALSE,
     rating_avg          NUMERIC(3,2) NOT NULL DEFAULT 5.00 CHECK (rating_avg BETWEEN 0 AND 5),
@@ -159,11 +177,14 @@ CREATE TABLE merchants (
     category        merchant_category NOT NULL,
     description     TEXT,
     logo_url        TEXT,
+    cover_image_url TEXT,
     address_note    TEXT NOT NULL,                            -- "al lado del D1"
-    location        GEOGRAPHY(Point, 4326) NOT NULL,
+    location        GEOGRAPHY(Point, 4326),
     phone           TEXT,
     whatsapp        TEXT,
+    opening_hours   TEXT,
     commission_pct  NUMERIC(4,2) NOT NULL DEFAULT 10.00 CHECK (commission_pct BETWEEN 0 AND 30),
+    approval_status merchant_status NOT NULL DEFAULT 'approved',
     -- Alternativa: suscripción fija por visibilidad destacada
     featured_until  TIMESTAMPTZ,
     featured_fee_cop INTEGER CHECK (featured_fee_cop >= 0),
@@ -213,6 +234,7 @@ CREATE TABLE trips (
     platform_fee_cop  INTEGER NOT NULL DEFAULT 0 CHECK (platform_fee_cop >= 0),
     payment_method    payment_method NOT NULL DEFAULT 'cash',
     started_via_whatsapp BOOLEAN NOT NULL DEFAULT FALSE,
+    prefer_female_driver BOOLEAN NOT NULL DEFAULT FALSE,
     confirmation_pin  CHAR(4) NOT NULL CHECK (confirmation_pin ~ '^[0-9]{4}$'),
     pin_verified_at   TIMESTAMPTZ,
     delivery_proof_url TEXT,
@@ -252,8 +274,11 @@ CREATE TABLE orders (
     id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     customer_id     UUID NOT NULL REFERENCES users(id),
     merchant_id     UUID NOT NULL REFERENCES merchants(id),
+    courier_id      UUID REFERENCES driver_profiles(user_id),
     trip_id         UUID REFERENCES trips(id),                -- el domicilio asociado
     status          order_status NOT NULL DEFAULT 'placed',
+    status_history  JSONB NOT NULL DEFAULT '[]'::jsonb,       -- [{status,timestamp,actor}]
+    delivery_pin    CHAR(4),                                  -- PIN de entrega
     items           JSONB NOT NULL,                           -- [{product_id,name,qty,unit_price_cop}]
     subtotal_cop    INTEGER NOT NULL CHECK (subtotal_cop >= 0),
     delivery_fee_cop INTEGER NOT NULL DEFAULT 0 CHECK (delivery_fee_cop >= 0),
@@ -264,12 +289,14 @@ CREATE TABLE orders (
     delivery_point  GEOGRAPHY(Point, 4326),
     started_via_whatsapp BOOLEAN NOT NULL DEFAULT FALSE,
     prep_minutes    SMALLINT CHECK (prep_minutes > 0),        -- temporizador de preparación
+    rejection_reason TEXT,
     accepted_at     TIMESTAMPTZ,
     ready_at        TIMESTAMPTZ,
     created_at      TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 CREATE INDEX idx_orders_merchant ON orders (merchant_id, status, created_at DESC);
 CREATE INDEX idx_orders_customer ON orders (customer_id, created_at DESC);
+CREATE INDEX idx_orders_courier ON orders (courier_id, status);
 CREATE INDEX idx_orders_delivery_point ON orders USING GIST (delivery_point);
 
 ALTER TABLE trips ADD CONSTRAINT fk_trips_order FOREIGN KEY (order_id) REFERENCES orders(id);
