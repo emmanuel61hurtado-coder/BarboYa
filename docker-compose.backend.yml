@@ -1,0 +1,38 @@
+services:
+  db:
+    image: postgis/postgis:16-3.4
+    environment:
+      POSTGRES_USER: barboya
+      POSTGRES_PASSWORD: barboya
+      POSTGRES_DB: barboya
+    ports: ["5432:5432"]
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./database/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U barboya"]
+      interval: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    ports: ["6379:6379"]
+
+  api:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    env_file: ./backend/.env.example
+    environment:
+      DATABASE_URL: ******db:5432/barboya
+      REDIS_URL: redis://redis:6379/0
+      USE_SQLITE: "false"
+    ports: ["8000:8000"]
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_started
+
+volumes:
+  pgdata:

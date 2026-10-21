@@ -12,6 +12,7 @@ Este documento describe el procedimiento para desplegar la plataforma **BarboYa*
 1. **Crear Nuevo Proyecto en Coolify:**
    - Seleccionar tipo **Docker Compose**.
    - Conectar con el repositorio Git de BarboYa y la rama `main`.
+   - En la configuración del archivo Compose, indicar `docker-compose.backend.yml`.
 
 2. **Configurar Variables de Entorno (.env):**
    - Definir las credenciales seguras de producción:
@@ -22,7 +23,7 @@ Este documento describe el procedimiento para desplegar la plataforma **BarboYa*
      - `JWT_AUDIENCE=barboya-api`
 
 3. **Ejecutar Despliegue:**
-   - Coolify clonará el repositorio, construirá la imagen Docker del backend y levantará los servicios (`db`, `redis`, `api`) utilizando `docker-compose.yml`.
+   - Coolify clonará el repositorio, construirá la imagen Docker del backend y levantará los servicios (`db`, `redis`, `api`) utilizando `docker-compose.backend.yml`.
 
 4. **Verificación (Health Check):**
    - Comprobar que el endpoint `/health` responda correctamente (`{"status": "ok", "app": "Barboya"}`).
