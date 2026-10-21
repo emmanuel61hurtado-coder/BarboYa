@@ -131,3 +131,53 @@ def test_role_based_login_rejection():
     finally:
         app.dependency_overrides.pop(get_session, None)
 
+
+def test_password_recovery_request_code_and_reset():
+    """Prueba la solicitud de código y la recuperación por correo o teléfono."""
+    # 1. Solicitar código por correo
+    res_code = client.post("/auth/request-recovery-code", json={
+        "identifier": "conductor@barboya.co",
+        "method": "email"
+    })
+    assert res_code.status_code == 200
+    data = res_code.json()
+    assert data["status"] == "ok"
+    assert data["security_pin"] == "8492"
+    assert "conductor@barboya.co" in data["identifier"]
+
+    # 2. Mock de recuperación de contraseña
+    mock_session = AsyncMock()
+    mock_user = MagicMock()
+    mock_user.password_hash = "old_hash"
+    exec_result = MagicMock()
+    exec_result.scalar_one_or_none.return_value = mock_user
+    mock_session.execute = AsyncMock(return_value=exec_result)
+
+    async def override_get_session():
+        yield mock_session
+
+    app.dependency_overrides[get_session] = override_get_session
+    try:
+        # Recuperación por correo
+        res_email = client.post("/auth/recover-password", json={
+            "identifier": "usuario@barboya.co",
+            "recovery_method": "email",
+            "security_pin": "8492",
+            "new_password": "NuevoPassword2026!"
+        })
+        assert res_email.status_code == 200
+        assert "exitosamente" in res_email.json()["message"]
+
+        # Recuperación por teléfono (compatibilidad)
+        res_phone = client.post("/auth/recover-password", json={
+            "phone": "+573105551234",
+            "recovery_method": "phone",
+            "security_pin": "8492",
+            "new_password": "OtroPassword2026!"
+        })
+        assert res_phone.status_code == 200
+        assert "exitosamente" in res_phone.json()["message"]
+    finally:
+        app.dependency_overrides.pop(get_session, None)
+
+
