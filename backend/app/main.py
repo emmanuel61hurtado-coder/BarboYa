@@ -1,3 +1,4 @@
+import asyncio
 from contextlib import asynccontextmanager
 from pathlib import Path
 
@@ -33,21 +34,32 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
         return response
 
 
-@asynccontextmanager
-async def lifespan(app: FastAPI):
-    # Create tables / synchronize the schema with the SQLAlchemy models
+async def _bootstrap_database(attempts: int = 30, delay: float = 10.0) -> None:
+    """Sincroniza el esquema con la base de datos reintentando.
+
+    En producción el contenedor de PostgreSQL puede tardar en estar listo
+    (o reiniciarse); la API arranca igual y reintenta en segundo plano.
+    """
     from app.core.database import init_db
     from app.core.demo_data import seed_demo_customer
 
-    try:
-        await init_db()
-    except Exception as err:
-        print(f"[BarboYa] Aviso: no se pudo sincronizar el esquema al iniciar ({err}). La API arranca igual.")
+    for attempt in range(1, attempts + 1):
+        try:
+            await init_db()
+            await seed_demo_customer()
+            print("[BarboYa] Base de datos lista y esquema sincronizado")
+            return
+        except asyncio.CancelledError:
+            raise
+        except Exception as err:
+            print(f"[BarboYa] Base de datos aun no disponible (intento {attempt}/{attempts}): {err}")
+            await asyncio.sleep(delay)
 
-    try:
-        await seed_demo_customer()
-    except Exception as err:
-        print(f"[BarboYa] Aviso: no se pudo sembrar el cliente demo ({err}).")
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Create tables / synchronize the schema with the SQLAlchemy models
+    schema_task = asyncio.create_task(_bootstrap_database())
 
     client = None
     try:
@@ -56,6 +68,7 @@ async def lifespan(app: FastAPI):
     except Exception as err:
         print(f"[BarboYa] Redis no disponible ({err}). Continuando servidor FastAPI en memoria...")
     yield
+    schema_task.cancel()
     if client:
         try:
             await client.aclose()

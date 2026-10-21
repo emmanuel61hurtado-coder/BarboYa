@@ -13,10 +13,10 @@ services:
       - ./database/schema.sql:/opt/barboya/schema.sql:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U \"$$POSTGRES_USER\" -d \"$$POSTGRES_DB\""]
-      interval: 5s
+      interval: 10s
       timeout: 5s
       retries: 30
-      start_period: 30s
+      start_period: 60s
 
   redis:
     image: redis:7-alpine
@@ -51,7 +51,9 @@ services:
       - "${API_PORT:-8000}:8000"
     depends_on:
       db:
-        condition: service_healthy
+        # La API reintenta la sincronizacion del esquema en segundo plano:
+        # no debe bloquear el despliegue si Postgres aun no esta listo.
+        condition: service_started
       redis:
         condition: service_healthy
     healthcheck:

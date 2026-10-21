@@ -75,10 +75,14 @@ def test_compose_file_is_utf8_without_bom(compose_file):
 def test_compose_declares_required_services(compose_file):
     data = yaml.safe_load(compose_file.read_text(encoding="utf-8"))
     assert set(data["services"]) == {"db", "redis", "api"}
-    assert data["services"]["api"]["depends_on"]["db"]["condition"] == "service_healthy"
+    # Postgres no bloquea el despliegue: la API reintenta la sincronizacion.
+    assert data["services"]["api"]["depends_on"]["db"]["condition"] == "service_started"
+    assert data["services"]["api"]["depends_on"]["redis"]["condition"] == "service_healthy"
     assert data["services"]["api"]["environment"]["USE_SQLITE"] == "false"
     assert "JWT_SECRET" in data["services"]["api"]["environment"]
     assert "healthcheck" in data["services"]["api"]
+    # Margen suficiente para el initdb con PostGIS en un VPS lento.
+    assert data["services"]["db"]["healthcheck"]["start_period"] >= "30s"
 
 
 @pytest.mark.parametrize("compose_file", COMPOSE_FILES, ids=lambda p: p.name)
