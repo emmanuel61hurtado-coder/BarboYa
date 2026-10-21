@@ -73,13 +73,13 @@ export const Navbar: React.FC<NavbarProps> = ({
           </div>
         </div>
 
-        {/* Central Futuristic Tab Switcher */}
-        <nav className="flex items-center bg-nexus-950/90 p-1 rounded-2xl border border-slate-800/90 shadow-inner">
+        {/* Central Modern Tab Switcher */}
+        <nav className="hidden sm:flex items-center bg-slate-950/90 p-1 rounded-2xl border border-slate-800/90 shadow-inner">
           <button
             onClick={() => handleTabChange('client')}
-            className={`px-3 sm:px-4 py-1.5 rounded-xl font-medium text-xs sm:text-sm flex items-center space-x-1.5 transition-all duration-300 ${
+            className={`px-3 sm:px-4 py-1.5 rounded-xl font-medium text-xs sm:text-sm flex items-center space-x-1.5 transition-all duration-200 ${
               activeTab === 'client'
-                ? 'bg-gradient-to-r from-cyan-500/20 to-cyan-500/10 text-cyan-300 border border-cyan-400/50 shadow-cyan-glow-sm font-semibold'
+                ? 'bg-sky-500/15 text-sky-300 border border-sky-400/50 shadow-sm font-semibold'
                 : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/40'
             }`}
           >
@@ -89,9 +89,9 @@ export const Navbar: React.FC<NavbarProps> = ({
 
           <button
             onClick={() => handleTabChange('driver')}
-            className={`px-3 sm:px-4 py-1.5 rounded-xl font-medium text-xs sm:text-sm flex items-center space-x-1.5 transition-all duration-300 ${
+            className={`px-3 sm:px-4 py-1.5 rounded-xl font-medium text-xs sm:text-sm flex items-center space-x-1.5 transition-all duration-200 ${
               activeTab === 'driver'
-                ? 'bg-gradient-to-r from-neon-emerald/20 to-neon-emerald/10 text-neon-emerald border border-neon-emerald/50 shadow-emerald-glow font-semibold'
+                ? 'bg-emerald-500/15 text-emerald-300 border border-emerald-400/50 shadow-sm font-semibold'
                 : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/40'
             }`}
           >
@@ -101,27 +101,38 @@ export const Navbar: React.FC<NavbarProps> = ({
 
           <button
             onClick={() => handleTabChange('merchant')}
-            className={`px-3 sm:px-4 py-1.5 rounded-xl font-medium text-xs sm:text-sm flex items-center space-x-1.5 transition-all duration-300 ${
+            className={`px-3 sm:px-4 py-1.5 rounded-xl font-medium text-xs sm:text-sm flex items-center space-x-1.5 transition-all duration-200 ${
               activeTab === 'merchant'
-                ? 'bg-gradient-to-r from-brand-500/20 to-brand-500/10 text-brand-400 border border-brand-500/50 shadow-brand-glow font-semibold'
+                ? 'bg-orange-500/15 text-orange-300 border border-orange-400/50 shadow-sm font-semibold'
                 : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/40'
             }`}
           >
             <Store className="w-3.5 h-3.5" />
-            <span className="hidden sm:inline">Comercio</span>
-            <span className="sm:hidden">Tienda</span>
+            <span>Comercio</span>
           </button>
 
           <button
             onClick={() => handleTabChange('admin')}
-            className={`px-3 sm:px-4 py-1.5 rounded-xl font-medium text-xs sm:text-sm flex items-center space-x-1.5 transition-all duration-300 ${
+            className={`px-3 sm:px-4 py-1.5 rounded-xl font-medium text-xs sm:text-sm flex items-center space-x-1.5 transition-all duration-200 ${
               activeTab === 'admin'
-                ? 'bg-gradient-to-r from-neon-violet/20 to-neon-violet/10 text-neon-violet border border-neon-violet/50 shadow-lg font-semibold'
+                ? 'bg-purple-500/15 text-purple-300 border border-purple-400/50 shadow-sm font-semibold'
                 : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/40'
             }`}
           >
             <ShieldCheck className="w-3.5 h-3.5" />
             <span>Admin</span>
+          </button>
+
+          <button
+            onClick={() => handleTabChange('auth')}
+            className={`px-3 sm:px-4 py-1.5 rounded-xl font-medium text-xs sm:text-sm flex items-center space-x-1.5 transition-all duration-200 ${
+              activeTab === 'auth'
+                ? 'bg-indigo-500/15 text-indigo-300 border border-indigo-400/50 shadow-sm font-semibold'
+                : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/40'
+            }`}
+          >
+            <LogIn className="w-3.5 h-3.5" />
+            <span>Portal Acceso</span>
           </button>
         </nav>
 
@@ -129,9 +140,12 @@ export const Navbar: React.FC<NavbarProps> = ({
         <div className="flex items-center space-x-2">
           {/* User Session Info or Login CTA */}
           {session ? (
-            <div className="flex items-center space-x-1.5 bg-nexus-900/80 border border-slate-800 rounded-xl px-2.5 py-1 text-xs">
-              <div className="flex items-center space-x-1.5">
-                <span className="w-2 h-2 rounded-full bg-cyan-glow animate-pulse" />
+            <div className="flex items-center space-x-1.5 bg-slate-900/90 border border-slate-800 rounded-xl px-2.5 py-1 text-xs">
+              <div 
+                onClick={() => handleTabChange('auth')}
+                className="flex items-center space-x-1.5 cursor-pointer hover:opacity-80 transition"
+              >
+                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
                 <span className="font-bold text-white text-xs max-w-[90px] truncate">
                   {session.fullName.split(' ')[0]}
                 </span>
@@ -139,10 +153,10 @@ export const Navbar: React.FC<NavbarProps> = ({
                   session.role === 'admin' || session.role === 'superadmin'
                     ? 'bg-purple-500/20 text-purple-300 border border-purple-500/40'
                     : session.role === 'driver' || session.role === 'courier'
-                    ? 'bg-neon-emerald/20 text-neon-emerald border border-neon-emerald/40'
+                    ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40'
                     : session.role === 'merchant_owner'
-                    ? 'bg-brand-500/20 text-brand-300 border border-brand-500/40'
-                    : 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40'
+                    ? 'bg-orange-500/20 text-orange-300 border border-orange-500/40'
+                    : 'bg-sky-500/20 text-sky-300 border border-sky-500/40'
                 }`}>
                   {session.role === 'merchant_owner' ? 'Tienda' : session.role}
                 </span>
@@ -162,9 +176,9 @@ export const Navbar: React.FC<NavbarProps> = ({
             <button
               onClick={() => {
                 sound.tick()
-                onOpenAuth('customer')
+                setActiveTab('auth')
               }}
-              className="py-1.5 px-3 rounded-xl bg-cyan-500/15 hover:bg-cyan-500/25 border border-cyan-500/30 text-cyan-300 text-xs font-semibold flex items-center space-x-1.5 transition active:scale-95"
+              className="py-1.5 px-3 rounded-xl bg-sky-500/15 hover:bg-sky-500/25 border border-sky-500/30 text-sky-300 text-xs font-semibold flex items-center space-x-1.5 transition active:scale-95"
             >
               <LogIn className="w-3.5 h-3.5" />
               <span>Ingresar</span>

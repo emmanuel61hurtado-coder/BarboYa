@@ -81,6 +81,7 @@ class ApiService {
   async register(data: {
     fullName: string
     phone: string
+    email?: string
     password: string
     role: 'customer' | 'driver' | 'merchant_owner'
     vehicleType?: 'moto' | 'car'
@@ -92,6 +93,9 @@ class ApiService {
       phone: data.phone,
       password: data.password,
       role: data.role,
+    }
+    if (data.email) {
+      payload.email = data.email
     }
     if (data.role === 'driver') {
       payload.vehicle_type = data.vehicleType
@@ -107,8 +111,8 @@ class ApiService {
     return res
   }
 
-  async login(phone: string, password: string, expectedRole?: string): Promise<{ access_token: string; role: string; user_id: string }> {
-    const payload: any = { phone, password }
+  async login(phoneOrEmail: string, password: string, expectedRole?: string): Promise<{ access_token: string; role: string; user_id: string }> {
+    const payload: any = { phone: phoneOrEmail, password }
     if (expectedRole) {
       payload.expected_role = expectedRole
     }
@@ -124,10 +128,55 @@ class ApiService {
     return this.request<any>('/auth/me')
   }
 
-  async recoverPassword(phone: string, newPassword: string): Promise<any> {
+  async requestRecoveryCode(identifier: string, method: 'phone' | 'email'): Promise<{
+    status: string
+    method: string
+    identifier: string
+    masked_identifier: string
+    security_pin: string
+    message: string
+  }> {
+    return this.request('/auth/request-recovery-code', {
+      method: 'POST',
+      body: JSON.stringify({ identifier, method }),
+    })
+  }
+
+  async recoverPassword(
+    param: string | {
+      identifier?: string
+      phone?: string
+      email?: string
+      recoveryMethod?: 'phone' | 'email'
+      newPassword: string
+      securityPin?: string
+    },
+    maybeNewPassword?: string
+  ): Promise<any> {
+    let payload: any
+    if (typeof param === 'string') {
+      // Compatibilidad con signatura anterior: recoverPassword(phone, newPassword)
+      payload = {
+        phone: param,
+        identifier: param,
+        new_password: maybeNewPassword,
+        security_pin: '1234',
+        recovery_method: 'phone',
+      }
+    } else {
+      payload = {
+        identifier: param.identifier || param.email || param.phone,
+        phone: param.phone,
+        email: param.email,
+        recovery_method: param.recoveryMethod || 'phone',
+        new_password: param.newPassword,
+        security_pin: param.securityPin || '8492',
+      }
+    }
+
     return this.request('/auth/recover-password', {
       method: 'POST',
-      body: JSON.stringify({ phone, new_password: newPassword, security_pin: '1234' }),
+      body: JSON.stringify(payload),
     })
   }
 

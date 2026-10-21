@@ -17,6 +17,8 @@ import { MerchantPanel } from './components/MerchantPanel'
 import { AdminPanel } from './components/AdminPanel'
 import { SosModal } from './components/SosModal'
 import { AuthModal } from './components/AuthModal'
+import { AuthDashboard } from './components/AuthDashboard'
+import { MobileNavDock } from './components/MobileNavDock'
 import { sound } from './utils/sound'
 import { api } from './utils/api'
 
@@ -77,10 +79,10 @@ export default function App() {
   }
 
   return (
-    <div className="min-h-screen bg-[#07090e] text-slate-100 flex flex-col font-sans selection:bg-cyan-500/30 selection:text-cyan-200 relative overflow-x-hidden cyber-grid">
+    <div className="min-h-screen bg-[#090d16] text-slate-100 flex flex-col font-sans selection:bg-sky-500/30 selection:text-sky-200 relative overflow-x-hidden">
       {/* Ambient Radial Lighting Effects */}
-      <div className="fixed top-0 left-1/4 w-[600px] h-[600px] bg-cyan-500/5 blur-[160px] rounded-full pointer-events-none -z-10" />
-      <div className="fixed bottom-0 right-1/4 w-[500px] h-[500px] bg-brand-500/5 blur-[140px] rounded-full pointer-events-none -z-10" />
+      <div className="fixed top-0 left-1/3 w-[650px] h-[650px] bg-sky-500/5 blur-[180px] rounded-full pointer-events-none -z-10" />
+      <div className="fixed bottom-10 right-1/4 w-[550px] h-[550px] bg-emerald-500/5 blur-[160px] rounded-full pointer-events-none -z-10" />
 
       {/* Futuristic Navbar */}
       <Navbar
@@ -317,6 +319,31 @@ export default function App() {
           </div>
         )}
 
+        {/* ======================= AUTH DASHBOARD PORTAL ======================= */}
+        {activeTab === 'auth' && (
+          <div className="py-2 animate-fade-in">
+            <AuthDashboard
+              initialMode="login"
+              initialRole={authInitialRole}
+              onSuccess={(newSession) => {
+                setSession(newSession)
+                showToast(`✨ Bienvenido a BarboYa, ${newSession.fullName}`)
+                if (newSession.role === 'admin' || newSession.role === 'superadmin') {
+                  setActiveTab('admin')
+                } else if (newSession.role === 'driver' || newSession.role === 'courier') {
+                  setActiveTab('driver')
+                } else if (newSession.role === 'merchant_owner' || newSession.role === 'merchant_employee') {
+                  setActiveTab('merchant')
+                } else {
+                  setActiveTab('client')
+                }
+              }}
+              onCancel={() => setActiveTab('client')}
+              isModal={false}
+            />
+          </div>
+        )}
+
         {/* ======================= DRIVER VIEW ======================= */}
         {activeTab === 'driver' && <DriverPanel onShowToast={showToast} />}
 
@@ -328,7 +355,7 @@ export default function App() {
           session?.role === 'admin' || session?.role === 'superadmin' ? (
             <AdminPanel onShowToast={showToast} />
           ) : (
-            <div className="glass-surface-elevated p-8 rounded-3xl border border-purple-500/40 text-center max-w-lg mx-auto space-y-4 shadow-2xl animate-fade-in my-12">
+            <div className="pro-surface-elevated p-8 rounded-3xl border border-purple-500/40 text-center max-w-lg mx-auto space-y-4 shadow-2xl animate-fade-in my-12">
               <div className="w-16 h-16 rounded-2xl bg-purple-500/20 border border-purple-500/40 text-purple-300 flex items-center justify-center mx-auto text-2xl font-black">
                 <Lock className="w-8 h-8" />
               </div>
@@ -338,7 +365,10 @@ export default function App() {
                 Ningún usuario puede obtener acceso administrativo simplemente modificando el cliente web.
               </p>
               <button
-                onClick={() => handleOpenAuth('admin')}
+                onClick={() => {
+                  setAuthInitialRole('admin')
+                  setActiveTab('auth')
+                }}
                 className="py-2.5 px-6 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs uppercase tracking-wider transition shadow-lg flex items-center justify-center space-x-2 mx-auto"
               >
                 <KeyRound className="w-4 h-4" />
@@ -377,11 +407,11 @@ export default function App() {
         onShowToast={showToast}
       />
 
-      {/* Futuristic Footer */}
-      <footer className="glass-surface border-t border-slate-800/80 py-6 mt-12 text-slate-400 text-xs">
+      {/* Modern Responsive Footer */}
+      <footer className="pro-surface border-t border-slate-800/80 py-6 mt-12 mb-14 sm:mb-0 text-slate-400 text-xs">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 flex flex-col sm:flex-row items-center justify-between gap-3">
           <div className="flex items-center space-x-2">
-            <span className="font-display font-bold text-white tracking-wider">BARBOYA NEXUS</span>
+            <span className="font-display font-bold text-white tracking-wider">BARBOYA</span>
             <span className="text-slate-600">|</span>
             <span className="text-[11px] font-mono text-slate-400">
               Barbosa, Santander · Colombia (Lat: 5.9333, Lng: -73.6208)
@@ -393,6 +423,17 @@ export default function App() {
           </div>
         </div>
       </footer>
+
+      {/* Mobile Bottom Navigation Dock */}
+      <MobileNavDock
+        activeTab={activeTab}
+        setActiveTab={setActiveTab}
+        serviceMode={serviceMode}
+        setServiceMode={setServiceMode}
+        session={session}
+        onOpenAuth={() => setActiveTab('auth')}
+        onTriggerSOS={handleTriggerSOS}
+      />
     </div>
   )
 }

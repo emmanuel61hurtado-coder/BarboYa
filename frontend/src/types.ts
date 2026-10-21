@@ -1,4 +1,4 @@
-export type AppTab = 'client' | 'driver' | 'merchant' | 'admin'
+export type AppTab = 'client' | 'driver' | 'merchant' | 'admin' | 'auth'
 export type ServiceMode = 'move' | 'food' | 'package' | 'tracking'
 export type VehicleType = 'moto' | 'car'
 export type TripState = 'idle' | 'searching' | 'offers_received' | 'trip_active' | 'completed'
@@ -18,6 +18,7 @@ export interface UserSession {
   userId: string
   fullName: string
   phone: string
+  email?: string
   avatarUrl?: string
   gender?: string
   driverInfo?: any

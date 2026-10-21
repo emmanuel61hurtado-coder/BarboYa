@@ -134,18 +134,6 @@ def test_role_based_login_rejection():
 
 def test_password_recovery_request_code_and_reset():
     """Prueba la solicitud de código y la recuperación por correo o teléfono."""
-    # 1. Solicitar código por correo
-    res_code = client.post("/auth/request-recovery-code", json={
-        "identifier": "conductor@barboya.co",
-        "method": "email"
-    })
-    assert res_code.status_code == 200
-    data = res_code.json()
-    assert data["status"] == "ok"
-    assert data["security_pin"] == "8492"
-    assert "conductor@barboya.co" in data["identifier"]
-
-    # 2. Mock de recuperación de contraseña
     mock_session = AsyncMock()
     mock_user = MagicMock()
     mock_user.password_hash = "old_hash"
@@ -158,7 +146,18 @@ def test_password_recovery_request_code_and_reset():
 
     app.dependency_overrides[get_session] = override_get_session
     try:
-        # Recuperación por correo
+        # 1. Solicitar código por correo
+        res_code = client.post("/auth/request-recovery-code", json={
+            "identifier": "conductor@barboya.co",
+            "method": "email"
+        })
+        assert res_code.status_code == 200
+        data = res_code.json()
+        assert data["status"] == "ok"
+        assert data["security_pin"] == "8492"
+        assert "conductor@barboya.co" in data["identifier"]
+
+        # 2. Recuperación por correo
         res_email = client.post("/auth/recover-password", json={
             "identifier": "usuario@barboya.co",
             "recovery_method": "email",
@@ -168,7 +167,7 @@ def test_password_recovery_request_code_and_reset():
         assert res_email.status_code == 200
         assert "exitosamente" in res_email.json()["message"]
 
-        # Recuperación por teléfono (compatibilidad)
+        # 3. Recuperación por teléfono (compatibilidad)
         res_phone = client.post("/auth/recover-password", json={
             "phone": "+573105551234",
             "recovery_method": "phone",
@@ -179,5 +178,6 @@ def test_password_recovery_request_code_and_reset():
         assert "exitosamente" in res_phone.json()["message"]
     finally:
         app.dependency_overrides.pop(get_session, None)
+
 
 
