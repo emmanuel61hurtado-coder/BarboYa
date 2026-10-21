@@ -30,12 +30,12 @@ def _resolve_database_url() -> str:
 
     if settings.use_sqlite:
         _using_sqlite = True
-        print("[BarboYa DB] 🗃️  Modo SQLite activado (desarrollo local sin PostgreSQL)")
+        print("[BarboYa DB] [SQLite] Modo SQLite activado (desarrollo local sin PostgreSQL)")
         return settings.sqlite_url
 
     # Otherwise, try PostgreSQL (it might still fail at connect time)
     _using_sqlite = False
-    print("[BarboYa DB] 🐘 Usando PostgreSQL:", settings.database_url[:50] + "...")
+    print("[BarboYa DB] [PostgreSQL] Usando PostgreSQL:", settings.database_url[:50] + "...")
     return settings.database_url
 
 
@@ -92,7 +92,7 @@ async def init_db():
 
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
-    print("[BarboYa DB] ✅ Tablas SQLite creadas/verificadas correctamente")
+    print("[BarboYa DB] [OK] Tablas SQLite creadas/verificadas correctamente")
 
 
 def is_using_sqlite() -> bool:

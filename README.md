@@ -17,9 +17,15 @@ barboya/
 ## Arrancar el backend
 
 ```bash
-docker compose up --build        # BD con schema.sql, Redis y API en :8000
-# o sin Docker:  cd backend && pip install -r requirements.txt && uvicorn app.main:app --reload
+docker compose up --build        # PostGIS, Redis, API y React en :8000
+# Sin Docker: construir React y luego iniciar FastAPI
+cd frontend && npm ci && npm run build
+cd ../backend && pip install -r requirements.txt && uvicorn app.main:app --reload
 ```
+FastAPI sirve el build de React y la API desde el mismo origen. En desarrollo, Vite
+se ejecuta con `cd frontend && npm run dev` y redirige `/api` al backend en `:8000`.
+El modo local SQLite crea automáticamente el usuario de demostración Pasajero
+(`+573001112233` / `Cliente123!`) solo cuando `ENVIRONMENT=development`.
 Documentación interactiva: http://localhost:8000/docs · Pruebas: `cd backend && pytest`
 
 ## Arrancar la app

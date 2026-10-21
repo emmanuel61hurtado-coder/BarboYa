@@ -1,8 +1,11 @@
 from contextlib import asynccontextmanager
+from pathlib import Path
 
 import redis.asyncio as aioredis
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse, JSONResponse
+from fastapi.staticfiles import StaticFiles
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.requests import Request
 from starlette.responses import Response
@@ -34,7 +37,10 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
 async def lifespan(app: FastAPI):
     # Create tables if using SQLite dev mode
     from app.core.database import init_db
+    from app.core.demo_data import seed_demo_customer
+
     await init_db()
+    await seed_demo_customer()
 
     client = None
     try:
@@ -87,10 +93,6 @@ async def health():
 
 
 # ───────────────────── SERVIR FRONTEND SPA CON FASTAPI ─────────────────────
-from pathlib import Path
-from fastapi.staticfiles import StaticFiles
-from fastapi.responses import FileResponse
-
 FRONTEND_DIST = Path(__file__).resolve().parent.parent.parent / "frontend" / "dist"
 
 if FRONTEND_DIST.exists():
@@ -99,14 +101,18 @@ if FRONTEND_DIST.exists():
         app.mount("/assets", StaticFiles(directory=str(assets_dir)), name="assets")
 
     @app.get("/{full_path:path}", include_in_schema=False)
-    async def serve_spa(full_path: str):
-        # Permitir rutas de archivos estáticos directos (como favicon, vite.svg, etc)
-        file_path = FRONTEND_DIST / full_path
-        if file_path.is_file():
+    async def serve_spa(full_path: str, request: Request):
+        # Serve files from the build directory only; never allow paths outside it.
+        dist_dir = FRONTEND_DIST.resolve()
+        file_path = (dist_dir / full_path).resolve()
+        if file_path.is_relative_to(dist_dir) and file_path.is_file():
             return FileResponse(file_path)
-        # Fallback a index.html para soportar navegación SPA
+
+        # Only browser document requests should receive the SPA fallback.
+        if "text/html" not in request.headers.get("accept", ""):
+            return JSONResponse({"detail": "Not Found"}, status_code=404)
+
         index_file = FRONTEND_DIST / "index.html"
         if index_file.is_file():
             return FileResponse(index_file)
-        return {"status": "ok", "app": "Barboya"}
-
+        return JSONResponse({"detail": "Not Found"}, status_code=404)

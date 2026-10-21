@@ -19,11 +19,14 @@ services:
     ports: ["6379:6379"]
 
   api:
-    build: ./backend
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
     env_file: ./backend/.env.example
     environment:
       DATABASE_URL: postgresql+asyncpg://barboya:barboya@db:5432/barboya
       REDIS_URL: redis://redis:6379/0
+      USE_SQLITE: "false"
     ports: ["8000:8000"]
     depends_on:
       db:
