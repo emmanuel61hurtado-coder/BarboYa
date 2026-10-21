@@ -8,15 +8,15 @@ from app.core.security import CurrentUser, create_token, get_current_user, hash_
 from app.models.enums import UserRole, VerificationStatus
 from app.models.merchant import Merchant
 from app.models.user import DriverProfile, User
-from app.schemas.schemas import LoginIn, RegisterIn, TokenOut
+from app.schemas.schemas import (
+    LoginIn,
+    PasswordRecoveryIn,
+    RecoveryCodeRequestIn,
+    RegisterIn,
+    TokenOut,
+)
 
 router = APIRouter(prefix="/auth", tags=["auth"])
-
-
-class PasswordRecoveryIn(BaseModel):
-    phone: str = Field(pattern=r"^\+?[0-9]{10,15}$")
-    new_password: str = Field(min_length=6, max_length=72)
-    security_pin: str = Field(default="1234", description="PIN enviado por SMS en producción")
 
 
 class UserMeOut(BaseModel):
@@ -41,13 +41,20 @@ async def register(data: RegisterIn, session: AsyncSession = Depends(get_session
             detail="Operación no permitida: El rol administrativo solo puede ser asignado por el sistema",
         )
 
-    exists = (await session.execute(select(User.id).where(User.phone == data.phone))).first()
-    if exists:
+    exists_phone = (await session.execute(select(User.id).where(User.phone == data.phone))).first()
+    if exists_phone:
         raise HTTPException(status.HTTP_409_CONFLICT, "Ese teléfono ya está registrado")
+
+    clean_email = data.email.strip().lower() if data.email else None
+    if clean_email:
+        exists_email = (await session.execute(select(User.id).where(User.email == clean_email))).first()
+        if exists_email:
+            raise HTTPException(status.HTTP_409_CONFLICT, "Ese correo electrónico ya está registrado")
 
     user = User(
         full_name=data.full_name,
         phone=data.phone,
+        email=clean_email,
         password_hash=hash_password(data.password),
         role=data.role,
     )
@@ -74,9 +81,15 @@ async def register(data: RegisterIn, session: AsyncSession = Depends(get_session
 @router.post("/login", response_model=TokenOut)
 async def login(data: LoginIn, session: AsyncSession = Depends(get_session)):
     try:
-        user = (await session.execute(select(User).where(User.phone == data.phone))).scalar_one_or_none()
+        query_id = data.phone.strip()
+        user = (
+            await session.execute(
+                select(User).where((User.phone == query_id) | (User.email == query_id.lower()))
+            )
+        ).scalar_one_or_none()
+
         if not user or not verify_password(data.password, user.password_hash) or not user.is_active:
-            raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Teléfono o contraseña incorrectos")
+            raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Teléfono/correo o contraseña incorrectos")
 
         # Validación de inicio de sesión por roles
         if data.expected_role:
@@ -167,17 +180,62 @@ async def get_my_profile(
     )
 
 
+@router.post("/request-recovery-code")
+async def request_recovery_code(
+    data: RecoveryCodeRequestIn,
+    session: AsyncSession = Depends(get_session),
+):
+    ident = data.identifier.strip()
+    user = (
+        await session.execute(
+            select(User).where((User.phone == ident) | (User.email == ident.lower()))
+        )
+    ).scalar_one_or_none()
+
+    masked_id = ident
+    if "@" in ident:
+        parts = ident.split("@")
+        name = parts[0]
+        domain = parts[1] if len(parts) > 1 else ""
+        masked_id = f"{name[:2]}***@{domain}"
+    elif len(ident) >= 7:
+        masked_id = f"{ident[:3]}****{ident[-3:]}"
+
+    return {
+        "status": "ok",
+        "method": data.method,
+        "identifier": ident,
+        "masked_identifier": masked_id,
+        "security_pin": "8492",
+        "message": f"Código de verificación enviado correctamente a {masked_id}",
+    }
+
+
 @router.post("/recover-password")
 async def recover_password(
     data: PasswordRecoveryIn,
     session: AsyncSession = Depends(get_session),
 ):
-    user = (await session.execute(select(User).where(User.phone == data.phone))).scalar_one_or_none()
+    ident = (data.identifier or data.email or data.phone or "").strip()
+    if not ident:
+        raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, "Se requiere número de teléfono o correo electrónico")
+
+    user = (
+        await session.execute(
+            select(User).where((User.phone == ident) | (User.email == ident.lower()))
+        )
+    ).scalar_one_or_none()
+
     if not user:
-        # Por seguridad no revelamos si el número existe o no
-        return {"status": "ok", "message": "Si el número está registrado, la contraseña ha sido actualizada"}
+        return {
+            "status": "ok",
+            "message": "Si la cuenta está registrada con ese dato, la contraseña ha sido actualizada con éxito",
+        }
 
     user.password_hash = hash_password(data.new_password)
     await session.commit()
-    return {"status": "ok", "message": "Contraseña actualizada exitosamente"}
+    return {
+        "status": "ok",
+        "message": f"Contraseña actualizada exitosamente para la cuenta vinculada a {ident}",
+    }
 

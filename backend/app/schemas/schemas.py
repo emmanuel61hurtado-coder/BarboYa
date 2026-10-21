@@ -23,6 +23,7 @@ class GeoPoint(BaseModel):
 class RegisterIn(BaseModel):
     full_name: str = Field(min_length=2, max_length=120)
     phone: str = Field(pattern=r"^\+?[0-9]{10,15}$")
+    email: str | None = None
     password: str = Field(min_length=6, max_length=72)
     role: UserRole = UserRole.customer
     # Solo si role == driver
@@ -32,7 +33,7 @@ class RegisterIn(BaseModel):
 
 
 class LoginIn(BaseModel):
-    phone: str
+    phone: str = Field(description="Número de teléfono o correo electrónico registrado")
     password: str
     expected_role: UserRole | None = None
 
@@ -42,6 +43,20 @@ class TokenOut(BaseModel):
     token_type: str = "bearer"
     role: UserRole
     user_id: UUID
+
+
+class RecoveryCodeRequestIn(BaseModel):
+    identifier: str = Field(min_length=3, description="Teléfono o correo electrónico registrado")
+    method: str = Field(default="phone", description="'phone' o 'email'")
+
+
+class PasswordRecoveryIn(BaseModel):
+    identifier: str | None = Field(default=None, description="Teléfono o correo electrónico registrado")
+    phone: str | None = Field(default=None, description="Teléfono para compatibilidad previa")
+    email: str | None = Field(default=None, description="Correo electrónico registrado")
+    recovery_method: str = Field(default="phone", description="'phone' o 'email'")
+    new_password: str = Field(min_length=6, max_length=72)
+    security_pin: str = Field(default="1234", description="PIN enviado por SMS, WhatsApp o Correo")
 
 
 # ----------------------------------------------------------------- viajes
