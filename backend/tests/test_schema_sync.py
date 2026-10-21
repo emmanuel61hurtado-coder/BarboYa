@@ -103,3 +103,58 @@ def test_schema_sql_declares_model_enums():
         assert f"CREATE TYPE {enum_name}" in sql
     for column in ("gender", "prefer_female_driver", "status_history", "delivery_pin"):
         assert column in sql
+
+
+class _FakeResult:
+    def __init__(self, rows):
+        self._rows = rows
+
+    def all(self):
+        return self._rows
+
+    def scalar_one(self):
+        return self._rows[0][0]
+
+
+class _FakeConn:
+    """Captura el SQL ejecutado por el sincronizador."""
+
+    def __init__(self, results=None):
+        self.executed = []
+        self._results = list(results or [])
+
+    async def execute(self, statement, params=None):
+        self.executed.append(str(statement))
+        if self._results:
+            return self._results.pop(0)
+        return _FakeResult([])
+
+
+@pytest.mark.asyncio
+async def test_sync_columns_adds_missing_columns():
+    from app.core.schema_sync import _sync_columns
+
+    existing = [("users", "id"), ("users", "phone"), ("users", "role")]
+    conn = _FakeConn([_FakeResult(existing)])
+    await _sync_columns(conn)
+
+    alters = [stmt for stmt in conn.executed if stmt.startswith("ALTER TABLE")]
+    assert 'ALTER TABLE "users" ADD COLUMN IF NOT EXISTS "email" VARCHAR' in alters
+    assert 'ALTER TABLE "users" ADD COLUMN IF NOT EXISTS "gender" user_gender' in alters
+    assert 'ALTER TABLE "users" ADD COLUMN IF NOT EXISTS "is_active" BOOLEAN DEFAULT TRUE' in alters
+    assert "ALTER TABLE" not in " ".join(stmt for stmt in conn.executed if "users" in stmt and "id" in stmt)
+
+
+@pytest.mark.asyncio
+async def test_seed_zones_is_idempotent_and_uses_postgis():
+    from app.core.schema_sync import _seed_zones
+
+    conn = _FakeConn([_FakeResult([(3,)])])
+    await _seed_zones(conn)
+    assert conn.executed == ["SELECT count(*) FROM zones"]
+
+    conn = _FakeConn([_FakeResult([(0,)]), _FakeResult([]), _FakeResult([])])
+    await _seed_zones(conn)
+    assert any("ST_GeomFromText" in stmt for stmt in conn.executed)
+    assert any("ON CONFLICT (name) DO NOTHING" in stmt for stmt in conn.executed)
+
