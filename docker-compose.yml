@@ -39,8 +39,8 @@ services:
     restart: unless-stopped
     environment:
       ENVIRONMENT: ${ENVIRONMENT:-production}
-      # Si no se define DATABASE_URL, la API la arma con POSTGRES_* (ver config.py)
-      DATABASE_URL: ${DATABASE_URL:-}
+      # Si no se define DATABASE_URL, la API la arma con postgres://barboya:password@db:5432/barboya
+      DATABASE_URL: ${DATABASE_URL:-postgresql+asyncpg://${POSTGRES_USER:-barboya}:${POSTGRES_PASSWORD:-barboya}@db:5432/${POSTGRES_DB:-barboya}}
       POSTGRES_USER: ${POSTGRES_USER:-barboya}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-barboya}
       POSTGRES_HOST: ${POSTGRES_HOST:-db}
