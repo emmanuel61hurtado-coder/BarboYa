@@ -74,6 +74,28 @@ class Settings(BaseSettings):
                     self.cors_origins = [o.strip() for o in allowed.split(",")]
 
         if not self.database_url:
+            from urllib.parse import urlparse
+
+            if self.postgres_host:
+                host_str = str(self.postgres_host).strip()
+                if "://" in host_str:
+                    parsed_url = urlparse(host_str)
+                    if parsed_url.hostname:
+                        self.postgres_host = parsed_url.hostname
+                    if parsed_url.port:
+                        self.postgres_port = parsed_url.port
+                    if parsed_url.username and not self.postgres_user:
+                        self.postgres_user = parsed_url.username
+                    if parsed_url.password and not self.postgres_password:
+                        self.postgres_password = parsed_url.password
+                    if parsed_url.path and len(parsed_url.path) > 1 and not self.postgres_db:
+                        self.postgres_db = parsed_url.path.lstrip("/")
+                elif ":" in host_str and not host_str.startswith("["):
+                    parts = host_str.split(":")
+                    self.postgres_host = parts[0]
+                    if len(parts) > 1 and parts[1].isdigit():
+                        self.postgres_port = int(parts[1])
+
             user = quote_plus(self.postgres_user)
             password = quote_plus(self.postgres_password)
             self.database_url = (
