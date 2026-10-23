@@ -45,8 +45,8 @@ services:
       POSTGRES_DB: ${POSTGRES_DB:-barboya}
       REDIS_URL: ${REDIS_URL:-redis://redis:6379/0}
       USE_SQLITE: "false"
-      JWT_SECRET: "${JWT_SECRET:?Define JWT_SECRET en las variables de entorno de Coolify}"
-      CORS_ORIGINS: '${CORS_ORIGINS:?Define CORS_ORIGINS con el dominio de la aplicacion}'
+      JWT_SECRET: "${JWT_SECRET:-${SECRET_KEY:-CAMBIAR-EN-PRODUCCION}}"
+      CORS_ORIGINS: '${CORS_ORIGINS:-${ALLOWED_ORIGINS:-["*"]}}'
     expose:
       - "8000"
     depends_on:

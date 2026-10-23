@@ -55,6 +55,24 @@ class Settings(BaseSettings):
     @model_validator(mode="after")
     def _build_database_url(self) -> "Settings":
         """Si no viene DATABASE_URL, se arma con las variables POSTGRES_*."""
+        import os
+        import json
+
+        if self.jwt_secret == "CAMBIAR-EN-PRODUCCION":
+            sec = os.getenv("SECRET_KEY") or os.getenv("JWT_SECRET")
+            if sec:
+                self.jwt_secret = sec
+
+        if self.cors_origins == ["*"]:
+            allowed = os.getenv("ALLOWED_ORIGINS") or os.getenv("CORS_ORIGINS")
+            if allowed:
+                try:
+                    parsed = json.loads(allowed)
+                    if isinstance(parsed, list):
+                        self.cors_origins = parsed
+                except Exception:
+                    self.cors_origins = [o.strip() for o in allowed.split(",")]
+
         if not self.database_url:
             user = quote_plus(self.postgres_user)
             password = quote_plus(self.postgres_password)
