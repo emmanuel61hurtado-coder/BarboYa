@@ -34,48 +34,58 @@ class UserMeOut(BaseModel):
 
 @router.post("/register", response_model=TokenOut, status_code=201)
 async def register(data: RegisterIn, session: AsyncSession = Depends(get_session)):
-    # Protección estricta: nadie puede registrarse como admin, superadmin ni support
-    if data.role in (UserRole.admin, UserRole.superadmin, UserRole.support):
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Operación no permitida: El rol administrativo solo puede ser asignado por el sistema",
-        )
-
-    exists_phone = (await session.execute(select(User.id).where(User.phone == data.phone))).first()
-    if exists_phone:
-        raise HTTPException(status.HTTP_409_CONFLICT, "Ese teléfono ya está registrado")
-
-    clean_email = data.email.strip().lower() if data.email else None
-    if clean_email:
-        exists_email = (await session.execute(select(User.id).where(User.email == clean_email))).first()
-        if exists_email:
-            raise HTTPException(status.HTTP_409_CONFLICT, "Ese correo electrónico ya está registrado")
-
-    user = User(
-        full_name=data.full_name,
-        phone=data.phone,
-        email=clean_email,
-        password_hash=hash_password(data.password),
-        role=data.role,
-    )
-    session.add(user)
-    await session.flush()
-
-    if data.role == UserRole.driver:
-        if not (data.vehicle_type and data.vehicle_plate and data.document_id):
-            raise HTTPException(422, "Un conductor requiere vehículo, placa y documento")
-        session.add(
-            DriverProfile(
-                user_id=user.id,
-                vehicle_type=data.vehicle_type,
-                vehicle_plate=data.vehicle_plate.upper(),
-                document_id=data.document_id,
-                verification_status=VerificationStatus.pending,
-                is_verified=False,
+    try:
+        # Protección estricta: nadie puede registrarse como admin, superadmin ni support
+        if data.role in (UserRole.admin, UserRole.superadmin, UserRole.support):
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Operación no permitida: El rol administrativo solo puede ser asignado por el sistema",
             )
+
+        exists_phone = (await session.execute(select(User.id).where(User.phone == data.phone))).first()
+        if exists_phone:
+            raise HTTPException(status.HTTP_409_CONFLICT, "Ese teléfono ya está registrado")
+
+        clean_email = data.email.strip().lower() if data.email else None
+        if clean_email:
+            exists_email = (await session.execute(select(User.id).where(User.email == clean_email))).first()
+            if exists_email:
+                raise HTTPException(status.HTTP_409_CONFLICT, "Ese correo electrónico ya está registrado")
+
+        user = User(
+            full_name=data.full_name,
+            phone=data.phone,
+            email=clean_email,
+            password_hash=hash_password(data.password),
+            role=data.role,
         )
-    await session.commit()
-    return TokenOut(access_token=create_token(user.id, user.role.value), role=user.role, user_id=user.id)
+        session.add(user)
+        await session.flush()
+
+        if data.role == UserRole.driver:
+            if not (data.vehicle_type and data.vehicle_plate and data.document_id):
+                raise HTTPException(422, "Un conductor requiere vehículo, placa y documento")
+            session.add(
+                DriverProfile(
+                    user_id=user.id,
+                    vehicle_type=data.vehicle_type,
+                    vehicle_plate=data.vehicle_plate.upper(),
+                    document_id=data.document_id,
+                    verification_status=VerificationStatus.pending,
+                    is_verified=False,
+                )
+            )
+        await session.commit()
+        return TokenOut(access_token=create_token(user.id, user.role.value), role=user.role, user_id=user.id)
+    except HTTPException:
+        raise
+    except Exception as err:
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Error interno al registrar usuario: {str(err)}"
+        )
 
 
 @router.post("/login", response_model=TokenOut)
