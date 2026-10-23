@@ -1,0 +1,70 @@
+services:
+  db:
+    image: postgis/postgis:16-3.4
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-barboya}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Define POSTGRES_PASSWORD en las variables de entorno de Coolify}
+      POSTGRES_DB: ${POSTGRES_DB:-barboya}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      # Init tolerante: los errores de schema.sql no matan el contenedor
+      - ./database/init:/docker-entrypoint-initdb.d:ro
+      - ./database/schema.sql:/opt/barboya/schema.sql:ro
+      - ./database/postgres-entrypoint.sh:/opt/barboya/postgres-entrypoint.sh:ro
+    entrypoint: ["/bin/sh", "/opt/barboya/postgres-entrypoint.sh"]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U \"$$POSTGRES_USER\" -d \"$$POSTGRES_DB\""]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+      start_period: 60s
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - redisdata:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  api:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    restart: unless-stopped
+    environment:
+      ENVIRONMENT: ${ENVIRONMENT:-production}
+      # Si no se define DATABASE_URL, la API la arma con postgres://barboya:password@db:5432/barboya
+      DATABASE_URL: ${DATABASE_URL:-postgresql+asyncpg://${POSTGRES_USER:-barboya}:${POSTGRES_PASSWORD:-barboya}@db:5432/${POSTGRES_DB:-barboya}}
+      POSTGRES_USER: ${POSTGRES_USER:-barboya}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Define POSTGRES_PASSWORD en las variables de entorno de Coolify}
+      POSTGRES_HOST: ${POSTGRES_HOST:-db}
+      POSTGRES_DB: ${POSTGRES_DB:-barboya}
+      REDIS_URL: ${REDIS_URL:-redis://redis:6379/0}
+      USE_SQLITE: "false"
+      JWT_SECRET: "${JWT_SECRET:-${SECRET_KEY:-CAMBIAR-EN-PRODUCCION}}"
+      CORS_ORIGINS: '${CORS_ORIGINS:-${ALLOWED_ORIGINS:-["*"]}}'
+    expose:
+      - "8000"
+    depends_on:
+      db:
+        # La API reintenta la sincronizacion del esquema en segundo plano:
+        # no debe bloquear el despliegue si Postgres aun no esta listo.
+        condition: service_started
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health', timeout=3).read()"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 40s
+
+volumes:
+  pgdata:
+  redisdata:
