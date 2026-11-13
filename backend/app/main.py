@@ -98,6 +98,7 @@ async def lifespan(app: FastAPI):
         print(f"[BarboYa] Redis no disponible ({err}). Continuando servidor FastAPI en memoria...")
     yield
     schema_task.cancel()
+    indexer_task.cancel()
     if client:
         try:
             await client.aclose()
@@ -127,6 +128,8 @@ app.include_router(trips.router)
 app.include_router(trips.public_router)
 app.include_router(wallet.router)
 app.include_router(wallet.admin)
+app.include_router(blockchain.router)
+app.include_router(blockchain.admin)
 app.include_router(admin.router)
 app.include_router(merchants.router)
 app.include_router(merchants.orders_router)
