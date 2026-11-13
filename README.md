@@ -56,6 +56,24 @@ El admin cambia el esquema por conductor con `PUT /admin/drivers/billing`, aprue
 `POST /admin/topups/{id}/decision` y activa pases con `POST /admin/subscriptions`.
 Las validaciones ocurren con la fila del conductor bloqueada (`FOR UPDATE`) para evitar carreras.
 
+## Recargas con blockchain (EVM)
+
+Además de Nequi/Daviplata manuales, el conductor puede recargar su bolsa con un
+stablecoin (USDC) en una cadena EVM. El flujo replica la arquitectura
+billetera → nodo RPC → mempool → bloque/EVM → recibo y logs → indexador → PostgreSQL:
+
+1. El conductor firma el tx en su wallet y lo reporta: `POST /payments/crypto`
+   (`{tx_hash, payer_address, token_amount_units}`, 1 USDC = `1_000_000` unidades).
+2. El **indexador** (tarea de fondo) consulta el recibo por JSON-RPC, verifica el
+   evento `Transfer` (destino = tesorería, remitente = billetera reportada, monto)
+   y espera las confirmaciones configuradas.
+3. Al confirmar, acredita el saldo COP en el wallet (idempotente por `txHash`).
+
+Estados: `pending` (mempool) → `confirming` → `confirmed` / `failed`.
+Sin nodo configurado el método queda inactivo; en desarrollo una **cadena
+simulada** recorre el ciclo completo sin red. Detalles: `docs/blockchain-payments.md`.
+Configuración: `CHAIN_RPC_URL`, `PAYMENT_TOKEN_ADDRESS`, `TREASURY_ADDRESS`, `COP_PER_TOKEN`.
+
 ## Flujo "Pon Tu Precio"
 
 1. Cliente: `POST /trips/quote` → tarifa sugerida (zona + km + recargo nocturno) → ajusta con ±$500.
