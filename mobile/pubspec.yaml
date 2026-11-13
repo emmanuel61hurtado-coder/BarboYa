@@ -1,0 +1,27 @@
+name: barboya
+description: Barboya - movilidad, mensajería y domicilios de Barbosa, Santander.
+publish_to: "none"
+version: 0.1.0+1
+
+environment:
+  sdk: ">=3.3.0 <4.0.0"
+  flutter: ">=3.19.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_bloc: ^8.1.6
+  equatable: ^2.0.5
+  http: ^1.2.1
+  web_socket_channel: ^2.4.5
+  shared_preferences: ^2.2.3
+  google_fonts: ^6.2.1
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  bloc_test: ^9.1.7
+  flutter_lints: ^4.0.0
+
+flutter:
+  uses-material-design: true
