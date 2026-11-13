@@ -12,7 +12,7 @@ from starlette.requests import Request
 from starlette.responses import Response
 
 from app.core.config import get_settings
-from app.routers import admin, auth, drivers, merchants, security, trips, wallet, webhooks, ws
+from app.routers import admin, auth, blockchain, drivers, merchants, security, trips, wallet, webhooks, ws
 from app.websockets.manager import manager
 
 settings = get_settings()
@@ -56,10 +56,39 @@ async def _bootstrap_database(attempts: int = 30, delay: float = 10.0) -> None:
             await asyncio.sleep(delay)
 
 
+async def _blockchain_indexer() -> None:
+    """Paso 7 de la arquitectura: indexador de pagos cripto.
+
+    Cada `indexer_interval_seconds` revisa los pagos pendientes contra el nodo
+    (recibo y logs) y acredita los confirmados en PostgreSQL. Solo corre cuando
+    el método cripto está configurado.
+    """
+    from app.core.database import SessionLocal
+    from app.services import blockchain as chain_service
+
+    if not settings.payment_token_address:
+        print("[BarboYa] Pagos cripto sin configurar: indexador inactivo")
+        return
+
+    while True:
+        try:
+            async with SessionLocal() as session:
+                synced = await chain_service.sync_pending_payments(session)
+                await session.commit()
+                if synced:
+                    print(f"[BarboYa] Indexador cripto: {len(synced)} pago(s) sincronizado(s)")
+        except asyncio.CancelledError:
+            raise
+        except Exception as err:
+            print(f"[BarboYa] Indexador cripto: error ({err})")
+        await asyncio.sleep(settings.indexer_interval_seconds)
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Create tables / synchronize the schema with the SQLAlchemy models
     schema_task = asyncio.create_task(_bootstrap_database())
+    indexer_task = asyncio.create_task(_blockchain_indexer())
 
     client = None
     try:
