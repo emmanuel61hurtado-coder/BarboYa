@@ -55,6 +55,22 @@ class PaymentMethod(str, enum.Enum):
     nequi = "nequi"
     daviplata = "daviplata"
     physical_point = "physical_point"
+    crypto = "crypto"
+
+
+class BlockchainTxStatus(str, enum.Enum):
+    """Ciclo de vida de un pago on-chain (ver docs/blockchain-payments.md).
+
+    pending    -> el txHash no aparece en el nodo: sigue en el mempool
+    confirming -> incluido en un bloque, esperando las confirmaciones exigidas
+    confirmed  -> confirmado y verificado por el indexador: saldo acreditado
+    failed     -> revertido (status 0x0) o datos que no coinciden con el intento
+    """
+
+    pending = "pending"
+    confirming = "confirming"
+    confirmed = "confirmed"
+    failed = "failed"
 
 
 class ServiceType(str, enum.Enum):

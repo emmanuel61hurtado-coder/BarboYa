@@ -52,6 +52,23 @@ class Settings(BaseSettings):
     s3_endpoint_url: str | None = None
     s3_region: str = "us-east-1"
 
+    # ── Pagos blockchain (EVM). Ver docs/blockchain-payments.md ──
+    # Nodo JSON-RPC (paso 2 de la arquitectura). Vacío = cadena simulada local,
+    # suficiente para desarrollo y pruebas sin desplegar un nodo.
+    chain_rpc_url: str = ""
+    chain_id: int = 80002                       # Polygon Amoy (testnet) por defecto
+    payment_token_address: str = ""             # contrato del stablecoin (0x…)
+    payment_token_symbol: str = "USDC"
+    payment_token_decimals: int = 6
+    # Tesorería de Barboya: dirección que recibe los pagos (0x…)
+    treasury_address: str = ""
+    cop_per_token: int = 4_000                  # 1 USDC ≈ 4.000 COP
+    required_confirmations: int = 12
+    topup_min_cop: int = 1_000
+    topup_max_cop: int = 500_000
+    # Cada cuántos segundos el indexador (paso 7) revisa pagos pendientes
+    indexer_interval_seconds: float = 15.0
+
     @model_validator(mode="after")
     def _build_database_url(self) -> "Settings":
         """Si no viene DATABASE_URL, se arma con las variables POSTGRES_*."""

@@ -157,6 +157,33 @@ class TopupDecisionIn(BaseModel):
     approve: bool
 
 
+class CryptoPaymentIn(BaseModel):
+    """La billetera del conductor ya firmó y difundió el tx (paso 1)."""
+
+    tx_hash: str = Field(pattern=r"^0x[0-9a-fA-F]{64}$")
+    payer_address: str = Field(pattern=r"^0x[0-9a-fA-F]{40}$")
+    # Monto en unidades mínimas del token (ej. 1 USDC = 1_000_000 con 6 decimales)
+    token_amount_units: int = Field(gt=0)
+
+
+class CryptoPaymentOut(BaseModel):
+    id: UUID
+    tx_hash: str
+    payer_address: str
+    status: str
+    token_symbol: str
+    token_amount_units: int
+    amount_cop: int
+    chain_id: int
+    block_number: int | None = None
+    gas_used: int | None = None
+    confirmations: int | None = None
+    failure_reason: str | None = None
+    wallet_tx_id: UUID | None = None
+    created_at: datetime
+    confirmed_at: datetime | None = None
+
+
 class SubscriptionApproveIn(BaseModel):
     driver_id: UUID
     plan: SubscriptionPlan
