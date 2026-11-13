@@ -1,4 +1,5 @@
 from app.models.billing import Subscription, WalletTransaction
+from app.models.blockchain import BlockchainPayment
 from app.models.merchant import Merchant, Order, Product
 from app.models.trip import SecurityLog, Trip
 from app.models.user import DriverProfile, User
@@ -9,6 +10,7 @@ __all__ = [
     "DriverProfile",
     "Subscription",
     "WalletTransaction",
+    "BlockchainPayment",
     "Trip",
     "SecurityLog",
     "Merchant",
