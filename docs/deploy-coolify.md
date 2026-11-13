@@ -49,6 +49,14 @@ En **Environment Variables** define:
 | `REDIS_URL` | Opcional | `redis://redis:6379/0` |
 | `CORS_ORIGINS` | **Sí** | `["https://app.barboya.co"]` |
 | `ENVIRONMENT` | Opcional | `production` |
+| `CHAIN_RPC_URL` | Opcional | `https://polygon-amoy-bor-rpc.publicnode.com` (testnet) |
+| `CHAIN_ID` | Opcional | `80002` (Amoy) |
+| `PAYMENT_TOKEN_ADDRESS` | Opcional | USDC Amoy: `0x41E94Eb019C0762f9Bfcf9Fb1E58725BfB0e7582` |
+| `PAYMENT_TOKEN_SYMBOL` / `PAYMENT_TOKEN_DECIMALS` | Opcional | `USDC` / `6` |
+| `TREASURY_ADDRESS` | Opcional | wallet de tesorería (ver `backend/scripts/generate_wallet.py`) |
+| `COP_PER_TOKEN` | Opcional | `4000` (1 USDC ≈ 4.000 COP) |
+| `REQUIRED_CONFIRMATIONS` | Opcional | `12` |
+| `INDEXER_INTERVAL_SECONDS` | Opcional | `15` |
 
 - Genera dos secretos distintos (por ejemplo, `openssl rand -hex 32`) y
   guárdalos como `JWT_SECRET` y `POSTGRES_PASSWORD` en **Environment Variables**
@@ -63,6 +71,12 @@ En **Environment Variables** define:
 - `docker-compose.yml` ya fija `USE_SQLITE=false` (PostgreSQL + PostGIS).
 - `JWT_SECRET` no tiene valor por defecto: si falta, el despliegue se detiene con
   un mensaje explícito en lugar de arrancar con un secreto inseguro.
+- **Pagos cripto**: el método queda inactivo salvo que definas
+  `PAYMENT_TOKEN_ADDRESS` + `TREASURY_ADDRESS` (+ `CHAIN_RPC_URL` para nodo real;
+  sin él se usa la cadena simulada, solo para desarrollo). En producción usa
+  Polygon mainnet: `CHAIN_ID=137` y USDC `0x3c499c542cEF5E3811e1192ce70d8cC03d5c3359`.
+  La clave privada de la tesorería NO la necesita la API (solo recibe); guárdala
+  en tu gestor de secretos para retiros. Detalles: `docs/blockchain-payments.md`.
 
 ## 3. Desplegar
 En la configuración de dominio del servicio **api** en Coolify, indica el

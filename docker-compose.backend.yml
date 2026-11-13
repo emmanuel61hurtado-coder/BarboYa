@@ -47,8 +47,18 @@ services:
       POSTGRES_DB: ${POSTGRES_DB:-barboya}
       REDIS_URL: ${REDIS_URL:-redis://redis:6379/0}
       USE_SQLITE: "false"
-      JWT_SECRET: "${JWT_SECRET:-${SECRET_KEY:-CAMBIAR-EN-PRODUCCION}}"
+      JWT_SECRET: "${JWT_SECRET:?Define JWT_SECRET en las variables de entorno de Coolify}"
       CORS_ORIGINS: '${CORS_ORIGINS:-${ALLOWED_ORIGINS:-["*"]}}'
+      # Pagos blockchain (EVM). Ver docs/blockchain-payments.md
+      CHAIN_RPC_URL: ${CHAIN_RPC_URL:-}
+      CHAIN_ID: ${CHAIN_ID:-80002}
+      PAYMENT_TOKEN_ADDRESS: ${PAYMENT_TOKEN_ADDRESS:-}
+      PAYMENT_TOKEN_SYMBOL: ${PAYMENT_TOKEN_SYMBOL:-USDC}
+      PAYMENT_TOKEN_DECIMALS: ${PAYMENT_TOKEN_DECIMALS:-6}
+      TREASURY_ADDRESS: ${TREASURY_ADDRESS:-}
+      COP_PER_TOKEN: ${COP_PER_TOKEN:-4000}
+      REQUIRED_CONFIRMATIONS: ${REQUIRED_CONFIRMATIONS:-12}
+      INDEXER_INTERVAL_SECONDS: ${INDEXER_INTERVAL_SECONDS:-15}
     expose:
       - "8000"
     depends_on:

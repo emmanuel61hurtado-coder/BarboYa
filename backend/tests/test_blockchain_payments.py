@@ -210,3 +210,38 @@ async def test_partial_amount_confirmed_for_full_only_when_enough(db):
     [p] = await blockchain.sync_pending_payments(session)
     assert p.status == enums.BlockchainTxStatus.failed
     assert "menor" in p.failure_reason.lower()
+
+
+# ───────────────── generador de wallets (scripts/generate_wallet.py) ─────────────────
+
+def _load_wallet_script():
+    import importlib.util
+    from pathlib import Path
+
+    spec = importlib.util.spec_from_file_location(
+        "generate_wallet", Path(__file__).resolve().parent.parent / "scripts" / "generate_wallet.py"
+    )
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+def test_keccak_matches_evm_constants():
+    """keccak256 propio debe coincidir con las constantes del estándar ERC-20."""
+    gen = _load_wallet_script()
+    assert gen.keccak256(b"Transfer(address,address,uint256)").hex() == blockchain.TRANSFER_TOPIC[2:]
+
+
+def test_eip55_checksum_vector():
+    gen = _load_wallet_script()
+    address = "0x5aaeb6053f3e94c9b9a09f33669435e7ef1beaed"  # vector oficial EIP-55
+    assert gen.eip55_address(bytes.fromhex(address[2:])) == "0x5aAeb6053F3E94C9b9A09f33669435E7Ef1BeAed"
+
+
+def test_generated_wallet_is_valid_format():
+    gen = _load_wallet_script()
+    w = gen.generate_wallet()
+    assert w["address"].startswith("0x") and len(w["address"]) == 42
+    assert w["private_key"].startswith("0x") and len(w["private_key"]) == 66
+    # la dirección debe ser checksum válida: re-codificar da el mismo resultado
+    assert gen.eip55_address(bytes.fromhex(w["address"][2:])) == w["address"]

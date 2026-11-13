@@ -77,3 +77,31 @@ recorre mempool → bloque → recibo de forma determinista (2 consultas: primer
    API y sincroniza cada `INDEXER_INTERVAL_SECONDS`.
 3. Recomendado: ejecutar el RPC contra un proveedor (Alchemy/Infura/Ankr) y usar
    una red barata (Polygon) por el costo del gas.
+
+### Configuración actual (testnet, ya aplicada en `backend/.env`)
+
+| Variable | Valor |
+|---|---|
+| Red | Polygon PoS Amoy (testnet), `CHAIN_ID=80002` |
+| RPC | `https://polygon-amoy-bor-rpc.publicnode.com` |
+| Token | USDC nativo de Circle: `0x41E94Eb019C0762f9Bfcf9Fb1E58725BfB0e7582` (6 decimales) |
+| Tesorería | Generada con `backend/scripts/generate_wallet.py` (ver `backend/.env`) |
+| Conversión | 1 USDC ≈ 4.000 COP |
+| Confirmaciones | 12 (≈ 24 s: en Amoy los bloques tardan ~2 s) |
+
+Fondos de prueba: USDC → `https://faucet.circle.com` · POL para gas → `https://faucet.polygon.technology`.
+
+### Wallet de tesorería
+
+```bash
+cd backend
+python scripts/generate_wallet.py            # genera address + private_key
+python scripts/generate_wallet.py --selftest # valida keccak256 contra vectores conocidos
+```
+
+* Importa la clave privada en MetaMask para gestionar los fondos de prueba.
+* La API **no** necesita la clave privada (solo recibe pagos); guárdala en tu
+  gestor de secretos. `.gitignore` ya excluye `*.key` y `treasury*`.
+* Para producción: genera una wallet nueva, cambia a Polygon mainnet
+  (`CHAIN_ID=137`, RPC propio, USDC `0x3c499c542cEF5E3811e1192ce70d8cC03d5c3359`)
+  y actualiza `COP_PER_TOKEN` con la tasa real del día.

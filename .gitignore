@@ -7,3 +7,6 @@ build/
 *.db
 *.db-shm
 *.db-wal
+# Claves privadas de wallets (tesorería blockchain) — jamás al repositorio
+*.key
+treasury*
