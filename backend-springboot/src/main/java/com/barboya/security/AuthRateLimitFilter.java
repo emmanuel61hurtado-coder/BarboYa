@@ -7,9 +7,22 @@ import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
+import java.util.Set;
 
-/** Limita por IP las operaciones de autenticacion, objetivo habitual de fuerza bruta. */
+/**
+ * Limita por IP las operaciones donde se adivinan secretos cortos. Renovar o
+ * cerrar sesion queda fuera: usa un token aleatorio largo y ocurre en cada
+ * recarga de la pagina, tambien en redes moviles que comparten IP.
+ */
 public class AuthRateLimitFilter extends OncePerRequestFilter {
+
+    private static final Set<String> LIMITED = Set.of(
+            "/api/v1/auth/register",
+            "/api/v1/auth/login",
+            "/api/v1/auth/password/forgot",
+            "/api/v1/auth/password/reset",
+            "/api/v1/auth/email/verification",
+            "/api/v1/auth/email/verify");
 
     private final RateLimiter limiter;
 
@@ -20,7 +33,7 @@ public class AuthRateLimitFilter extends OncePerRequestFilter {
     @Override
     protected boolean shouldNotFilter(HttpServletRequest request) {
         return !"POST".equals(request.getMethod())
-                || !request.getRequestURI().startsWith(request.getContextPath() + "/api/v1/auth/");
+                || !LIMITED.contains(request.getRequestURI().substring(request.getContextPath().length()));
     }
 
     @Override

@@ -87,6 +87,20 @@ class AuthorizationTest extends IntegrationTest {
     }
 
     @Test
+    void usersCanBeFilteredByStatus() throws Exception {
+        var admin = accountWithRole(Role.ADMIN);
+        register(Role.COURIER);
+
+        mvc.perform(get("/api/v1/admin/users?status=PENDING_VERIFICATION&size=100")
+                        .header("Authorization", admin.bearer()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.items").isNotEmpty())
+                .andExpect(jsonPath("$.items[?(@.status != 'PENDING_VERIFICATION')]").isEmpty());
+        mvc.perform(get("/api/v1/admin/users?status=OTRO").header("Authorization", admin.bearer()))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
     void suspensionTakesEffectImmediately() throws Exception {
         var admin = accountWithRole(Role.ADMIN);
         var customer = register(Role.CUSTOMER);

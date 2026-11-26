@@ -8,6 +8,7 @@ import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -30,8 +31,8 @@ public class ApiExceptionHandler {
         return detail;
     }
 
-    @ExceptionHandler(HttpMessageNotReadableException.class)
-    ProblemDetail handle(HttpMessageNotReadableException ex) {
+    @ExceptionHandler({HttpMessageNotReadableException.class, MethodArgumentTypeMismatchException.class})
+    ProblemDetail handleMalformed(Exception ex) {
         return problem(HttpStatus.BAD_REQUEST, "MALFORMED_REQUEST", "La solicitud no se pudo interpretar");
     }
 

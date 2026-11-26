@@ -1,6 +1,8 @@
 package com.barboya.users;
 
 import jakarta.persistence.LockModeType;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
@@ -18,6 +20,8 @@ public interface UserRepository extends JpaRepository<User, UUID> {
     boolean existsByPhone(String phone);
 
     boolean existsByRole(Role role);
+
+    Page<User> findByStatus(UserStatus status, Pageable pageable);
 
     /** Bloquea la fila: los intentos simultaneos se cuentan uno por uno. */
     @Lock(LockModeType.PESSIMISTIC_WRITE)

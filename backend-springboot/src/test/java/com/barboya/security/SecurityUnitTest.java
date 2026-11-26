@@ -82,6 +82,18 @@ class SecurityUnitTest {
     }
 
     @Test
+    void renewingASessionIsNotRateLimited() throws Exception {
+        var filter = new AuthRateLimitFilter(new RateLimiter(1, new MutableClock()));
+
+        for (int i = 0; i < 5; i++) {
+            var request = new MockHttpServletRequest("POST", "/api/v1/auth/refresh");
+            var response = new MockHttpServletResponse();
+            filter.doFilter(request, response, new MockFilterChain());
+            assertThat(response.getStatus()).isEqualTo(200);
+        }
+    }
+
+    @Test
     @SuppressWarnings("unchecked")
     void withoutAMailServerCodesAreReportedUnavailable() {
         MailService mail = new MailService(mock(ObjectProvider.class), properties(""));

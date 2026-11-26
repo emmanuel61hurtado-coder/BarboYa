@@ -9,6 +9,7 @@ import com.barboya.common.ClientInfo;
 import com.barboya.security.AuthUser;
 import com.barboya.users.UserRepository;
 import com.barboya.users.UserResponse;
+import com.barboya.users.UserStatus;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import org.springframework.data.domain.PageRequest;
@@ -44,9 +45,11 @@ public class AdminController {
     }
 
     @GetMapping("/users")
-    public PageResponse<UserResponse> users(@RequestParam(defaultValue = "0") int page,
+    public PageResponse<UserResponse> users(@RequestParam(required = false) UserStatus status,
+                                            @RequestParam(defaultValue = "0") int page,
                                             @RequestParam(defaultValue = "20") int size) {
-        var result = users.findAll(pageRequest(page, size, Sort.by("createdAt").descending()));
+        var pageable = pageRequest(page, size, Sort.by("createdAt").descending());
+        var result = status == null ? users.findAll(pageable) : users.findByStatus(status, pageable);
         return new PageResponse<>(result.map(UserResponse::from).getContent(),
                 result.getNumber(), result.getSize(), result.getTotalElements());
     }
