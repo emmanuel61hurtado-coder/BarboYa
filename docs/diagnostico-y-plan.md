@@ -5,7 +5,7 @@ Fecha: 26 de noviembre de 2026. Base revisada: commit `f1d19c5`. Incluye las cor
 ## 1. Resumen
 
 - BarboYa **no está listo para operar con usuarios ni dinero reales**.
-- El backend en uso es FastAPI (Python). En Spring Boot, el exigido, ya funcionan las cuentas, la administración, los comercios, el catálogo, los pedidos en efectivo con PIN y la verificación de domiciliarios, con interfaz en el modo `v1` y pruebas. Faltan la asignación de domiciliarios, viajes, pagos y blockchain.
+- El backend en uso es FastAPI (Python). En Spring Boot, el exigido, ya funcionan las cuentas, la administración, los comercios, el catálogo, los pedidos en efectivo con PIN, la verificación de domiciliarios y las entregas con mapa, con interfaz en el modo `v1` y pruebas. Faltan viajes, pagos y blockchain.
 - En el panel de comercios, el panel de administración, comida, viajes y envíos, los componentes de React no llaman a la API.
 - No hay contratos inteligentes: no existe código Solidity, Hardhat ni Web3j.
 
@@ -26,9 +26,9 @@ Fecha: 26 de noviembre de 2026. Base revisada: commit `f1d19c5`. Incluye las cor
 | Pruebas Python (suite completa) | 76 aprobadas en 4 corridas seguidas |
 | Prueba de punta a punta con la API real (SQLite) | Registro, ingreso, SOS, webhook y recuperación responden como se espera; en producción sin `JWT_SECRET` no arranca |
 | TypeScript y build de Vite (ambos modos, Node 20) | Correctos |
-| Pruebas de Spring Boot (PostgreSQL 16 real) | 129 aprobadas |
+| Pruebas de Spring Boot (PostgreSQL 16 real) | 144 aprobadas |
 | Pruebas del frontend (`npm test`) | 26 aprobadas |
-| Flujos de la interfaz `v1` en Chrome (API, PostgreSQL y correo de prueba) | 18 pasos de cuentas, 14 de pedido y 8 de verificación, en 2 corridas, sin errores de consola |
+| Flujos de la interfaz `v1` en Chrome (API, PostgreSQL y correo de prueba) | 50 pasos (cuentas, pedido, verificación y entrega), sin errores de consola; teselas del mapa simuladas |
 | App actual en Chrome tras actualizar herramientas | Carga, cambia de pestaña y abre el SOS sin errores |
 | `.jar` de Spring Boot con perfil `prod` | Arranca, aplica migraciones y responde por HTTP como se espera; sin `JWT_SECRET` no arranca |
 | `docker compose` | No ejecutado: Docker no está instalado |
@@ -80,7 +80,7 @@ Cada módulo reescrito debe cubrir su fallo con una prueba antes de activarse.
 - **Incompatibilidad:** el frontend espera campos como `access_token` y rutas que Spring Boot no tiene (usa `accessToken`). Hoy no pueden funcionar juntos.
 - **Spring Boot:** faltan repartidores, viajes, pagos, comisiones y Web3j.
 - **Comercios:** faltan fotografías, horarios, promociones, reportes, estadísticas y búsqueda por cercanía o precio.
-- **Frontend `v1`:** usa React Router, TanStack Query, React Hook Form, Zod, Axios y componentes al estilo shadcn/ui escritos a mano. Faltan los módulos de repartidores, viajes y finanzas, y el mapa.
+- **Frontend `v1`:** usa React Router, TanStack Query, React Hook Form, Zod, Axios y componentes al estilo shadcn/ui escritos a mano. Faltan los módulos de viajes y finanzas.
 - **Sin implementar:** MFA, verificación por SMS, libro contable de doble partida, proveedor de pagos, liquidaciones, contratos inteligentes y reputación.
 
 ## 6. Repositorio
@@ -100,7 +100,7 @@ Cada fase termina cuando sus pruebas pasan.
 | 2. Base React (hecha, sin desplegar) | Router, TanStack Query, formularios con Zod, shadcn/ui, autenticación, seguridad y administración conectadas | Registro e ingreso funcionan de extremo a extremo (cumplido) |
 | 3. Comercio y pedidos (hecha en lo esencial, sin desplegar) | Hecho: comercios, productos, inventario, pedidos, PIN, tiempo real. Falta: fotografías, horarios, promociones y reportes | Pedido completo probado entre cliente y comercio (cumplido) |
 | 4A. Verificación de domiciliarios (hecha, sin desplegar) | Datos, autorización, documentos cifrados y revisión humana. Falta: prueba de vida, plazo de conservación y S3 | No opera quien no esté verificado (cumplido para la activación) |
-| 4B. Entregas con domiciliarios | Ubicación, asignación, recogida, evidencia y mapas | Entrega completa con evidencia |
+| 4B. Entregas con domiciliarios (hecha, sin desplegar) | Ubicación, tarifa por distancia, toma de pedidos, recogida, evidencia y mapas. Falta: resolver entregas fallidas | Entrega completa con evidencia (cumplido) |
 | 5. Finanzas | Libro de doble partida, pasarela en sandbox, webhooks firmados, idempotencia, conciliación | Las cuentas cuadran en pruebas con fallos y reintentos |
 | 6. Blockchain | `PaymentEscrow`, `CommissionManager`, `OrderVerification`, `RefundManager`, `ReputationRegistry`; Hardhat y Web3j en red de pruebas | Pruebas y análisis de contratos aprobados |
 | 7. Move | Viajes, negociación, seguridad y SOS real | Revisión jurídica aprobada antes de activar |

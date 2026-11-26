@@ -1,6 +1,6 @@
 # BarboYa API (Spring Boot)
 
-Backend en Java 21 y Spring Boot 3.3 que reemplazará al de FastAPI. Hoy cubre **identidad, administración de cuentas, comercios, catálogo, pedidos y verificación de domiciliarios**; la asignación de domiciliarios, los viajes y los pagos siguen en `../backend` o están pendientes.
+Backend en Java 21 y Spring Boot 3.3 que reemplazará al de FastAPI. Hoy cubre **identidad, administración de cuentas, comercios, catálogo, pedidos, verificación de domiciliarios y entregas**; los viajes y los pagos siguen en `../backend` o están pendientes.
 
 **No reemplaza todavía al backend publicado.** El frontend lo usa solo en el modo `v1` (ver [Interfaz](#interfaz)).
 
@@ -64,6 +64,7 @@ Levantan un PostgreSQL 16 propio y temporal; no necesitan Docker ni tocan tu bas
 | `BOOTSTRAP_ADMIN_EMAIL`, `BOOTSTRAP_ADMIN_PHONE`, `BOOTSTRAP_ADMIN_PASSWORD` | Primer arranque | Crea el primer superadministrador (clave de 12+ caracteres). Elimina la clave después |
 | `FILES_KEY` | Sí, salvo en `dev` | 32 bytes en base64 (`openssl rand -base64 32`). Cifra los documentos |
 | `FILES_DIRECTORY` | Recomendada en `prod` | Carpeta privada y persistente. Por defecto `./data/files` |
+| `DELIVERY_BASE_FEE_COP`, `DELIVERY_PER_KM_COP`, `DELIVERY_MAX_KM` | No | Tarifa del domiciliario: `3000`, `1000` y `8` |
 | `PORT` | No | `8081` |
 
 ## Rutas
@@ -89,6 +90,12 @@ Base: `/api/v1`. Los errores usan `application/problem+json` con un campo `code`
 | `GET`, `POST /merchant/products`, `PUT`, `DELETE /merchant/products/{id}` | `RESTAURANT`, `STORE` (propios) |
 | `GET /merchant/orders`, `POST /merchant/orders/{id}/{accept,reject,ready,dispatch,deliver,cancel}` | `RESTAURANT`, `STORE` (propios) |
 | `POST`, `GET /orders`, `GET /orders/{id}`, `POST /orders/{id}/{cancel,new-pin}` | `CUSTOMER` (propios) |
+| `GET /catalog/businesses/{id}/delivery-quote?lat&lng` | Sesión |
+| `GET`, `PUT /courier/presence`, `GET /courier/offers`, `POST /courier/offers/{id}/accept` | `COURIER` |
+| `GET /courier/delivery`, `POST /courier/delivery/{id}/{release,pickup,evidence,deliver,fail}` | `COURIER` (propia) |
+| `GET /courier/history`, `GET /courier/earnings` | `COURIER` (propios) |
+| `POST /merchant/orders/{id}/unassign` | `RESTAURANT`, `STORE` (propios) |
+| `GET …/orders/{id}/evidence` (también bajo `/merchant` y `/courier/delivery`) | Participantes del pedido |
 
 Toda ruta no declarada queda cerrada.
 
@@ -124,6 +131,21 @@ La revisión técnico-mecánica se puede adjuntar y la valora quien revisa. **Un
 - **Si pierdes `FILES_KEY`, los archivos no se pueden recuperar.** Respáldala aparte de la carpeta y de la base.
 - Falta definir el plazo de conservación y un almacén compatible con S3.
 
+## Entregas con domiciliarios
+
+```
+El comercio acepta ──▶ un domiciliario lo toma ──▶ READY ──código de recogida──▶ OUT_FOR_DELIVERY ──PIN──▶ DELIVERED
+                          (puede soltarlo antes de recoger)                          └─ no se pudo entregar → FAILED
+```
+
+- **Dinero:** el domiciliario paga los productos al comercio al recogerlos y cobra el total al cliente. Su ganancia es la tarifa. La plataforma no registra esos pagos ni cobra comisión todavía.
+- **Tarifa:** base más valor por kilómetro, redondeado a $100. La distancia es **en línea recta**.
+- **Quién ve pedidos:** cuenta activa, documentos vigentes, conectado, posición de menos de 2 minutos y comercio a 5 km o menos. En bicicleta, el recorrido total no pasa de 4 km. Un pedido a la vez.
+- **Privacidad:** antes de tomar el pedido no se muestran datos del cliente; al terminar dejan de mostrarse. Solo se guarda la última posición y se borra al desconectarse.
+- La web no comparte la ubicación en segundo plano: la pantalla debe seguir abierta.
+- Un pedido `FAILED`, o uno recogido cuyo domiciliario deje de responder, **se resuelve manualmente**: no hay pantalla de soporte.
+- Los mapas usan las teselas públicas de OpenStreetMap, aptas para desarrollo y poco tráfico.
+
 ## Avisos en vivo
 
 WebSocket en `/ws/v1/events`. El primer mensaje es `{"type":"auth","token":"<token de acceso>"}`; el servidor responde `ready` y luego envía `{"type":"order.updated","orderId":"…"}` a quienes participan. Los datos se consultan por la API. Las conexiones viven en memoria (una sola instancia).
@@ -150,7 +172,8 @@ WebSocket en `/ws/v1/events`. El primer mensaje es `{"type":"auth","token":"<tok
 - Verificación del celular por SMS o WhatsApp (requiere proveedor).
 - Verificación documental y facial de quienes prestan servicios.
 - Fotografías de productos, horarios, promociones, reportes y búsqueda por cercanía o precio.
-- Repartidores de BarboYa, chat y calificaciones.
+- Chat, calificaciones, orden de ofertas por reputación y seguimiento en segundo plano.
+- Resolución de entregas fallidas y registro del efectivo.
 - Límite de peticiones y avisos en vivo compartidos entre instancias (hoy en memoria).
 - Migración de las cuentas existentes en FastAPI.
 - Imagen Docker y despliegue.

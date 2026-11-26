@@ -58,6 +58,11 @@ public class BusinessService {
             throw new ApiException(HttpStatus.BAD_REQUEST, "LOCATION_REQUIRED",
                     "Marca la ubicacion del comercio para usar domiciliarios");
         }
+        String phone = Contacts.phone(request.phone());
+        if (!phone.matches("^\\+\\d{10,15}$")) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "INVALID_PHONE",
+                    "Escribe el telefono con sus 10 digitos");
+        }
         Business business = businesses.findByOwnerId(ownerId)
                 .orElseGet(() -> Business.create(ownerId, clock.instant()));
         business.setName(request.name().trim());
@@ -66,7 +71,7 @@ public class BusinessService {
         business.setCategory(request.category());
         business.setDescription(blankToNull(request.description()));
         business.setAddress(request.address().trim());
-        business.setPhone(Contacts.phone(request.phone()));
+        business.setPhone(phone);
         business.setPickupEnabled(request.pickupEnabled());
         business.setDeliveryEnabled(request.deliveryEnabled());
         business.setDeliveryFeeCop(request.deliveryEnabled() ? request.deliveryFeeCop() : 0);
