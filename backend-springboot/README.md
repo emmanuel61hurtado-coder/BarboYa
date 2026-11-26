@@ -2,7 +2,7 @@
 
 Backend en Java 21 y Spring Boot 3.3 que reemplazará al de FastAPI. Hoy cubre **identidad y administración de cuentas**; los demás módulos siguen en `../backend`.
 
-**No reemplaza todavía al backend publicado** y el frontend aún no lo consume.
+**No reemplaza todavía al backend publicado.** El frontend lo usa solo en el modo `v1` (ver [Interfaz](#interfaz)).
 
 ## Arrancar en desarrollo
 
@@ -24,11 +24,30 @@ mvn spring-boot:run
 
 Flyway crea las tablas al arrancar. En PowerShell las variables se definen con `$env:DB_PASSWORD = '...'`.
 
+## Interfaz
+
+Con la API en marcha (perfil `dev`), en otra terminal (requiere Node 20 o superior):
+
+```bash
+cd ../frontend
+npm ci
+npm run dev:v1        # http://localhost:3000
+```
+
+Vite reenvía `/api/v1` a `http://localhost:8081` (otro destino: variable `BARBOYA_API_V1`). Incluye registro, ingreso, recuperación de contraseña, seguridad de la cuenta y administración.
+
+- Para entrar a la administración, arranca la API la primera vez con las variables `BOOTSTRAP_ADMIN_*`.
+- Para los códigos por correo, configura las variables SMTP.
+- `npm run dev` y `npm run build` siguen generando la aplicación actual, conectada a FastAPI.
+- `npm run build:v1` compila esta interfaz en `dist-v1/`. El servidor que la publique debe devolver `index.html` en cualquier ruta y enviar `/api/v1` a esta API desde el mismo sitio.
+
 ## Pruebas
 
 ```bash
 mvn test
 ```
+
+En `frontend/`: `npm test`.
 
 Levantan un PostgreSQL 16 propio y temporal; no necesitan Docker ni tocan tu base. La primera ejecución descarga sus binarios.
 
