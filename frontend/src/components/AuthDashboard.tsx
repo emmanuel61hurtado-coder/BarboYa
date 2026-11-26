@@ -41,7 +41,7 @@ const ROLE_DATA: Record<SelectableRole, {
     benefits: [
       'Negocia tarifas justas sin cobros ocultos ni dinámicas abusivas',
       'Pide en tus restaurantes favoritos de Barbosa con tracking real',
-      'Botón táctico de SOS conectado a la red local 24/7'
+      'Botón SOS con registro de alertas y llamada al 123'
     ]
   },
   driver: {
@@ -395,8 +395,8 @@ export const AuthDashboard: React.FC<AuthDashboardProps> = ({
               </div>
             )}
 
-            {/* Quick Demo Credentials Pill (For instant tester review) */}
-            {mode === 'login' && (
+            {/* Accesos de demostración: solo en desarrollo, no entran en el build publicado */}
+            {import.meta.env.DEV && mode === 'login' && (
               <div className="p-3.5 rounded-2xl bg-indigo-950/30 border border-indigo-500/20 space-y-2">
                 <div className="flex items-center justify-between text-xs text-indigo-300 font-bold">
                   <span className="flex items-center space-x-1">

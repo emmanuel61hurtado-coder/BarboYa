@@ -1,7 +1,7 @@
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone
 
-from sqlalchemy import Boolean, DateTime, Enum, ForeignKey, Integer, String, Text, func
+from sqlalchemy import Boolean, DateTime, Enum, ForeignKey, Integer, SmallInteger, String, Text, func
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.core.database import Base
@@ -42,6 +42,22 @@ class Trip(Base):
     requested_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
     accepted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     completed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+
+
+class TripOffer(Base):
+    """Precio propuesto por un conductor. El cliente solo puede aceptar uno vigente."""
+
+    __tablename__ = "trip_offers"
+
+    id: Mapped[uuid.UUID] = mapped_column(GUID(), primary_key=True, default=uuid.uuid4)
+    trip_id: Mapped[uuid.UUID] = mapped_column(GUID(), ForeignKey("trips.id", ondelete="CASCADE"), index=True)
+    driver_id: Mapped[uuid.UUID] = mapped_column(GUID(), ForeignKey("driver_profiles.user_id"))
+    amount_cop: Mapped[int] = mapped_column(Integer)
+    eta_minutes: Mapped[int | None] = mapped_column(SmallInteger)
+    status: Mapped[str] = mapped_column(Text, default="pending")
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), server_default=func.now()
+    )
 
 
 class SecurityLog(Base):

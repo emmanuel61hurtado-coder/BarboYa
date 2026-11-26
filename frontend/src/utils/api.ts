@@ -395,6 +395,14 @@ class ApiService {
     })
   }
 
+  // ──────────────────────── SEGURIDAD ────────────────────────
+  async triggerSos(position?: { lat: number; lng: number }): Promise<{ alert_id: string; message: string }> {
+    return this.request('/security/sos', {
+      method: 'POST',
+      body: JSON.stringify({ ...position }),
+    })
+  }
+
   // ──────────────────────── ADMINISTRACIÓN ────────────────────────
   async getAdminStats(): Promise<any> {
     return this.request('/admin/dashboard/stats')

@@ -17,6 +17,7 @@ barboya/
 ## Arrancar el backend
 
 ```bash
+export JWT_SECRET=$(openssl rand -hex 32)   # obligatorio, mínimo 32 caracteres
 docker compose up --build        # PostGIS, Redis, API y React en :8000
 # Sin Docker: construir React y luego iniciar FastAPI
 cd frontend

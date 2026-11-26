@@ -3,7 +3,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import func
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.database import get_session
+from app.core.database import get_session, is_using_sqlite
 from app.core.security import CurrentUser, get_current_user
 from app.models.enums import SecurityEventType
 from app.models.trip import SecurityLog
@@ -27,7 +27,10 @@ async def trigger_sos(
 ):
     location = None
     if data.lat is not None and data.lng is not None:
-        location = func.ST_SetSRID(func.ST_MakePoint(data.lng, data.lat), 4326)
+        if is_using_sqlite():  # sin PostGIS se guarda como texto WKT
+            location = f"POINT({data.lng} {data.lat})"
+        else:
+            location = func.ST_SetSRID(func.ST_MakePoint(data.lng, data.lat), 4326)
 
     log_entry = SecurityLog(
         user_id=user.id,
@@ -39,4 +42,4 @@ async def trigger_sos(
     )
     session.add(log_entry)
     await session.commit()
-    return {"status": "recorded", "alert_id": str(log_entry.id), "message": "Alerta SOS registrada. Soporte y contactos notificados."}
+    return {"status": "recorded", "alert_id": str(log_entry.id), "message": "Alerta registrada en BarboYa. No se avisa a nadie automáticamente: llama al 123."}

@@ -1,8 +1,14 @@
+import logging
+import secrets
 from functools import lru_cache
 from urllib.parse import quote_plus
 
 from pydantic import model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+# Valores públicos (código y ejemplos): quien los conozca podría firmar tokens
+PLACEHOLDER_SECRETS = {"", "CAMBIAR-EN-PRODUCCION", "cambia-esto-por-un-secreto-largo-y-aleatorio"}
+MIN_SECRET_LENGTH = 32
 
 
 class Settings(BaseSettings):
@@ -33,6 +39,9 @@ class Settings(BaseSettings):
     jwt_audience: str = "barboya-api"
 
     cors_origins: list[str] = ["*"]
+
+    # Firma HMAC de los webhooks de pago. Vacío = el webhook rechaza todo.
+    webhook_secret: str = ""
 
     # Tarifas de suscripción (COP)
     price_daily_cop: int = 3_000
@@ -70,15 +79,33 @@ class Settings(BaseSettings):
     indexer_interval_seconds: float = 15.0
 
     @model_validator(mode="after")
+    def _require_safe_jwt_secret(self) -> "Settings":
+        """Fuera de desarrollo exige un secreto propio; en desarrollo genera uno efímero."""
+        import os
+
+        secret = self.jwt_secret
+        if secret in PLACEHOLDER_SECRETS:
+            secret = os.getenv("SECRET_KEY") or os.getenv("JWT_SECRET") or ""
+        is_placeholder = secret in PLACEHOLDER_SECRETS
+
+        if self.environment.lower() != "development":
+            if is_placeholder or len(secret) < MIN_SECRET_LENGTH:
+                raise ValueError(
+                    f"Define JWT_SECRET con un valor propio de al menos {MIN_SECRET_LENGTH} caracteres"
+                )
+        elif is_placeholder:
+            secret = secrets.token_urlsafe(48)
+            logging.getLogger("barboya").warning(
+                "JWT_SECRET sin definir: se usa uno temporal y las sesiones se cierran al reiniciar"
+            )
+        self.jwt_secret = secret
+        return self
+
+    @model_validator(mode="after")
     def _build_database_url(self) -> "Settings":
         """Si no viene DATABASE_URL, se arma con las variables POSTGRES_*."""
         import os
         import json
-
-        if self.jwt_secret == "CAMBIAR-EN-PRODUCCION":
-            sec = os.getenv("SECRET_KEY") or os.getenv("JWT_SECRET")
-            if sec:
-                self.jwt_secret = sec
 
         if self.cors_origins == ["*"]:
             allowed = os.getenv("ALLOWED_ORIGINS") or os.getenv("CORS_ORIGINS")

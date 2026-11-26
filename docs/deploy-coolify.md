@@ -42,7 +42,8 @@ En **Environment Variables** define:
 
 | Variable | Obligatoria | Ejemplo |
 |---|---|---|
-| `JWT_SECRET` | **Sí** | secreto aleatorio de 64+ caracteres |
+| `JWT_SECRET` | **Sí** | secreto aleatorio de 64+ caracteres (mínimo 32) |
+| `WEBHOOK_SECRET` | Opcional | secreto para firmar webhooks de pago; sin él se rechazan |
 | `POSTGRES_PASSWORD` | **Sí** | contraseña aleatoria y única |
 | `DATABASE_URL` | Opcional | `postgresql+asyncpg://barboya:UnaClaveLargaYUnica@db:5432/barboya` |
 | `POSTGRES_USER` / `POSTGRES_DB` | Opcional | `barboya` (por defecto) |
@@ -70,7 +71,9 @@ En **Environment Variables** define:
   el puerto interno `8000` sin publicar un puerto del host.
 - `docker-compose.yml` ya fija `USE_SQLITE=false` (PostgreSQL + PostGIS).
 - `JWT_SECRET` no tiene valor por defecto: si falta, el despliegue se detiene con
-  un mensaje explícito en lugar de arrancar con un secreto inseguro.
+  un mensaje explícito en lugar de arrancar con un secreto inseguro. Fuera de
+  `ENVIRONMENT=development`, la API tampoco arranca si tiene menos de 32
+  caracteres o es uno de los valores de ejemplo.
 - **Pagos cripto**: el método queda inactivo salvo que definas
   `PAYMENT_TOKEN_ADDRESS` + `TREASURY_ADDRESS` (+ `CHAIN_RPC_URL` para nodo real;
   sin él se usa la cadena simulada, solo para desarrollo). En producción usa

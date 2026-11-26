@@ -48,6 +48,7 @@ services:
       REDIS_URL: ${REDIS_URL:-redis://redis:6379/0}
       USE_SQLITE: "false"
       JWT_SECRET: "${JWT_SECRET:?Define JWT_SECRET en las variables de entorno de Coolify}"
+      WEBHOOK_SECRET: ${WEBHOOK_SECRET:-}
       CORS_ORIGINS: '${CORS_ORIGINS:-${ALLOWED_ORIGINS:-["*"]}}'
       # Pagos blockchain (EVM). Ver docs/blockchain-payments.md
       CHAIN_RPC_URL: ${CHAIN_RPC_URL:-}

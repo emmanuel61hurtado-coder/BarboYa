@@ -1,15 +1,17 @@
 import secrets
+from datetime import datetime, timedelta, timezone
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from geoalchemy2.shape import to_shape
-from sqlalchemy import func, select
+from sqlalchemy import func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.config import get_settings
 from app.core.database import get_session
 from app.core.security import CurrentUser, require_role
 from app.models.enums import TripStatus
-from app.models.trip import Trip
+from app.models.trip import Trip, TripOffer
 from app.models.user import DriverProfile, User
 from app.schemas.schemas import (
     AcceptOfferIn,
@@ -28,10 +30,18 @@ from app.websockets.manager import manager
 router = APIRouter(prefix="/trips", tags=["trips"])
 
 NEARBY_RADIUS_M = 3_000
+settings = get_settings()
 
 
 def _point(lat: float, lng: float):
     return func.ST_SetSRID(func.ST_MakePoint(lng, lat), 4326)
+
+
+def _offer_expired(offer: TripOffer) -> bool:
+    created = offer.created_at
+    if created.tzinfo is None:  # SQLite devuelve la fecha UTC sin zona
+        created = created.replace(tzinfo=timezone.utc)
+    return datetime.now(timezone.utc) - created > timedelta(seconds=settings.offer_ttl_seconds)
 
 
 @router.post("/quote", response_model=FareQuoteOut)
@@ -125,6 +135,15 @@ async def driver_offer(
         raise HTTPException(status.HTTP_402_PAYMENT_REQUIRED, {"code": elig.code, "message": elig.reason})
 
     trip.status = TripStatus.negotiating
+    # Cada conductor tiene como máximo una oferta vigente por viaje
+    await session.execute(
+        update(TripOffer)
+        .where(TripOffer.trip_id == trip.id, TripOffer.driver_id == user.id, TripOffer.status == "pending")
+        .values(status="withdrawn")
+    )
+    session.add(
+        TripOffer(trip_id=trip.id, driver_id=user.id, amount_cop=data.amount_cop, eta_minutes=data.eta_minutes)
+    )
     profile_user = await session.get(User, user.id)
     await session.commit()
 
@@ -173,11 +192,34 @@ async def customer_accepts_offer(
     trip = await session.get(Trip, trip_id)
     if trip is None or trip.customer_id != user.id:
         raise HTTPException(404, "Viaje no encontrado")
+    offer = (
+        await session.execute(
+            select(TripOffer)
+            .where(
+                TripOffer.trip_id == trip_id,
+                TripOffer.driver_id == data.driver_id,
+                TripOffer.status == "pending",
+            )
+            .order_by(TripOffer.created_at.desc())
+            .limit(1)
+        )
+    ).scalar_one_or_none()
+    if offer is None or offer.amount_cop != data.amount_cop or _offer_expired(offer):
+        raise HTTPException(
+            status.HTTP_409_CONFLICT,
+            {"code": "OFFER_NOT_FOUND", "message": "La oferta no existe, cambió o venció"},
+        )
     try:
-        trip = await billing.accept_trip(session, trip_id, data.driver_id, data.amount_cop)
+        trip = await billing.accept_trip(session, trip_id, offer.driver_id, offer.amount_cop)
     except billing.BillingError as e:
         await session.rollback()
         raise HTTPException(status.HTTP_409_CONFLICT, {"code": e.code, "message": e.message})
+    offer.status = "accepted"
+    await session.execute(
+        update(TripOffer)
+        .where(TripOffer.trip_id == trip_id, TripOffer.id != offer.id, TripOffer.status == "pending")
+        .values(status="rejected")
+    )
     await session.commit()
     await manager.notify_accepted(
         trip.id, trip.customer_id, data.driver_id, {"agreed_fare_cop": trip.agreed_fare_cop}
@@ -214,8 +256,6 @@ async def verify_pin(
     user: CurrentUser = Depends(require_role("driver")),
     session: AsyncSession = Depends(get_session),
 ):
-    from datetime import datetime, timezone
-
     trip = await session.get(Trip, trip_id)
     if trip is None or trip.driver_id != user.id:
         raise HTTPException(404, "Viaje no encontrado")

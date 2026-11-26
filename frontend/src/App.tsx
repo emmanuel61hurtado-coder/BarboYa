@@ -74,7 +74,6 @@ export default function App() {
 
   const handleTriggerSOS = () => {
     setSosOpen(true)
-    setSosBannerActive(true)
   }
 
   const handleOpenAuth = (role: UserRole = 'customer') => {
@@ -188,6 +187,7 @@ export default function App() {
           isOpen={sosOpen}
           onClose={() => setSosOpen(false)}
           onShowToast={showToast}
+          onAlertRecorded={() => setSosBannerActive(true)}
         />
 
         {/* Footer */}
@@ -223,13 +223,16 @@ export default function App() {
         <div className="bg-gradient-to-r from-red-600 via-rose-600 to-red-700 text-white px-4 py-2 flex items-center justify-between text-xs font-mono font-bold shadow-rose-glow animate-pulse z-40">
           <div className="flex items-center space-x-2">
             <ShieldAlert className="w-4 h-4 animate-bounce" />
-            <span>ALERTA TÁCTICA ACTIVA: Red de emergencia de Barbosa enlazada. Coordenadas transmitidas.</span>
+            <span>
+              Alerta SOS registrada en BarboYa. No se avisa a nadie automáticamente:{' '}
+              <a href="tel:123" className="underline">llama al 123</a>.
+            </span>
           </div>
           <button
             onClick={() => setSosBannerActive(false)}
             className="underline hover:text-slate-200 text-[11px] cursor-pointer"
           >
-            Desactivar Banner
+            Ocultar aviso
           </button>
         </div>
       )}
@@ -526,6 +529,7 @@ export default function App() {
         isOpen={sosOpen}
         onClose={() => setSosOpen(false)}
         onShowToast={showToast}
+        onAlertRecorded={() => setSosBannerActive(true)}
       />
 
       {/* Modern Responsive Footer */}

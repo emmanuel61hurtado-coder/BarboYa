@@ -41,13 +41,14 @@ def test_sos_requires_auth():
     assert response.status_code == 401
 
 
-def test_webhook_signature_verification():
+def test_webhook_signature_verification(monkeypatch):
     import hmac
     import hashlib
     from app.core.config import get_settings
     settings = get_settings()
+    monkeypatch.setattr(settings, "webhook_secret", "secreto-solo-para-pruebas-del-webhook")
     body = b'{"event": "transaction.updated"}'
-    sig = hmac.new(settings.jwt_secret.encode(), body, hashlib.sha256).hexdigest()
+    sig = hmac.new(settings.webhook_secret.encode(), body, hashlib.sha256).hexdigest()
     response = client.post("/webhooks/payments", content=body, headers={"x-signature": sig})
     assert response.status_code == 200
     assert response.json() == {"received": True, "event": "transaction.updated"}

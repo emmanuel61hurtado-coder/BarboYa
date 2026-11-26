@@ -47,7 +47,8 @@ services:
       POSTGRES_DB: ${POSTGRES_DB:-barboya}
       REDIS_URL: ${REDIS_URL:-redis://redis:6379/0}
       USE_SQLITE: "false"
-      JWT_SECRET: "${JWT_SECRET:-${SECRET_KEY:-CAMBIAR-EN-PRODUCCION}}"
+      JWT_SECRET: "${JWT_SECRET:?Define JWT_SECRET (minimo 32 caracteres) antes de levantar el stack}"
+      WEBHOOK_SECRET: ${WEBHOOK_SECRET:-}
       CORS_ORIGINS: '${CORS_ORIGINS:-${ALLOWED_ORIGINS:-["*"]}}'
       # Pagos blockchain (EVM). Ver docs/blockchain-payments.md
       CHAIN_RPC_URL: ${CHAIN_RPC_URL:-}

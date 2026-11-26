@@ -10,9 +10,6 @@ build/
 # Dependencias y artefactos compilados
 node_modules/
 target/
-# Base de datos local H2 (backend Spring Boot)
-*.mv.db
-*.trace.db
 # Claves privadas de wallets (tesorería blockchain) — jamás al repositorio
 *.key
 treasury*
