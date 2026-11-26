@@ -5,7 +5,7 @@ Fecha: 26 de noviembre de 2026. Base revisada: commit `f1d19c5`. Incluye las cor
 ## 1. Resumen
 
 - BarboYa **no está listo para operar con usuarios ni dinero reales**.
-- El backend en uso es FastAPI (Python). El backend exigido, Spring Boot, existe como esqueleto inicial con fallos graves de acceso.
+- El backend en uso es FastAPI (Python). En Spring Boot, el exigido, ya funcionan la identidad y la administración de cuentas con pruebas; los demás módulos faltan.
 - En el panel de comercios, el panel de administración, comida, viajes y envíos, los componentes de React no llaman a la API.
 - No hay contratos inteligentes: no existe código Solidity, Hardhat ni Web3j.
 
@@ -14,7 +14,7 @@ Fecha: 26 de noviembre de 2026. Base revisada: commit `f1d19c5`. Incluye las cor
 | Carpeta | Contenido | Decisión propuesta |
 |---|---|---|
 | `backend/` | FastAPI, SQLAlchemy, pagos cripto con JSON-RPC | Mantener como referencia hasta que Spring Boot lo iguale |
-| `backend-springboot/` | Spring Boot 3.3.5, Java 21, entidades y controladores básicos | Reutilizar la base y reorganizar por módulos |
+| `backend-springboot/` | Spring Boot 3.3.5 y Java 21: módulos nuevos de identidad y administración, más el esqueleto anterior desconectado | Reescribir cada módulo y retirar el esqueleto |
 | `frontend/` | React 18, TypeScript, Vite, Tailwind, Leaflet | Reutilizar el diseño y conectar a la API |
 | `database/` | Esquema PostgreSQL con PostGIS | Convertir en migraciones Flyway |
 | `mobile/` | App Flutter | Fuera del stack pedido; decidir si se conserva |
@@ -26,7 +26,8 @@ Fecha: 26 de noviembre de 2026. Base revisada: commit `f1d19c5`. Incluye las cor
 | Pruebas Python (suite completa) | 76 aprobadas en 4 corridas seguidas |
 | Prueba de punta a punta con la API real (SQLite) | Registro, ingreso, SOS, webhook y recuperación responden como se espera; en producción sin `JWT_SECRET` no arranca |
 | TypeScript (`tsc --noEmit`) y build de Vite | Correctos. La interfaz no se probó en un navegador |
-| Compilación de Spring Boot | Correcta; **0 pruebas** |
+| Pruebas de Spring Boot (PostgreSQL 16 real) | 85 aprobadas en 2 corridas |
+| `.jar` de Spring Boot con perfil `prod` | Arranca, aplica migraciones y responde por HTTP como se espera; sin `JWT_SECRET` no arranca |
 | `docker compose` | No ejecutado: Docker no está instalado |
 | `ruff check` (paso del CI) | No ejecutado: Ruff no está instalado ni figura en `requirements.txt`, así que ese paso del CI debería fallar |
 | `npm audit` | 1 vulnerabilidad alta y 1 moderada (Vite y esbuild) |
@@ -52,27 +53,31 @@ Las pruebas de Python se ejecutaron en una copia temporal del código, sin el ar
 
 La aplicación Flutter permite contraofertar y aceptar de inmediato el nuevo valor. Con la corrección, el conductor debe enviar primero una oferta por ese valor.
 
-### 4.2. Spring Boot (no debe desplegarse)
+### 4.2. Esqueleto anterior de Spring Boot
 
-| Gravedad | Hallazgo | Evidencia |
+Estos fallos pertenecen al código de `com.barboya.barboya`, que desde la Fase 1 **ya no se carga**: sus rutas responden `401` o `403` (probado).
+
+| Gravedad | Hallazgo | Evidencia original |
 |---|---|---|
-| Crítica | El registro público permite elegir el rol `admin` | Probado en servidor local |
-| Crítica | Un cliente accede a rutas `/admin/**` | Probado en servidor local |
-| Crítica | Un pago cripto inventado queda `confirmed` sin verificar la cadena | Probado en servidor local |
-| Crítica | La respuesta del registro expone el hash de la contraseña | Probado en servidor local |
-| Crítica | Las rutas para aprobar recargas no comprueban el rol | Lectura de código |
-| Crítica | Cualquier usuario autenticado puede consultar, aceptar, completar o cancelar viajes ajenos | Lectura de código |
-| Alta | El enlace público de seguimiento devuelve la entidad completa del viaje, con PIN y usuarios | Lectura de código |
+| Crítica | El registro público permitía elegir el rol `admin` | Probado en servidor local |
+| Crítica | Un cliente accedía a rutas `/admin/**` | Probado en servidor local |
+| Crítica | Un pago cripto inventado quedaba `confirmed` sin verificar la cadena | Probado en servidor local |
+| Crítica | La respuesta del registro exponía el hash de la contraseña | Probado en servidor local |
+| Crítica | Las rutas para aprobar recargas no comprobaban el rol | Lectura de código |
+| Crítica | Cualquier usuario podía consultar, aceptar, completar o cancelar viajes ajenos | Lectura de código |
+| Alta | El enlace público de seguimiento devolvía el viaje completo, con PIN y usuarios | Lectura de código |
 | Alta | WebSocket sin autenticación, CORS abierto y secreto JWT por defecto | Lectura de código |
+
+Cada módulo reescrito debe cubrir su fallo con una prueba antes de activarse.
 
 ## 5. Brechas funcionales
 
 - **Interfaz sin conexión:** la recarga Nequi/Daviplata solo cambia el saldo en pantalla.
 - **SOS:** la alerta queda guardada, pero nadie la atiende: falta notificar a soporte y contactos, y mostrarla en el panel de administración.
 - **Incompatibilidad:** el frontend espera campos como `access_token` y rutas que Spring Boot no tiene (usa `accessToken`). Hoy no pueden funcionar juntos.
-- **Spring Boot:** los pedidos son un marcador vacío; faltan Flyway, Actuator, correo, OpenAPI y Web3j; usa H2 y `ddl-auto: update`.
+- **Spring Boot:** faltan comercios, pedidos, viajes, pagos, tiempo real y Web3j.
 - **Frontend:** faltan React Router, TanStack Query, React Hook Form, Zod, Axios y shadcn/ui.
-- **Sin implementar:** OTP, MFA, refresh tokens, libro contable de doble partida, proveedor de pagos, liquidaciones, contratos inteligentes y reputación.
+- **Sin implementar:** MFA, verificación por SMS, libro contable de doble partida, proveedor de pagos, liquidaciones, contratos inteligentes y reputación.
 
 ## 6. Repositorio
 
@@ -87,7 +92,7 @@ Cada fase termina cuando sus pruebas pasan.
 | Fase | Alcance | Criterio de salida |
 |---|---|---|
 | 0. Contención (hecha; despliegue sin verificar) | Recuperación de contraseña, secretos, oferta de viajes, webhook, accesos de demostración, SOS y limpieza de Git | Sin hallazgos críticos abiertos en el backend en uso |
-| 1. Base Spring Boot | Módulos, Flyway, PostgreSQL, roles, JWT con refresh tokens, OTP y recuperación, OpenAPI, Actuator, CI | Pruebas de autorización por cada rol |
+| 1. Base Spring Boot (identidad hecha) | Hecho: módulos, Flyway, roles, sesiones con refresco, códigos por correo, auditoría, OpenAPI, Actuator, CI. Falta: MFA y SMS | Pruebas de autorización por cada rol (cumplido) |
 | 2. Base React | Router, TanStack Query, formularios con Zod, shadcn/ui, autenticación conectada | Registro e ingreso funcionan de extremo a extremo |
 | 3. Comercio y pedidos | Comercios, productos, inventario, pedidos, PIN de entrega, tiempo real | Pedido completo probado entre cliente y comercio |
 | 4. Domiciliarios | Verificación, documentos, ubicación, asignación | Entrega completa con evidencia |
