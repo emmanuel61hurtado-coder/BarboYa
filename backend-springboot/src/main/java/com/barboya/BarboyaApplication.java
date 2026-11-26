@@ -18,16 +18,22 @@ import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
                 "com.barboya.admin",
                 "com.barboya.audit",
                 "com.barboya.auth",
+                "com.barboya.businesses",
                 "com.barboya.common",
                 "com.barboya.config",
                 "com.barboya.notifications",
+                "com.barboya.orders",
+                "com.barboya.products",
+                "com.barboya.realtime",
                 "com.barboya.security",
                 "com.barboya.users"
         },
         exclude = UserDetailsServiceAutoConfiguration.class)
 @ConfigurationPropertiesScan("com.barboya.config")
-@EntityScan({"com.barboya.audit", "com.barboya.auth", "com.barboya.users"})
-@EnableJpaRepositories({"com.barboya.audit", "com.barboya.auth", "com.barboya.users"})
+@EntityScan({"com.barboya.audit", "com.barboya.auth", "com.barboya.businesses", "com.barboya.orders",
+        "com.barboya.products", "com.barboya.users"})
+@EnableJpaRepositories({"com.barboya.audit", "com.barboya.auth", "com.barboya.businesses", "com.barboya.orders",
+        "com.barboya.products", "com.barboya.users"})
 public class BarboyaApplication {
 
     public static void main(String[] args) {

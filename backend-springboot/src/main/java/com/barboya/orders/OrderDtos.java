@@ -1,0 +1,68 @@
+package com.barboya.orders;
+
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotEmpty;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Pattern;
+import jakarta.validation.constraints.Size;
+
+import java.time.Instant;
+import java.util.List;
+import java.util.UUID;
+
+public final class OrderDtos {
+
+    private OrderDtos() {
+    }
+
+    public record LineRequest(@NotNull UUID productId, @NotNull @Min(1) @Max(50) Integer quantity) {
+    }
+
+    /** {@code expectedTotalCop} es el total que el cliente vio y acepto. */
+    public record PlaceOrderRequest(
+            @NotNull UUID businessId,
+            @NotEmpty @Size(max = 30) List<@Valid @NotNull LineRequest> items,
+            @NotNull CustomerOrder.Fulfillment fulfillment,
+            @Size(max = 200) String deliveryAddress,
+            @Size(max = 300) String notes,
+            @NotNull CustomerOrder.PaymentMethod paymentMethod,
+            @NotNull Integer expectedTotalCop) {
+    }
+
+    public record AcceptRequest(@NotNull @Min(1) @Max(240) Integer prepMinutes) {
+    }
+
+    public record ReasonRequest(@NotBlank @Size(min = 5, max = 300) String reason) {
+    }
+
+    public record DeliverRequest(@NotBlank @Pattern(regexp = "^\\d{4}$", message = "El PIN tiene 4 digitos") String pin) {
+    }
+
+    public record Line(UUID productId, String name, int unitPriceCop, int quantity, int lineTotalCop) {
+    }
+
+    public record Step(OrderStatus status, String note, Instant at) {
+    }
+
+    public record Contact(String name, String phone) {
+    }
+
+    /**
+     * {@code deliveryPin} solo viaja al cliente y {@code customer} solo al
+     * comercio, ambos mientras el pedido siga en curso.
+     */
+    public record OrderResponse(
+            UUID id, long number, OrderStatus status, CustomerOrder.Fulfillment fulfillment,
+            UUID businessId, String businessName, String businessPhone, String businessAddress,
+            Contact customer, String deliveryAddress, String notes, List<Line> items,
+            int subtotalCop, int deliveryFeeCop, int totalCop, CustomerOrder.PaymentMethod paymentMethod,
+            Integer prepMinutes, String statusReason, String deliveryPin, boolean pinLocked,
+            Instant createdAt, Instant deliveredAt, List<Step> history) {
+    }
+
+    public record OrderPage(List<OrderResponse> items, int page, int size, long total) {
+    }
+}

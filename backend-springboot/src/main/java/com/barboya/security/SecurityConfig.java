@@ -60,6 +60,10 @@ public class SecurityConfig {
                         .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
                         .requestMatchers("/error").permitAll()
                         .requestMatchers("/api/v1/admin/**").hasAnyRole("ADMIN", "SUPERADMIN")
+                        .requestMatchers("/api/v1/merchant/**").hasAnyRole("RESTAURANT", "STORE")
+                        .requestMatchers("/api/v1/orders/**").hasRole("CUSTOMER")
+                        // El WebSocket se autentica con su primer mensaje
+                        .requestMatchers(HttpMethod.GET, "/ws/v1/events").permitAll()
                         .requestMatchers("/api/v1/**").authenticated()
                         // Todo lo no declarado queda cerrado
                         .anyRequest().denyAll())
@@ -76,7 +80,7 @@ public class SecurityConfig {
         CorsConfiguration cors = new CorsConfiguration();
         cors.setAllowedOrigins(origins);
         cors.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE"));
-        cors.setAllowedHeaders(List.of("Authorization", "Content-Type"));
+        cors.setAllowedHeaders(List.of("Authorization", "Content-Type", "Idempotency-Key"));
         cors.setAllowCredentials(true);
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/api/**", cors);
