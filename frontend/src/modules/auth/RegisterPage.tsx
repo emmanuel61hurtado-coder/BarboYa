@@ -26,7 +26,7 @@ export function RegisterPage() {
       <ErrorAlert error={error} />
       <form onSubmit={submit} noValidate className="space-y-4">
         <SelectField label="Tipo de cuenta" error={errors.role?.message} {...form.register('role')}>
-          {registerSchema.innerType().shape.role.options.map((option) => (
+          {registerSchema.shape.role.options.map((option) => (
             <option key={option} value={option}>
               {ROLE_LABELS[option]}
             </option>

@@ -9,10 +9,10 @@
     "preview": "vite preview",
     "dev:v1": "vite --mode v1",
     "build:v1": "tsc && vite build --mode v1 --outDir dist-v1",
-    "test": "vitest run"
+    "test": "node scripts/test.mjs"
   },
   "dependencies": {
-    "@hookform/resolvers": "^3.10.0",
+    "@hookform/resolvers": "^5.9.2",
     "@radix-ui/react-label": "^2.1.17",
     "@radix-ui/react-slot": "^1.5.0",
     "@tanstack/react-query": "^5.108.4",
@@ -26,9 +26,9 @@
     "react-dom": "^18.3.1",
     "react-hook-form": "^7.92.0",
     "react-leaflet": "^4.2.1",
-    "react-router-dom": "^6.30.6",
+    "react-router-dom": "^7.18.7",
     "tailwind-merge": "^2.6.2",
-    "zod": "^3.25.76"
+    "zod": "^4.6.7"
   },
   "devDependencies": {
     "@types/react": "^18.3.5",
@@ -38,7 +38,7 @@
     "postcss": "^8.4.47",
     "tailwindcss": "^3.4.1",
     "typescript": "^5.5.3",
-    "vite": "^5.4.2",
-    "vitest": "^2.1.9"
+    "vite": "^6.4.6",
+    "vitest": "^4.1.12"
   }
 }
