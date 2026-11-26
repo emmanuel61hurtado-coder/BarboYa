@@ -31,6 +31,11 @@ const ACTION_LABELS: Record<string, string> = {
   PASSWORD_RESET: 'Contraseña restablecida',
   USER_STATUS_CHANGED: 'Cambio de estado de la cuenta',
   STAFF_CREATED: 'Cuenta interna creada',
+  DOCUMENT_UPLOADED: 'Documento subido',
+  DOCUMENT_DELETED: 'Documento eliminado',
+  DOCUMENT_VIEWED: 'Documento consultado por el equipo',
+  DOCUMENT_REVIEWED: 'Documento revisado',
+  VERIFICATION_REOPENED: 'Cuenta de vuelta a revisión',
 }
 
 export const actionLabel = (action: string) => ACTION_LABELS[action] ?? action

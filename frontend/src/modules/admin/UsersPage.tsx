@@ -14,6 +14,7 @@ import { Button } from '../../components/ui/button'
 import { Card, ErrorAlert, Pager } from '../../components/ui/surface'
 import { ROLE_LABELS, STATUS_LABELS, formatDate } from '../../utils/labels'
 import { CATEGORY_LABELS, formatCop } from '../../utils/commerce'
+import { CourierReview } from '../couriers/CourierReview'
 
 type Decision = 'ACTIVE' | 'SUSPENDED'
 
@@ -65,6 +66,7 @@ function UserRow({ user }: { user: User }) {
   const staff = user.role === 'ADMIN' || user.role === 'SUPERADMIN'
   const merchant = user.role === 'RESTAURANT' || user.role === 'STORE'
   const [reviewing, setReviewing] = useState(false)
+  const [documents, setDocuments] = useState(false)
   // El backend aplica estas mismas reglas; aquí solo se ocultan acciones imposibles
   const manageable = user.id !== actor.id && (!staff || actor.role === 'SUPERADMIN')
 
@@ -101,6 +103,12 @@ function UserRow({ user }: { user: User }) {
         </Button>
       )}
       {reviewing && <BusinessReview ownerId={user.id} />}
+      {user.role === 'COURIER' && (
+        <Button variant="link" size="inline" aria-expanded={documents} onClick={() => setDocuments(!documents)}>
+          {documents ? 'Ocultar documentos' : 'Ver documentos'}
+        </Button>
+      )}
+      {documents && <CourierReview userId={user.id} />}
       {decision && <DecisionForm user={user} decision={decision} onClose={() => setDecision(null)} />}
     </li>
   )

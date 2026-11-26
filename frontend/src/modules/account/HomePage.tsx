@@ -50,8 +50,13 @@ export function HomePage() {
             <Link to="/mi-comercio">Administrar mi comercio</Link>
           </Button>
         )}
+        {user.role === 'COURIER' && (
+          <Button asChild>
+            <Link to="/verificacion">Completar mi verificación</Link>
+          </Button>
+        )}
         <p className="text-sm text-slate-400">
-          Los domiciliarios de BarboYa, los viajes y los pagos en línea todavía no están disponibles.
+          Los pedidos para domiciliarios, los viajes y los pagos en línea todavía no están disponibles.
         </p>
       </Card>
     </>

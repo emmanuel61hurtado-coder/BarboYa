@@ -34,6 +34,7 @@ export function AppLayout() {
           { to: '/mi-comercio', label: 'Mi comercio' },
         ]
       : []),
+    ...(user.role === 'COURIER' ? [{ to: '/verificacion', label: 'Verificación' }] : []),
     { to: '/seguridad', label: 'Seguridad' },
     ...(staff
       ? [
