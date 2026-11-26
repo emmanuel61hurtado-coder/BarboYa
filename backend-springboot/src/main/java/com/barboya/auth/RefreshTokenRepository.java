@@ -15,4 +15,7 @@ public interface RefreshTokenRepository extends JpaRepository<RefreshToken, UUID
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("select t from RefreshToken t where t.tokenHash = :hash")
     Optional<RefreshToken> lockByHash(@Param("hash") String hash);
+
+    /** El token vigente que nacio de otro, si lo hay. */
+    Optional<RefreshToken> findByParentIdAndDiscardedAtIsNull(UUID parentId);
 }

@@ -54,6 +54,8 @@ barboya:
     audience: barboya-api
     access-token-ttl: 15m
     session-ttl: 30d
+    # Margen para repetir una renovacion cuya respuesta se perdio
+    refresh-retry-window: 20s
     max-failed-logins: 5
     lock-duration: 15m
     cookie-secure: true

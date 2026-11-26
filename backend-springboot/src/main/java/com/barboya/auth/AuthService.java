@@ -143,13 +143,19 @@ public class AuthService {
         return openSession(user, client);
     }
 
-    /** Cada token de refresco sirve una vez; reutilizarlo revela una copia y cierra la sesion. */
+    /**
+     * Cada token de refresco sirve una vez; reutilizarlo revela una copia y cierra
+     * la sesion. Unica excepcion: si la respuesta se perdio (recarga, corte de red),
+     * el mismo token puede repetirse durante unos segundos mientras su reemplazo
+     * siga sin usarse.
+     */
     @Transactional(noRollbackFor = ApiException.class)
     public Tokens refresh(String rawToken, ClientInfo client) {
         RefreshToken token = findToken(rawToken).orElseThrow(AuthService::invalidSession);
         AuthSession session = sessions.findById(token.getSessionId()).orElseThrow(AuthService::invalidSession);
         Instant now = clock.instant();
-        if (token.getUsedAt() != null) {
+        Optional<RefreshToken> unclaimed = unclaimedReplacement(token, now);
+        if (token.getDiscardedAt() != null || (token.getUsedAt() != null && unclaimed.isEmpty())) {
             session.revoke(now);
             audit.record(AuditAction.REFRESH_TOKEN_REUSED, null, session.getUserId(),
                     session.getId().toString(), client);
@@ -159,9 +165,22 @@ public class AuthService {
         if (!session.isActive(now) || user.isSuspended()) {
             throw invalidSession();
         }
-        token.markUsed(now);
+        if (token.getUsedAt() == null) {
+            token.markUsed(now);
+        } else {
+            unclaimed.ifPresent(replacement -> replacement.discard(now));
+        }
         session.touch(now);
-        return issue(user, session);
+        return issue(user, session, token.getId());
+    }
+
+    /** Reemplazo que nadie ha usado, solo si el original se gasto hace muy poco. */
+    private Optional<RefreshToken> unclaimedReplacement(RefreshToken token, Instant now) {
+        if (token.getUsedAt() == null || token.getUsedAt().plus(settings.refreshRetryWindow()).isBefore(now)) {
+            return Optional.empty();
+        }
+        return refreshTokens.findByParentIdAndDiscardedAtIsNull(token.getId())
+                .filter(replacement -> replacement.getUsedAt() == null);
     }
 
     @Transactional
@@ -202,14 +221,15 @@ public class AuthService {
         Instant now = clock.instant();
         AuthSession session = sessions.save(
                 new AuthSession(user.getId(), client, now, now.plus(settings.sessionTtl())));
-        return issue(user, session);
+        return issue(user, session, null);
     }
 
-    private Tokens issue(User user, AuthSession session) {
+    private Tokens issue(User user, AuthSession session, UUID parentTokenId) {
         byte[] bytes = new byte[32];
         RANDOM.nextBytes(bytes);
         String raw = Base64.getUrlEncoder().withoutPadding().encodeToString(bytes);
-        refreshTokens.save(new RefreshToken(session.getId(), SecretKeys.sha256(raw), clock.instant()));
+        refreshTokens.save(new RefreshToken(
+                session.getId(), parentTokenId, SecretKeys.sha256(raw), clock.instant()));
         return new Tokens(jwt.create(user.getId(), session.getId()), settings.accessTokenTtl().toSeconds(),
                 raw, session.getExpiresAt(), UserResponse.from(user));
     }

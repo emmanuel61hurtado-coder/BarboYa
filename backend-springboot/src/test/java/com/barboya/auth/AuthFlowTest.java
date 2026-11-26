@@ -126,18 +126,60 @@ class AuthFlowTest extends IntegrationTest {
         assertThat(statusOfMe(account(renewed))).isEqualTo(200);
     }
 
-    @Test
-    void reusingARefreshTokenClosesTheWholeSession() throws Exception {
-        var user = register(Role.CUSTOMER);
-        var renewed = account(refresh(user.refresh()));
-
-        assertThat(refresh(user.refresh()).getResponse().getStatus()).isEqualTo(401);
-
-        assertThat(refresh(renewed.refresh()).getResponse().getStatus()).isEqualTo(401);
-        assertThat(statusOfMe(renewed)).isEqualTo(401);
+    private void assertSessionClosed(Account user, Account latest) throws Exception {
+        assertThat(refresh(latest.refresh()).getResponse().getStatus()).isEqualTo(401);
+        assertThat(statusOfMe(latest)).isEqualTo(401);
         mvc.perform(get("/api/v1/auth/history")
                         .header("Authorization", account(login(user.email(), PASSWORD, "a")).bearer()))
                 .andExpect(jsonPath("$[?(@.action == 'REFRESH_TOKEN_REUSED')]").isNotEmpty());
+    }
+
+    @Test
+    void reusingAnOldRefreshTokenClosesTheWholeSession() throws Exception {
+        var user = register(Role.CUSTOMER);
+        var renewed = account(refresh(user.refresh()));
+
+        clock.advance(Duration.ofSeconds(21));
+        assertThat(refresh(user.refresh()).getResponse().getStatus()).isEqualTo(401);
+
+        assertSessionClosed(user, renewed);
+    }
+
+    /** Por ejemplo, recargar la pagina mientras se renovaba. */
+    @Test
+    void aLostRenewalResponseCanBeRetriedRightAway() throws Exception {
+        var user = register(Role.CUSTOMER);
+        refresh(user.refresh());
+
+        MvcResult retried = refresh(user.refresh());
+        MvcResult retriedAgain = refresh(user.refresh());
+
+        assertThat(retried.getResponse().getStatus()).isEqualTo(200);
+        assertThat(retriedAgain.getResponse().getStatus()).isEqualTo(200);
+        var next = account(refresh(account(retriedAgain).refresh()));
+        assertThat(statusOfMe(next)).isEqualTo(200);
+    }
+
+    @Test
+    void theRetryWindowDoesNotApplyOnceTheNewTokenWasUsed() throws Exception {
+        var user = register(Role.CUSTOMER);
+        var second = account(refresh(user.refresh()));
+        var third = account(refresh(second.refresh()));
+
+        assertThat(refresh(user.refresh()).getResponse().getStatus()).isEqualTo(401);
+
+        assertSessionClosed(user, third);
+    }
+
+    @Test
+    void aTokenReplacedByARetryRevealsASecondCopy() throws Exception {
+        var user = register(Role.CUSTOMER);
+        var discarded = account(refresh(user.refresh()));
+        var current = account(refresh(user.refresh()));
+
+        assertThat(refresh(discarded.refresh()).getResponse().getStatus()).isEqualTo(401);
+
+        assertSessionClosed(user, current);
     }
 
     @Test

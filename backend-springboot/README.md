@@ -67,6 +67,7 @@ Toda ruta no declarada queda cerrada.
 - El **token de acceso** (JWT, 15 minutos) va en `Authorization: Bearer`. Guárdalo en memoria, no en `localStorage`.
 - El **token de refresco** viaja en una cookie `HttpOnly`, `Secure` y `SameSite=Strict`, por lo que frontend y API deben compartir sitio. Dura como máximo 30 días desde el ingreso.
 - Cada token de refresco **sirve una sola vez**. Reutilizarlo cierra la sesión, así que el cliente debe evitar dos renovaciones simultáneas (por ejemplo, entre pestañas).
+- Excepción: si la respuesta de una renovación se pierde (recarga o corte de red), el mismo token puede repetirse durante 20 segundos mientras su reemplazo no se haya usado.
 - Cerrar una sesión o suspender una cuenta surte efecto de inmediato.
 
 ## Roles

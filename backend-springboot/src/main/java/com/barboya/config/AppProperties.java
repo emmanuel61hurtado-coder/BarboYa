@@ -15,6 +15,7 @@ public record AppProperties(Security security, Codes codes, Mail mail, Bootstrap
             String audience,
             Duration accessTokenTtl,
             Duration sessionTtl,
+            @DefaultValue("20s") Duration refreshRetryWindow,
             int maxFailedLogins,
             Duration lockDuration,
             @DefaultValue("true") boolean cookieSecure,

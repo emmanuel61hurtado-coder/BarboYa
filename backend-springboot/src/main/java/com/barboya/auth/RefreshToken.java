@@ -22,15 +22,22 @@ public class RefreshToken {
     private String tokenHash;
     private Instant createdAt;
     private Instant usedAt;
+    private UUID parentId;
+    private Instant discardedAt;
 
-    RefreshToken(UUID sessionId, String tokenHash, Instant now) {
+    RefreshToken(UUID sessionId, UUID parentId, String tokenHash, Instant now) {
         this.id = UUID.randomUUID();
         this.sessionId = sessionId;
+        this.parentId = parentId;
         this.tokenHash = tokenHash;
         this.createdAt = now;
     }
 
     void markUsed(Instant now) {
         usedAt = now;
+    }
+
+    void discard(Instant now) {
+        discardedAt = now;
     }
 }

@@ -25,7 +25,8 @@ class SecurityUnitTest {
 
     private static AppProperties properties(String secret) {
         return new AppProperties(
-                new AppProperties.Security(secret, "i", "a", Duration.ofMinutes(15), Duration.ofDays(1), 5,
+                new AppProperties.Security(secret, "i", "a", Duration.ofMinutes(15), Duration.ofDays(1),
+                        Duration.ofSeconds(20), 5,
                         Duration.ofMinutes(15), true, 20, List.of()),
                 null, new AppProperties.Mail(""), new AppProperties.BootstrapAdmin("", "", ""));
     }

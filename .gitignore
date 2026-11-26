@@ -13,3 +13,5 @@ target/
 # Claves privadas de wallets (tesorería blockchain) — jamás al repositorio
 *.key
 treasury*
+# Build de la interfaz v1 (el dist/ actual si se versiona)
+dist-v1/
