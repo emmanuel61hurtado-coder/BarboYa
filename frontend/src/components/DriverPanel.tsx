@@ -1,12 +1,27 @@
 import React, { useState } from 'react'
 import { 
   Car, Bike, DollarSign, Power, Navigation, 
-  Check, X, AlertCircle, Clock, ShieldCheck, TrendingUp, Wallet, ArrowUpRight
+  Check, X, AlertCircle, Clock, ShieldCheck, TrendingUp, Wallet, ArrowUpRight, Copy, ExternalLink, Loader2
 } from 'lucide-react'
 import { sound } from '../utils/sound'
+import { api } from '../utils/api'
 
 interface DriverPanelProps {
   onShowToast: (msg: string) => void
+}
+
+interface CryptoConfig {
+  chain_id: number
+  network: string
+  explorer_tx_url: string
+  token_symbol: string
+  token_address: string
+  token_decimals: number
+  treasury_address: string
+  cop_per_token: number
+  required_confirmations: number
+  min_cop: number
+  max_cop: number
 }
 
 export const DriverPanel: React.FC<DriverPanelProps> = ({ onShowToast }) => {
@@ -17,6 +32,14 @@ export const DriverPanel: React.FC<DriverPanelProps> = ({ onShowToast }) => {
   const [hasIncomingRequest, setHasIncomingRequest] = useState<boolean>(true)
   const [showTopupModal, setShowTopupModal] = useState<boolean>(false)
   const [topupAmount, setTopupAmount] = useState<number>(10000)
+
+  // Pago cripto (USDC en cadena EVM)
+  const [topupMethod, setTopupMethod] = useState<'fiat' | 'crypto'>('fiat')
+  const [cryptoConfig, setCryptoConfig] = useState<CryptoConfig | null>(null)
+  const [txHash, setTxHash] = useState<string>('')
+  const [payerAddress, setPayerAddress] = useState<string>('')
+  const [cryptoBusy, setCryptoBusy] = useState<boolean>(false)
+  const [cryptoStatus, setCryptoStatus] = useState<string | null>(null)
 
   const handleToggleOnline = () => {
     const next = !isOnline
@@ -50,6 +73,83 @@ export const DriverPanel: React.FC<DriverPanelProps> = ({ onShowToast }) => {
     setWalletBalance((prev) => prev + topupAmount)
     setShowTopupModal(false)
     onShowToast(`💰 Recarga aprobada. +$${topupAmount.toLocaleString('es-CO')} acreditados a tu bolsa.`)
+  }
+
+  // ────────── Pago cripto: la billetera firma, el indexador confirma solo ──────────
+  const copToUnits = (cop: number): number =>
+    Math.round((cop * 10 ** (cryptoConfig?.token_decimals ?? 6)) / (cryptoConfig?.cop_per_token ?? 4000))
+
+  const openCryptoTab = async () => {
+    setTopupMethod('crypto')
+    sound.tick()
+    if (!cryptoConfig) {
+      const cfg = await api.getCryptoConfig()
+      setCryptoConfig(cfg)
+      if (!cfg) {
+        onShowToast('⚠️ El pago cripto no está disponible por ahora.')
+      }
+    }
+  }
+
+  const handleCryptoTopup = async () => {
+    if (!cryptoConfig || cryptoBusy) return
+    if (!/^0x[0-9a-fA-F]{64}$/.test(txHash.trim())) {
+      onShowToast('⚠️ El hash de la transacción debe ser 0x… (64 caracteres).')
+      return
+    }
+    if (!/^0x[0-9a-fA-F]{40}$/.test(payerAddress.trim())) {
+      onShowToast('⚠️ La dirección de tu billetera debe ser 0x… (40 caracteres).')
+      return
+    }
+    setCryptoBusy(true)
+    setCryptoStatus(null)
+    try {
+      const units = copToUnits(topupAmount)
+      const payment = await api.registerCryptoPayment({
+        txHash: txHash.trim(),
+        payerAddress: payerAddress.trim(),
+        tokenAmountUnits: units,
+      })
+      sound.success()
+      onShowToast(`🦊 Pago reportado. El indexador lo confirmará solo (${cryptoConfig.required_confirmations} confirmaciones).`)
+
+      // Sigue el estado hasta que el indexador lo resuelva (o agota los intentos)
+      for (let i = 0; i < 20; i++) {
+        await new Promise((r) => setTimeout(r, 3000))
+        const st = await api.getCryptoPaymentStatus(payment.id)
+        setCryptoStatus(st.status)
+        if (st.status === 'confirmed') {
+          setWalletBalance((prev) => prev + st.amount_cop)
+          onShowToast(`✅ Recarga cripto confirmada: +$${st.amount_cop.toLocaleString('es-CO')} COP a tu bolsa.`)
+          setShowTopupModal(false)
+          setTxHash('')
+          setPayerAddress('')
+          setCryptoStatus(null)
+          return
+        }
+        if (st.status === 'failed') {
+          sound.tick()
+          onShowToast(`❌ El pago falló on-chain: ${st.failure_reason || 'transacción revertida'}.`)
+          return
+        }
+      }
+      onShowToast('⏳ Aún esperando confirmaciones; se acreditará automáticamente.')
+    } catch (err: any) {
+      sound.tick()
+      onShowToast(`❌ ${err?.message || 'No se pudo registrar el pago cripto.'}`)
+    } finally {
+      setCryptoBusy(false)
+    }
+  }
+
+  const copyTreasury = async () => {
+    if (!cryptoConfig) return
+    try {
+      await navigator.clipboard.writeText(cryptoConfig.treasury_address)
+      onShowToast('📋 Dirección de tesorería copiada.')
+    } catch {
+      onShowToast('⚠️ No se pudo copiar; hazlo manualmente.')
+    }
   }
 
   return (
@@ -221,7 +321,7 @@ export const DriverPanel: React.FC<DriverPanelProps> = ({ onShowToast }) => {
       {/* Quick Topup Modal */}
       {showTopupModal && (
         <div className="fixed inset-0 z-50 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="w-full max-w-sm glass-surface-elevated p-6 rounded-2xl border border-cyan-500/40 space-y-4 shadow-2xl">
+          <div className="w-full max-w-sm glass-surface-elevated p-6 rounded-2xl border border-cyan-500/40 space-y-4 shadow-2xl max-h-[90vh] overflow-y-auto">
             <div className="flex justify-between items-center border-b border-slate-800 pb-2">
               <h4 className="font-display font-bold text-base text-white">Recargar Bolsa Prepago</h4>
               <button onClick={() => setShowTopupModal(false)} className="text-slate-400 hover:text-white">✕</button>
@@ -230,6 +330,30 @@ export const DriverPanel: React.FC<DriverPanelProps> = ({ onShowToast }) => {
             <p className="text-xs text-slate-400">
               Recarga tu saldo para continuar aceptando viajes bajo el fee de $300 COP por carrera.
             </p>
+
+            {/* Método de pago */}
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                onClick={() => { setTopupMethod('fiat'); sound.tick() }}
+                className={`p-2 rounded-xl border text-xs font-bold transition ${
+                  topupMethod === 'fiat'
+                    ? 'bg-cyan-500/20 border-cyan-400 text-cyan-300'
+                    : 'bg-nexus-950 border-slate-800 text-slate-400'
+                }`}
+              >
+                💸 Nequi / Daviplata
+              </button>
+              <button
+                onClick={openCryptoTab}
+                className={`p-2 rounded-xl border text-xs font-bold transition ${
+                  topupMethod === 'crypto'
+                    ? 'bg-cyan-500/20 border-cyan-400 text-cyan-300'
+                    : 'bg-nexus-950 border-slate-800 text-slate-400'
+                }`}
+              >
+                🦊 Cripto {cryptoConfig ? `(${cryptoConfig.token_symbol})` : '(USDC)'}
+              </button>
+            </div>
 
             <div className="grid grid-cols-3 gap-2">
               {[5000, 10000, 25000].map((amt) => (
@@ -247,14 +371,99 @@ export const DriverPanel: React.FC<DriverPanelProps> = ({ onShowToast }) => {
               ))}
             </div>
 
-            <div className="space-y-2 pt-2">
-              <button
-                onClick={handleTopup}
-                className="w-full py-2.5 rounded-xl bg-gradient-to-r from-neon-emerald to-emerald-600 text-nexus-950 font-display font-bold text-xs shadow-emerald-glow transition"
-              >
-                Pagar con Nequi / Daviplata
-              </button>
-            </div>
+            {topupMethod === 'fiat' ? (
+              <div className="space-y-2 pt-2">
+                <button
+                  onClick={handleTopup}
+                  className="w-full py-2.5 rounded-xl bg-gradient-to-r from-neon-emerald to-emerald-600 text-nexus-950 font-display font-bold text-xs shadow-emerald-glow transition"
+                >
+                  Pagar con Nequi / Daviplata
+                </button>
+              </div>
+            ) : cryptoConfig ? (
+              <div className="space-y-3 pt-1">
+                {/* Equivalente en cripto */}
+                <div className="p-3 rounded-xl bg-nexus-950 border border-slate-800 space-y-1">
+                  <div className="flex justify-between text-[11px] font-mono text-slate-400">
+                    <span>Envía exactamente</span>
+                    <span className="text-cyan-300 font-bold">
+                      {(copToUnits(topupAmount) / 10 ** cryptoConfig.token_decimals).toFixed(2)}{' '}
+                      {cryptoConfig.token_symbol}
+                    </span>
+                  </div>
+                  <div className="flex justify-between text-[10px] font-mono text-slate-500">
+                    <span>Red: <strong className="text-slate-300">{cryptoConfig.network}</strong></span>
+                    <span>{cryptoConfig.cop_per_token.toLocaleString('es-CO')} COP / {cryptoConfig.token_symbol}</span>
+                  </div>
+                </div>
+
+                {/* Tesorería */}
+                <div>
+                  <label className="text-[10px] font-mono text-slate-400">1) ENVÍA A LA TESORERÍA DE BARBOYA</label>
+                  <div className="flex items-center space-x-1.5 mt-1">
+                    <code className="flex-1 text-[10px] font-mono bg-nexus-950 border border-slate-800 rounded-lg px-2 py-2 text-emerald-300 break-all">
+                      {cryptoConfig.treasury_address}
+                    </code>
+                    <button
+                      onClick={copyTreasury}
+                      className="p-2 rounded-lg bg-nexus-900 border border-slate-700 text-slate-300 hover:text-cyan-300 transition"
+                      title="Copiar dirección"
+                    >
+                      <Copy className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                  <div className="flex items-center space-x-1 mt-1 text-[10px] font-mono text-slate-500">
+                    <AlertCircle className="w-3 h-3 text-amber-400" />
+                    <span>Solo {cryptoConfig.network} · contrato {cryptoConfig.token_address.slice(0, 10)}…</span>
+                  </div>
+                </div>
+
+                {/* Datos del tx */}
+                <div className="space-y-2">
+                  <label className="text-[10px] font-mono text-slate-400">
+                    2) PEGA EL HASH DEL TX (0x…, 64 caracteres)
+                  </label>
+                  <input
+                    value={txHash}
+                    onChange={(e) => setTxHash(e.target.value)}
+                    placeholder="0x…"
+                    className="w-full text-[11px] font-mono bg-nexus-950 border border-slate-800 rounded-xl px-3 py-2 text-white placeholder-slate-600 focus:border-cyan-400 outline-none"
+                  />
+                  <label className="text-[10px] font-mono text-slate-400">
+                    3) DIRECCIÓN DE TU BILLETERA (la que envió)
+                  </label>
+                  <input
+                    value={payerAddress}
+                    onChange={(e) => setPayerAddress(e.target.value)}
+                    placeholder="0x…"
+                    className="w-full text-[11px] font-mono bg-nexus-950 border border-slate-800 rounded-xl px-3 py-2 text-white placeholder-slate-600 focus:border-cyan-400 outline-none"
+                  />
+                </div>
+
+                {cryptoStatus && (
+                  <div className="flex items-center space-x-2 text-[11px] font-mono text-cyan-300 bg-cyan-950/50 border border-cyan-500/30 rounded-lg px-3 py-2">
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    <span>Estado: {cryptoStatus} · esperando confirmaciones…</span>
+                  </div>
+                )}
+
+                <button
+                  onClick={handleCryptoTopup}
+                  disabled={cryptoBusy}
+                  className="w-full py-2.5 rounded-xl bg-gradient-to-r from-neon-emerald to-emerald-600 text-nexus-950 font-display font-bold text-xs shadow-emerald-glow transition disabled:opacity-50"
+                >
+                  {cryptoBusy ? 'Reportando pago…' : '🦊 Ya envié el pago, acreditar mi recarga'}
+                </button>
+                <p className="text-[10px] text-slate-500 font-mono">
+                  El indexador de Barboya verifica tu transacción en la cadena y acredita la bolsa
+                  automáticamente al alcanzar {cryptoConfig.required_confirmations} confirmaciones.
+                </p>
+              </div>
+            ) : (
+              <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/30 text-[11px] text-amber-200 font-mono">
+                Cargando configuración de la red… o el método no está disponible.
+              </div>
+            )}
           </div>
         </div>
       )}

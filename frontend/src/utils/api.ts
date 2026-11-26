@@ -291,6 +291,53 @@ class ApiService {
     })
   }
 
+  // ──────────────────────── PAGOS CRIPTO (blockchain EVM) ────────────────────────
+  /** Config para pagar desde la billetera: red, token y tesorería. */
+  async getCryptoConfig(): Promise<{
+    enabled: boolean
+    chain_id: number
+    network: string
+    explorer_tx_url: string
+    token_symbol: string
+    token_address: string
+    token_decimals: number
+    treasury_address: string
+    cop_per_token: number
+    required_confirmations: number
+    min_cop: number
+    max_cop: number
+  } | null> {
+    try {
+      return await this.request('/payments/crypto/config')
+    } catch {
+      return null // método inactivo o no configurado
+    }
+  }
+
+  /** Registra el intento de pago: el tx ya fue firmado y difundido por la billetera. */
+  async registerCryptoPayment(data: {
+    txHash: string
+    payerAddress: string
+    tokenAmountUnits: number
+  }): Promise<any> {
+    return this.request('/payments/crypto', {
+      method: 'POST',
+      body: JSON.stringify({
+        tx_hash: data.txHash,
+        payer_address: data.payerAddress,
+        token_amount_units: data.tokenAmountUnits,
+      }),
+    })
+  }
+
+  async getCryptoPayments(): Promise<any[]> {
+    return this.request('/payments/crypto')
+  }
+
+  async getCryptoPaymentStatus(paymentId: string): Promise<any> {
+    return this.request(`/payments/crypto/${paymentId}`)
+  }
+
   // ──────────────────────── COMERCIO ────────────────────────
   async registerMerchant(data: {
     name: string

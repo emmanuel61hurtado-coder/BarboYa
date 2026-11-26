@@ -50,6 +50,7 @@ pending ──(recibo existe, < confirmaciones)──> confirming ──> confir
 
 | Ruta | Descripción |
 |---|---|
+| `GET /payments/crypto/config` | Red, token, tesorería, tasa COP y límites — lo que la billetera necesita para pagar |
 | `POST /payments/crypto` | Registra el intento: `{tx_hash, payer_address, token_amount_units}` (unidades mínimas del token: 1 USDC = `1_000_000`) |
 | `GET /payments/crypto` | Historial de sus pagos on-chain |
 | `GET /payments/crypto/{id}` | Estado actual; sincroniza contra el nodo al consultar |
@@ -77,6 +78,14 @@ recorre mempool → bloque → recibo de forma determinista (2 consultas: primer
    API y sincroniza cada `INDEXER_INTERVAL_SECONDS`.
 3. Recomendado: ejecutar el RPC contra un proveedor (Alchemy/Infura/Ankr) y usar
    una red barata (Polygon) por el costo del gas.
+
+### Interfaz web (frontend)
+
+`frontend/src/components/DriverPanel.tsx` ya incluye el flujo completo en el
+modal de recarga (pestaña 🦊 Cripto): muestra la tesorería con botón de copiar,
+el monto equivalente en USDC, pide el `txHash` y la dirección del remitente, y
+consulta el estado hasta la confirmación. Usa `GET /payments/crypto/config`
+a través de `api.getCryptoConfig()` en `frontend/src/utils/api.ts`.
 
 ### Configuración actual (testnet, ya aplicada en `backend/.env`)
 

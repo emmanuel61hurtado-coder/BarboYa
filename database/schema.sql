@@ -17,7 +17,8 @@ CREATE TYPE subscription_plan AS ENUM ('daily', 'weekly', 'monthly');
 CREATE TYPE subscription_status AS ENUM ('pending', 'active', 'expired', 'cancelled');
 CREATE TYPE wallet_tx_type AS ENUM ('topup', 'trip_fee', 'subscription_purchase', 'refund', 'adjustment');
 CREATE TYPE wallet_tx_status AS ENUM ('pending', 'approved', 'rejected');
-CREATE TYPE payment_method AS ENUM ('cash', 'nequi', 'daviplata', 'physical_point');
+CREATE TYPE payment_method AS ENUM ('cash', 'nequi', 'daviplata', 'physical_point', 'crypto');
+CREATE TYPE blockchain_tx_status AS ENUM ('pending', 'confirming', 'confirmed', 'failed');
 CREATE TYPE service_type AS ENUM ('passenger', 'delivery', 'errand');
 CREATE TYPE trip_status AS ENUM (
     'requested', 'negotiating', 'accepted', 'arrived', 'in_progress',
@@ -166,6 +167,42 @@ CREATE INDEX idx_wallet_tx_driver ON wallet_transactions (driver_id, created_at 
 -- Idempotencia: un solo descuento de fee por viaje
 CREATE UNIQUE INDEX uq_wallet_fee_per_trip ON wallet_transactions (trip_id)
     WHERE type = 'trip_fee' AND trip_id IS NOT NULL;
+
+-- ---------------------------------------------------------------------
+-- BLOCKCHAIN PAYMENTS (recargas cripto EVM. docs/blockchain-payments.md)
+-- ---------------------------------------------------------------------
+CREATE TABLE blockchain_payments (
+    id                UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    driver_id         UUID NOT NULL REFERENCES driver_profiles(user_id) ON DELETE CASCADE,
+    -- 1. Billetera: datos del tx firmado fuera de la cadena
+    tx_hash           VARCHAR(66) NOT NULL UNIQUE,
+    payer_address     VARCHAR(42) NOT NULL,
+    -- 2-3. Nodo RPC / mempool
+    chain_id          INTEGER NOT NULL,
+    status            blockchain_tx_status NOT NULL DEFAULT 'pending',
+    -- Token esperado (ej. USDC) en unidades mínimas del token
+    token_address     VARCHAR(42) NOT NULL,
+    token_symbol      VARCHAR(12) NOT NULL,
+    token_amount_units BIGINT NOT NULL CHECK (token_amount_units > 0),
+    decimals          INTEGER NOT NULL DEFAULT 6,
+    -- Conversión a la moneda del negocio
+    amount_cop        INTEGER NOT NULL,
+    cop_per_token     INTEGER NOT NULL,
+    -- 6. Recibo y logs (crudo, tal como lo devolvió el RPC)
+    block_number      INTEGER,
+    gas_used          BIGINT,
+    confirmations     INTEGER,
+    receipt           JSONB,
+    failure_reason    TEXT,
+    -- 8. PostgreSQL: al confirmar se crea la recarga real en el libro mayor
+    wallet_tx_id      UUID REFERENCES wallet_transactions(id) UNIQUE,
+    payment_method    payment_method NOT NULL DEFAULT 'crypto',
+    created_at        TIMESTAMPTZ NOT NULL DEFAULT now(),
+    confirmed_at      TIMESTAMPTZ,
+    indexed_at        TIMESTAMPTZ
+);
+CREATE INDEX idx_blockchain_payments_status ON blockchain_payments (status);
+CREATE INDEX idx_blockchain_payments_driver ON blockchain_payments (driver_id, created_at DESC);
 
 -- ---------------------------------------------------------------------
 -- MERCHANTS

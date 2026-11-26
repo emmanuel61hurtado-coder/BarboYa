@@ -25,6 +25,16 @@ from app.services import blockchain
 
 settings = get_settings()
 
+# Nombres y exploradores de redes EVM conocidas (para la app)
+_NETWORKS = {
+    80002: ("Polygon Amoy (testnet)", "https://amoy.polygonscan.com/tx/{tx}"),
+    137: ("Polygon PoS", "https://polygonscan.com/tx/{tx}"),
+    11155111: ("Ethereum Sepolia (testnet)", "https://sepolia.etherscan.io/tx/{tx}"),
+    1: ("Ethereum", "https://etherscan.io/tx/{tx}"),
+    84532: ("Base Sepolia (testnet)", "https://sepolia.basescan.org/tx/{tx}"),
+    8453: ("Base", "https://basescan.org/tx/{tx}"),
+}
+
 router = APIRouter(prefix="/payments/crypto", tags=["blockchain-payments"])
 admin = APIRouter(
     prefix="/admin/payments/crypto",
@@ -59,6 +69,32 @@ def _check_enabled() -> None:
             status.HTTP_503_SERVICE_UNAVAILABLE,
             {"code": "CHAIN_NOT_CONFIGURED", "message": "El método de pago cripto no está configurado"},
         )
+
+
+@router.get("/config")
+async def crypto_payment_config(
+    user: CurrentUser = Depends(require_role("driver")),
+):
+    """Datos que la billetera del conductor necesita para pagar (paso 1).
+
+    Red, contrato del token, dirección de tesorería, tasa COP y límites.
+    """
+    _check_enabled()
+    name, explorer = _NETWORKS.get(settings.chain_id, (f"Chain {settings.chain_id}", ""))
+    return {
+        "enabled": True,
+        "chain_id": settings.chain_id,
+        "network": name,
+        "explorer_tx_url": explorer,
+        "token_symbol": settings.payment_token_symbol,
+        "token_address": settings.payment_token_address,
+        "token_decimals": settings.payment_token_decimals,
+        "treasury_address": settings.treasury_address,
+        "cop_per_token": settings.cop_per_token,
+        "required_confirmations": settings.required_confirmations,
+        "min_cop": settings.topup_min_cop,
+        "max_cop": settings.topup_max_cop,
+    }
 
 
 @router.post("", status_code=201, response_model=CryptoPaymentOut)
