@@ -8,6 +8,7 @@ import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.multipart.MaxUploadSizeExceededException;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 
 import java.util.LinkedHashMap;
@@ -34,6 +35,11 @@ public class ApiExceptionHandler {
     @ExceptionHandler({HttpMessageNotReadableException.class, MethodArgumentTypeMismatchException.class})
     ProblemDetail handleMalformed(Exception ex) {
         return problem(HttpStatus.BAD_REQUEST, "MALFORMED_REQUEST", "La solicitud no se pudo interpretar");
+    }
+
+    @ExceptionHandler(MaxUploadSizeExceededException.class)
+    ProblemDetail handle(MaxUploadSizeExceededException ex) {
+        return problem(HttpStatus.PAYLOAD_TOO_LARGE, "FILE_TOO_LARGE", "El archivo supera el limite de 5 MB");
     }
 
     /** Dos peticiones simultaneas con el mismo dato unico. */

@@ -28,7 +28,7 @@ class SecurityUnitTest {
                 new AppProperties.Security(secret, "i", "a", Duration.ofMinutes(15), Duration.ofDays(1),
                         Duration.ofSeconds(20), 5,
                         Duration.ofMinutes(15), true, 20, List.of()),
-                null, new AppProperties.Mail(""), new AppProperties.BootstrapAdmin("", "", ""));
+                null, new AppProperties.Mail(""), new AppProperties.BootstrapAdmin("", "", ""), null);
     }
 
     private static MockEnvironment environment(String profile) {

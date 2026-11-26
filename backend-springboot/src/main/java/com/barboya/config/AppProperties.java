@@ -7,7 +7,11 @@ import java.time.Duration;
 import java.util.List;
 
 @ConfigurationProperties(prefix = "barboya")
-public record AppProperties(Security security, Codes codes, Mail mail, BootstrapAdmin bootstrapAdmin) {
+public record AppProperties(
+        Security security, Codes codes, Mail mail, BootstrapAdmin bootstrapAdmin, Files files) {
+
+    public record Files(@DefaultValue("./data/files") String directory, @DefaultValue("") String key) {
+    }
 
     public record Security(
             @DefaultValue("") String jwtSecret,

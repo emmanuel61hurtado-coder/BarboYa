@@ -61,6 +61,7 @@ public class SecurityConfig {
                         .requestMatchers("/error").permitAll()
                         .requestMatchers("/api/v1/admin/**").hasAnyRole("ADMIN", "SUPERADMIN")
                         .requestMatchers("/api/v1/merchant/**").hasAnyRole("RESTAURANT", "STORE")
+                        .requestMatchers("/api/v1/courier/**").hasRole("COURIER")
                         .requestMatchers("/api/v1/orders/**").hasRole("CUSTOMER")
                         // El WebSocket se autentica con su primer mensaje
                         .requestMatchers(HttpMethod.GET, "/ws/v1/events").permitAll()

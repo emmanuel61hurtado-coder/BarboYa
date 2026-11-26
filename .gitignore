@@ -13,5 +13,7 @@ target/
 # Claves privadas de wallets (tesorería blockchain) — jamás al repositorio
 *.key
 treasury*
+# Documentos subidos (datos personales): nunca al repositorio
+backend-springboot/data/
 # Build de la interfaz v1 (el dist/ actual si se versiona)
 dist-v1/

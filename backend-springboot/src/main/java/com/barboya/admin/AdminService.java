@@ -9,6 +9,7 @@ import com.barboya.common.ApiException;
 import com.barboya.common.ClientInfo;
 import com.barboya.common.Contacts;
 import com.barboya.security.AuthUser;
+import com.barboya.users.ActivationRequirement;
 import com.barboya.users.Role;
 import com.barboya.users.User;
 import com.barboya.users.UserRepository;
@@ -21,6 +22,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Clock;
 import java.time.Instant;
+import java.util.List;
 import java.util.UUID;
 
 @Service
@@ -30,10 +32,12 @@ public class AdminService {
     private final AuthSessionRepository sessions;
     private final PasswordEncoder encoder;
     private final AuditService audit;
+    private final List<ActivationRequirement> requirements;
     private final Clock clock;
 
     public AdminService(UserRepository users, AuthSessionRepository sessions, PasswordEncoder encoder,
-                        AuditService audit, Clock clock) {
+                        AuditService audit, List<ActivationRequirement> requirements, Clock clock) {
+        this.requirements = requirements;
         this.users = users;
         this.sessions = sessions;
         this.encoder = encoder;
@@ -50,11 +54,14 @@ public class AdminService {
         if (actor.id().equals(targetId)) {
             throw new ApiException(HttpStatus.CONFLICT, "SELF_CHANGE", "No puedes cambiar tu propio estado");
         }
-        User target = users.findById(targetId).orElseThrow(
+        User target = users.lockById(targetId).orElseThrow(
                 () -> new ApiException(HttpStatus.NOT_FOUND, "USER_NOT_FOUND", "Usuario no encontrado"));
         if (target.getRole().isStaff() && actor.role() != Role.SUPERADMIN) {
             throw new ApiException(HttpStatus.FORBIDDEN, "FORBIDDEN",
                     "Solo un superadministrador gestiona cuentas internas");
+        }
+        if (request.status() == UserStatus.ACTIVE) {
+            requirements.forEach(requirement -> requirement.verify(target));
         }
         UserStatus previous = target.getStatus();
         Instant now = clock.instant();

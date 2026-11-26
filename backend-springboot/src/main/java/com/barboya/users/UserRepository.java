@@ -23,6 +23,10 @@ public interface UserRepository extends JpaRepository<User, UUID> {
 
     Page<User> findByStatus(UserStatus status, Pageable pageable);
 
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("select u from User u where u.id = :id")
+    Optional<User> lockById(@Param("id") UUID id);
+
     /** Bloquea la fila: los intentos simultaneos se cuentan uno por uno. */
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("select u from User u where u.email = :email")

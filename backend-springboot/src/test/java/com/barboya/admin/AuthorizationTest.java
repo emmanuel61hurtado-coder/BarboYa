@@ -74,14 +74,14 @@ class AuthorizationTest extends IntegrationTest {
     @Test
     void approvalAfterReviewIsAudited() throws Exception {
         var admin = accountWithRole(Role.ADMIN);
-        var courier = register(Role.COURIER);
+        var provider = register(Role.RESTAURANT);
 
-        changeStatus(admin, courier.id(), "ACTIVE")
+        changeStatus(admin, provider.id(), "ACTIVE")
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("ACTIVE"));
 
         mvc.perform(get("/api/v1/admin/audit?size=100").header("Authorization", admin.bearer()))
-                .andExpect(jsonPath("$.items[?(@.targetId == '" + courier.id()
+                .andExpect(jsonPath("$.items[?(@.targetId == '" + provider.id()
                         + "' && @.action == 'USER_STATUS_CHANGED')].detail")
                         .value("PENDING_VERIFICATION -> ACTIVE: Revision documental"));
     }
@@ -89,7 +89,7 @@ class AuthorizationTest extends IntegrationTest {
     @Test
     void usersCanBeFilteredByStatus() throws Exception {
         var admin = accountWithRole(Role.ADMIN);
-        register(Role.COURIER);
+        register(Role.RESTAURANT);
 
         mvc.perform(get("/api/v1/admin/users?status=PENDING_VERIFICATION&size=100")
                         .header("Authorization", admin.bearer()))
@@ -127,9 +127,9 @@ class AuthorizationTest extends IntegrationTest {
 
     @Test
     void customersCannotApproveAccounts() throws Exception {
-        var courier = register(Role.COURIER);
+        var provider = register(Role.RESTAURANT);
 
-        changeStatus(courier, courier.id(), "ACTIVE").andExpect(status().isForbidden());
+        changeStatus(provider, provider.id(), "ACTIVE").andExpect(status().isForbidden());
     }
 
     /** Rutas del esqueleto anterior, que no comprobaban permisos. */
