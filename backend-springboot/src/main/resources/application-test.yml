@@ -1,0 +1,6 @@
+# Perfil de las pruebas automaticas. La base de datos la inyecta cada ejecucion.
+barboya:
+  security:
+    auth-requests-per-minute: 100000
+  mail:
+    from: no-responder@barboya.test

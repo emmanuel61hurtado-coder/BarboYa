@@ -1,0 +1,18 @@
+# Produccion: SPRING_PROFILES_ACTIVE=prod
+server:
+  # Detras de un proxy inverso: usa X-Forwarded-For/Proto para la IP real
+  forward-headers-strategy: native
+
+spring:
+  datasource:
+    url: ${DB_URL}
+    username: ${DB_USER}
+    password: ${DB_PASSWORD}
+  mail:
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+            required: true

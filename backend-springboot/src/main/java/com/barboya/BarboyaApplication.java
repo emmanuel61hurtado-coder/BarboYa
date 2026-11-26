@@ -1,0 +1,36 @@
+package com.barboya;
+
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.boot.autoconfigure.domain.EntityScan;
+import org.springframework.boot.autoconfigure.security.servlet.UserDetailsServiceAutoConfiguration;
+import org.springframework.boot.context.properties.ConfigurationPropertiesScan;
+import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
+
+/**
+ * Solo se cargan los modulos listados aqui. El esqueleto anterior
+ * ({@code com.barboya.barboya}) sigue en el repositorio como referencia, pero
+ * queda fuera: sus rutas no comprobaban permisos. Cada modulo se incorpora a
+ * esta lista cuando se reescribe y tiene pruebas.
+ */
+@SpringBootApplication(
+        scanBasePackages = {
+                "com.barboya.admin",
+                "com.barboya.audit",
+                "com.barboya.auth",
+                "com.barboya.common",
+                "com.barboya.config",
+                "com.barboya.notifications",
+                "com.barboya.security",
+                "com.barboya.users"
+        },
+        exclude = UserDetailsServiceAutoConfiguration.class)
+@ConfigurationPropertiesScan("com.barboya.config")
+@EntityScan({"com.barboya.audit", "com.barboya.auth", "com.barboya.users"})
+@EnableJpaRepositories({"com.barboya.audit", "com.barboya.auth", "com.barboya.users"})
+public class BarboyaApplication {
+
+    public static void main(String[] args) {
+        SpringApplication.run(BarboyaApplication.class, args);
+    }
+}

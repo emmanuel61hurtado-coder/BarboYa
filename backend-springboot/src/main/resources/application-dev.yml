@@ -1,0 +1,12 @@
+# Desarrollo local: SPRING_PROFILES_ACTIVE=dev
+springdoc:
+  api-docs:
+    enabled: true
+  swagger-ui:
+    enabled: true
+
+barboya:
+  security:
+    # http://localhost no admite cookies "Secure" en todos los navegadores
+    cookie-secure: false
+    cors-allowed-origins: ${CORS_ORIGINS:http://localhost:3000}

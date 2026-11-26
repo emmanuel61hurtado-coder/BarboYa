@@ -1,0 +1,17 @@
+package com.barboya.audit;
+
+public enum AuditAction {
+    REGISTERED,
+    LOGIN_SUCCESS,
+    LOGIN_NEW_DEVICE,
+    LOGIN_FAILED,
+    LOGIN_LOCKED,
+    LOGIN_BLOCKED,
+    LOGOUT,
+    SESSION_REVOKED,
+    REFRESH_TOKEN_REUSED,
+    EMAIL_VERIFIED,
+    PASSWORD_RESET,
+    USER_STATUS_CHANGED,
+    STAFF_CREATED
+}
