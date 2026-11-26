@@ -8,13 +8,7 @@ from app.core.security import CurrentUser, create_token, get_current_user, hash_
 from app.models.enums import UserRole, VerificationStatus
 from app.models.merchant import Merchant
 from app.models.user import DriverProfile, User
-from app.schemas.schemas import (
-    LoginIn,
-    PasswordRecoveryIn,
-    RecoveryCodeRequestIn,
-    RegisterIn,
-    TokenOut,
-)
+from app.schemas.schemas import LoginIn, RegisterIn, TokenOut
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
@@ -190,62 +184,17 @@ async def get_my_profile(
     )
 
 
+# La recuperación de contraseña está desactivada: no hay un proveedor de correo
+# o SMS que entregue un código al titular, así que no se puede comprobar quién
+# pide el cambio. No reactivar sin códigos aleatorios, de un solo uso, con
+# expiración, límite de intentos y entregados fuera de la respuesta HTTP.
+RECOVERY_UNAVAILABLE = (
+    "La recuperación de contraseña no está disponible por ahora. "
+    "Comunícate con soporte de BarboYa."
+)
+
+
 @router.post("/request-recovery-code")
-async def request_recovery_code(
-    data: RecoveryCodeRequestIn,
-    session: AsyncSession = Depends(get_session),
-):
-    ident = data.identifier.strip()
-    user = (
-        await session.execute(
-            select(User).where((User.phone == ident) | (User.email == ident.lower()))
-        )
-    ).scalar_one_or_none()
-
-    masked_id = ident
-    if "@" in ident:
-        parts = ident.split("@")
-        name = parts[0]
-        domain = parts[1] if len(parts) > 1 else ""
-        masked_id = f"{name[:2]}***@{domain}"
-    elif len(ident) >= 7:
-        masked_id = f"{ident[:3]}****{ident[-3:]}"
-
-    return {
-        "status": "ok",
-        "method": data.method,
-        "identifier": ident,
-        "masked_identifier": masked_id,
-        "security_pin": "8492",
-        "message": f"Código de verificación enviado correctamente a {masked_id}",
-    }
-
-
 @router.post("/recover-password")
-async def recover_password(
-    data: PasswordRecoveryIn,
-    session: AsyncSession = Depends(get_session),
-):
-    ident = (data.identifier or data.email or data.phone or "").strip()
-    if not ident:
-        raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, "Se requiere número de teléfono o correo electrónico")
-
-    user = (
-        await session.execute(
-            select(User).where((User.phone == ident) | (User.email == ident.lower()))
-        )
-    ).scalar_one_or_none()
-
-    if not user:
-        return {
-            "status": "ok",
-            "message": "Si la cuenta está registrada con ese dato, la contraseña ha sido actualizada con éxito",
-        }
-
-    user.password_hash = hash_password(data.new_password)
-    await session.commit()
-    return {
-        "status": "ok",
-        "message": f"Contraseña actualizada exitosamente para la cuenta vinculada a {ident}",
-    }
-
+async def password_recovery_unavailable():
+    raise HTTPException(status.HTTP_503_SERVICE_UNAVAILABLE, RECOVERY_UNAVAILABLE)

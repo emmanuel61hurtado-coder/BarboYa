@@ -132,58 +132,6 @@ class ApiService {
     return this.request<any>('/auth/me')
   }
 
-  async requestRecoveryCode(identifier: string, method: 'phone' | 'email'): Promise<{
-    status: string
-    method: string
-    identifier: string
-    masked_identifier: string
-    security_pin: string
-    message: string
-  }> {
-    return this.request('/auth/request-recovery-code', {
-      method: 'POST',
-      body: JSON.stringify({ identifier, method }),
-    })
-  }
-
-  async recoverPassword(
-    param: string | {
-      identifier?: string
-      phone?: string
-      email?: string
-      recoveryMethod?: 'phone' | 'email'
-      newPassword: string
-      securityPin?: string
-    },
-    maybeNewPassword?: string
-  ): Promise<any> {
-    let payload: any
-    if (typeof param === 'string') {
-      // Compatibilidad con signatura anterior: recoverPassword(phone, newPassword)
-      payload = {
-        phone: param,
-        identifier: param,
-        new_password: maybeNewPassword,
-        security_pin: '1234',
-        recovery_method: 'phone',
-      }
-    } else {
-      payload = {
-        identifier: param.identifier || param.email || param.phone,
-        phone: param.phone,
-        email: param.email,
-        recovery_method: param.recoveryMethod || 'phone',
-        new_password: param.newPassword,
-        security_pin: param.securityPin || '8492',
-      }
-    }
-
-    return this.request('/auth/recover-password', {
-      method: 'POST',
-      body: JSON.stringify(payload),
-    })
-  }
-
   logout() {
     this.setToken(null)
   }

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react'
 import {
   User, Bike, Store, ShieldCheck, Mail, Phone, Lock, Eye, EyeOff,
   ArrowRight, CheckCircle2, AlertCircle, KeyRound, Sparkles, RefreshCw,
-  Shield, Car, Check, ChevronRight, HelpCircle, Smartphone, AtSign
+  Shield, Car, Check, ChevronRight, HelpCircle,
 } from 'lucide-react'
 import { api } from '../utils/api'
 import { sound } from '../utils/sound'
@@ -17,7 +17,6 @@ interface AuthDashboardProps {
 }
 
 type SelectableRole = 'customer' | 'driver' | 'merchant_owner' | 'admin'
-type RecoveryMethod = 'phone' | 'email'
 
 const ROLE_DATA: Record<SelectableRole, {
   label: string
@@ -110,15 +109,6 @@ export const AuthDashboard: React.FC<AuthDashboardProps> = ({
       : 'customer'
   )
 
-  // Recovery method: phone or email
-  const [recoveryMethod, setRecoveryMethod] = useState<RecoveryMethod>('email')
-  const [recoveryIdentifier, setRecoveryIdentifier] = useState('')
-  const [recoveryPin, setRecoveryPin] = useState('')
-  const [recoveryNewPassword, setRecoveryNewPassword] = useState('')
-  const [recoveryConfirmPassword, setRecoveryConfirmPassword] = useState('')
-  const [codeRequested, setCodeRequested] = useState(false)
-  const [simulatedCode, setSimulatedCode] = useState<string | null>(null)
-
   // Common inputs
   const [loginIdentifier, setLoginIdentifier] = useState('')
   const [password, setPassword] = useState('')
@@ -175,37 +165,6 @@ export const AuthDashboard: React.FC<AuthDashboardProps> = ({
       setPassword('Admin123!')
     }
     setError(null)
-  }
-
-  // Request recovery code
-  const handleRequestRecoveryCode = async () => {
-    if (!recoveryIdentifier.trim()) {
-      setError(
-        recoveryMethod === 'email'
-          ? 'Por favor ingresa tu correo electrónico registrado'
-          : 'Por favor ingresa tu número de teléfono registrado (+57...)'
-      )
-      sound.alert()
-      return
-    }
-
-    setLoading(true)
-    setError(null)
-    setSuccessMsg(null)
-
-    try {
-      const res = await api.requestRecoveryCode(recoveryIdentifier.trim(), recoveryMethod)
-      sound.success()
-      setCodeRequested(true)
-      setSimulatedCode(res.security_pin || '8492')
-      setRecoveryPin(res.security_pin || '8492')
-      setSuccessMsg(`Código generado: ${res.security_pin || '8492'}. Se ha transmitido a ${res.masked_identifier}.`)
-    } catch (err: any) {
-      sound.alert()
-      setError(err.message || 'No se pudo generar el código. Verifica el dato ingresado.')
-    } finally {
-      setLoading(false)
-    }
   }
 
   // Submit Handler
@@ -290,29 +249,6 @@ export const AuthDashboard: React.FC<AuthDashboardProps> = ({
         }
         localStorage.setItem('barboya_user_session', JSON.stringify(session))
         onSuccess(session)
-      } else if (mode === 'recover') {
-        if (!recoveryIdentifier.trim()) {
-          throw new Error('Ingresa tu teléfono o correo registrado')
-        }
-        if (!recoveryNewPassword || recoveryNewPassword.length < 6) {
-          throw new Error('La nueva contraseña debe tener al menos 6 caracteres')
-        }
-        if (recoveryNewPassword !== recoveryConfirmPassword) {
-          throw new Error('Las contraseñas no coinciden')
-        }
-
-        await api.recoverPassword({
-          identifier: recoveryIdentifier.trim(),
-          recoveryMethod,
-          newPassword: recoveryNewPassword,
-          securityPin: recoveryPin || '8492',
-        })
-
-        sound.success()
-        setSuccessMsg('¡Contraseña actualizada exitosamente! Ya puedes iniciar sesión con tu nueva clave.')
-        setLoginIdentifier(recoveryIdentifier.trim())
-        setPassword(recoveryNewPassword)
-        setMode('login')
       }
     } catch (err: any) {
       sound.alert()
@@ -429,7 +365,7 @@ export const AuthDashboard: React.FC<AuthDashboardProps> = ({
               <p className="text-xs text-slate-400 leading-relaxed">
                 {mode === 'login' && 'Accede a tus servicios con total privacidad y validación instantánea por perfil.'}
                 {mode === 'register' && 'Crea tu perfil en segundos y aprovecha las ventajas de un sistema sin comisiones abusivas.'}
-                {mode === 'recover' && 'Restaura el acceso a tu cuenta fácilmente mediante tu correo o tu celular registrado.'}
+                {mode === 'recover' && 'La recuperación automática de contraseña está temporalmente desactivada.'}
               </p>
             </div>
 
@@ -502,18 +438,6 @@ export const AuthDashboard: React.FC<AuthDashboardProps> = ({
               </div>
             )}
 
-            {/* Recovery Highlights */}
-            {mode === 'recover' && (
-              <div className="p-3.5 rounded-2xl bg-slate-950 border border-slate-800 space-y-2 text-xs text-slate-400">
-                <div className="flex items-center space-x-2 text-slate-200 font-semibold">
-                  <HelpCircle className="w-4 h-4 text-sky-400" />
-                  <span>¿Cómo funciona la recuperación?</span>
-                </div>
-                <p className="text-[11px] leading-relaxed">
-                  Puedes elegir restablecer tu clave mediante el <strong>correo electrónico registrado</strong> o mediante tu <strong>número celular (WhatsApp/SMS)</strong>. Te proporcionamos un código de seguridad para confirmar tu titularidad.
-                </p>
-              </div>
-            )}
           </div>
         </div>
 
@@ -898,176 +822,17 @@ export const AuthDashboard: React.FC<AuthDashboardProps> = ({
 
               {/* ======================= RECOVER PASSWORD VIEW ======================= */}
               {mode === 'recover' && (
-                <>
-                  <div>
-                    <label className="block text-xs font-semibold text-slate-300 mb-2">
-                      Selecciona el método de recuperación:
-                    </label>
-                    <div className="grid grid-cols-2 gap-3 mb-4">
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setRecoveryMethod('email')
-                          sound.tick()
-                          setError(null)
-                        }}
-                        className={`p-3 rounded-2xl border text-left transition flex items-center space-x-2.5 ${
-                          recoveryMethod === 'email'
-                            ? 'bg-sky-500/15 border-sky-500 text-sky-300 font-bold shadow-md'
-                            : 'bg-slate-900/60 border-slate-800 text-slate-400 hover:text-white'
-                        }`}
-                      >
-                        <Mail className="w-4 h-4" />
-                        <div>
-                          <div className="text-xs font-semibold">Por Correo</div>
-                          <div className="text-[10px] text-slate-400">Mensaje a tu email</div>
-                        </div>
-                      </button>
-
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setRecoveryMethod('phone')
-                          sound.tick()
-                          setError(null)
-                        }}
-                        className={`p-3 rounded-2xl border text-left transition flex items-center space-x-2.5 ${
-                          recoveryMethod === 'phone'
-                            ? 'bg-emerald-500/15 border-emerald-500 text-emerald-300 font-bold shadow-md'
-                            : 'bg-slate-900/60 border-slate-800 text-slate-400 hover:text-white'
-                        }`}
-                      >
-                        <Smartphone className="w-4 h-4" />
-                        <div>
-                          <div className="text-xs font-semibold">Por Teléfono</div>
-                          <div className="text-[10px] text-slate-400">SMS o WhatsApp</div>
-                        </div>
-                      </button>
-                    </div>
-                  </div>
-
-                  {/* Input depending on method */}
-                  <div>
-                    <label className="block text-xs font-medium text-slate-300 mb-1.5">
-                      {recoveryMethod === 'email'
-                        ? 'Correo Electrónico Registrado'
-                        : 'Número de Teléfono Registrado'}
-                    </label>
-                    <div className="flex gap-2">
-                      <div className="relative flex-1">
-                        <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-500">
-                          {recoveryMethod === 'email' ? <AtSign className="w-4 h-4" /> : <Phone className="w-4 h-4" />}
-                        </div>
-                        <input
-                          type={recoveryMethod === 'email' ? 'email' : 'tel'}
-                          value={recoveryIdentifier}
-                          onChange={(e) => setRecoveryIdentifier(e.target.value)}
-                          placeholder={
-                            recoveryMethod === 'email'
-                              ? 'Ej: tu_cuenta@correo.com'
-                              : 'Ej: +57 310 123 4567'
-                          }
-                          className="w-full pl-10 pr-4 py-2.5 rounded-xl pro-input text-xs sm:text-sm font-sans"
-                          required
-                        />
-                      </div>
-
-                      <button
-                        type="button"
-                        onClick={handleRequestRecoveryCode}
-                        disabled={loading || !recoveryIdentifier.trim()}
-                        className="px-3.5 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-sky-400 hover:text-sky-300 border border-slate-700 text-xs font-bold transition flex items-center space-x-1 shrink-0 disabled:opacity-40"
-                      >
-                        <Sparkles className="w-3.5 h-3.5" />
-                        <span>Generar Código</span>
-                      </button>
-                    </div>
-                  </div>
-
-                  {/* Security PIN verification */}
-                  <div>
-                    <div className="flex items-center justify-between mb-1.5">
-                      <label className="block text-xs font-medium text-slate-300">
-                        Código de Seguridad (PIN)
-                      </label>
-                      {simulatedCode && (
-                        <span className="text-[10px] font-mono text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">
-                          PIN Verificado: {simulatedCode}
-                        </span>
-                      )}
-                    </div>
-                    <div className="relative">
-                      <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-500">
-                        <KeyRound className="w-4 h-4" />
-                      </div>
-                      <input
-                        type="text"
-                        value={recoveryPin}
-                        onChange={(e) => setRecoveryPin(e.target.value)}
-                        placeholder="Ingresa el PIN de 4 dígitos"
-                        className="w-full pl-10 pr-4 py-2.5 rounded-xl pro-input text-xs sm:text-sm font-mono tracking-widest"
-                        required
-                      />
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    <div>
-                      <label className="block text-xs font-medium text-slate-300 mb-1.5">
-                        Nueva Contraseña
-                      </label>
-                      <div className="relative">
-                        <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-500">
-                          <Lock className="w-4 h-4" />
-                        </div>
-                        <input
-                          type={showPassword ? 'text' : 'password'}
-                          value={recoveryNewPassword}
-                          onChange={(e) => setRecoveryNewPassword(e.target.value)}
-                          placeholder="Mínimo 6 caracteres"
-                          className="w-full pl-10 pr-10 py-2.5 rounded-xl pro-input text-xs sm:text-sm font-mono"
-                          required
-                          minLength={6}
-                        />
-                      </div>
-                    </div>
-
-                    <div>
-                      <label className="block text-xs font-medium text-slate-300 mb-1.5">
-                        Confirmar Nueva Contraseña
-                      </label>
-                      <div className="relative">
-                        <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-500">
-                          <Lock className="w-4 h-4" />
-                        </div>
-                        <input
-                          type={showPassword ? 'text' : 'password'}
-                          value={recoveryConfirmPassword}
-                          onChange={(e) => setRecoveryConfirmPassword(e.target.value)}
-                          placeholder="Repite tu clave"
-                          className="w-full pl-10 pr-10 py-2.5 rounded-xl pro-input text-xs sm:text-sm font-mono"
-                          required
-                          minLength={6}
-                        />
-                      </div>
-                    </div>
-                  </div>
-
-                  <button
-                    type="submit"
-                    disabled={loading}
-                    className="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-indigo-600 to-sky-600 hover:from-indigo-500 hover:to-sky-500 text-white font-bold text-xs sm:text-sm tracking-wide shadow-lg shadow-indigo-600/20 transition-all flex items-center justify-center space-x-2 active:scale-[0.99] disabled:opacity-50 cursor-pointer"
-                  >
-                    {loading ? (
-                      <RefreshCw className="w-4 h-4 animate-spin" />
-                    ) : (
-                      <>
-                        <span>Restablecer Contraseña</span>
-                        <ArrowRight className="w-4 h-4" />
-                      </>
-                    )}
-                  </button>
-                </>
+                <div
+                  role="status"
+                  className="p-4 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex items-start space-x-3 text-xs sm:text-sm text-amber-200"
+                >
+                  <HelpCircle className="w-5 h-5 text-amber-400 shrink-0" />
+                  <p className="leading-relaxed">
+                    La recuperación de contraseña no está disponible por ahora, porque todavía no
+                    podemos enviarte un código para comprobar que la cuenta es tuya. Comunícate con
+                    soporte de BarboYa.
+                  </p>
+                </div>
               )}
             </form>
 

@@ -45,20 +45,6 @@ class TokenOut(BaseModel):
     user_id: UUID
 
 
-class RecoveryCodeRequestIn(BaseModel):
-    identifier: str = Field(min_length=3, description="Teléfono o correo electrónico registrado")
-    method: str = Field(default="phone", description="'phone' o 'email'")
-
-
-class PasswordRecoveryIn(BaseModel):
-    identifier: str | None = Field(default=None, description="Teléfono o correo electrónico registrado")
-    phone: str | None = Field(default=None, description="Teléfono para compatibilidad previa")
-    email: str | None = Field(default=None, description="Correo electrónico registrado")
-    recovery_method: str = Field(default="phone", description="'phone' o 'email'")
-    new_password: str = Field(min_length=6, max_length=72)
-    security_pin: str = Field(default="1234", description="PIN enviado por SMS, WhatsApp o Correo")
-
-
 # ----------------------------------------------------------------- viajes
 class FareQuoteIn(BaseModel):
     pickup: GeoPoint
