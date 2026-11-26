@@ -1,6 +1,6 @@
 # BarboYa API (Spring Boot)
 
-Backend en Java 21 y Spring Boot 3.3 que reemplazará al de FastAPI. Hoy cubre **identidad, administración de cuentas, comercios, catálogo y pedidos**; viajes, repartidores y pagos siguen en `../backend` o están pendientes.
+Backend en Java 21 y Spring Boot 3.3 que reemplazará al de FastAPI. Hoy cubre **identidad, administración de cuentas, comercios, catálogo, pedidos y verificación de domiciliarios**; la asignación de domiciliarios, los viajes y los pagos siguen en `../backend` o están pendientes.
 
 **No reemplaza todavía al backend publicado.** El frontend lo usa solo en el modo `v1` (ver [Interfaz](#interfaz)).
 
@@ -62,6 +62,8 @@ Levantan un PostgreSQL 16 propio y temporal; no necesitan Docker ni tocan tu bas
 | `CORS_ORIGINS` | Si el frontend usa otro dominio | Lista separada por comas; no admite `*` |
 | `SPRING_MAIL_HOST`, `SPRING_MAIL_PORT`, `SPRING_MAIL_USERNAME`, `SPRING_MAIL_PASSWORD`, `MAIL_FROM` | Para correo | Sin ellas, verificación y recuperación responden `503` |
 | `BOOTSTRAP_ADMIN_EMAIL`, `BOOTSTRAP_ADMIN_PHONE`, `BOOTSTRAP_ADMIN_PASSWORD` | Primer arranque | Crea el primer superadministrador (clave de 12+ caracteres). Elimina la clave después |
+| `FILES_KEY` | Sí, salvo en `dev` | 32 bytes en base64 (`openssl rand -base64 32`). Cifra los documentos |
+| `FILES_DIRECTORY` | Recomendada en `prod` | Carpeta privada y persistente. Por defecto `./data/files` |
 | `PORT` | No | `8081` |
 
 ## Rutas
@@ -79,6 +81,9 @@ Base: `/api/v1`. Los errores usan `application/problem+json` con un campo `code`
 | `GET /admin/users`, `GET /admin/audit`, `PATCH /admin/users/{id}/status` | `ADMIN`, `SUPERADMIN` |
 | `GET /admin/users/{id}/business` | `ADMIN`, `SUPERADMIN` |
 | `POST /admin/staff` | `SUPERADMIN` |
+| `GET`, `PUT /courier/profile` | `COURIER` (propio) |
+| `POST /courier/documents/{tipo}`, `DELETE /courier/documents/{id}`, `GET …/{id}/file` | `COURIER` (propios) |
+| `GET /admin/users/{id}/courier`, `GET /admin/documents/{id}/file`, `POST /admin/documents/{id}/review` | `ADMIN`, `SUPERADMIN` |
 | `GET /catalog/businesses`, `GET /catalog/businesses/{id}` | Sesión |
 | `GET`, `PUT /merchant/business`, `PATCH /merchant/business/accepting` | `RESTAURANT`, `STORE` (propio) |
 | `GET`, `POST /merchant/products`, `PUT`, `DELETE /merchant/products/{id}` | `RESTAURANT`, `STORE` (propios) |
@@ -101,6 +106,23 @@ PLACED ──aceptar──▶ PREPARING ──▶ READY ──enviar──▶ OU
 - El **PIN de 4 dígitos** solo lo ve el cliente y es la única forma de marcar la entrega. Tras 5 fallos se bloquea hasta que el cliente genere otro.
 - Pago: **solo en efectivo**. La plataforma todavía no cobra comisión.
 - Entrega: con personal del comercio o recogiendo en el local.
+
+## Verificación de domiciliarios
+
+| Vehículo | Documentos obligatorios |
+|---|---|
+| Bicicleta | Identidad y foto del rostro |
+| Motocicleta o automóvil | Además, licencia de conducción y SOAT, con vencimiento |
+
+La revisión técnico-mecánica se puede adjuntar y la valora quien revisa. **Un abogado debe confirmar esta lista y el texto de autorización antes de operar.**
+
+- La cuenta solo se activa cuando cada documento obligatorio está aprobado y vigente.
+- Cambiar los datos o un documento obligatorio devuelve la cuenta a revisión. Un documento que vence después de la aprobación **no** suspende la cuenta por sí solo: la asignación de pedidos deberá comprobarlo.
+- La revisión es **humana**. No hay verificación facial automática ni prueba de vida (requieren un proveedor).
+- Archivos: JPG, PNG o PDF de hasta 5 MB, validados por contenido. Las imágenes conservan sus metadatos originales.
+- Se guardan cifrados (AES-256-GCM). Cada consulta del equipo queda auditada. La persona puede eliminarlos.
+- **Si pierdes `FILES_KEY`, los archivos no se pueden recuperar.** Respáldala aparte de la carpeta y de la base.
+- Falta definir el plazo de conservación y un almacén compatible con S3.
 
 ## Avisos en vivo
 
