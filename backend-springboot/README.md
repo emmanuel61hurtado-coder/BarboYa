@@ -1,6 +1,6 @@
 # BarboYa API (Spring Boot)
 
-Backend en Java 21 y Spring Boot 3.3 que reemplazará al de FastAPI. Hoy cubre **identidad y administración de cuentas**; los demás módulos siguen en `../backend`.
+Backend en Java 21 y Spring Boot 3.3 que reemplazará al de FastAPI. Hoy cubre **identidad, administración de cuentas, comercios, catálogo y pedidos**; viajes, repartidores y pagos siguen en `../backend` o están pendientes.
 
 **No reemplaza todavía al backend publicado.** El frontend lo usa solo en el modo `v1` (ver [Interfaz](#interfaz)).
 
@@ -77,9 +77,34 @@ Base: `/api/v1`. Los errores usan `application/problem+json` con un campo `code`
 | `GET /auth/history` | Sesión propia |
 | `GET /users/me` | Sesión |
 | `GET /admin/users`, `GET /admin/audit`, `PATCH /admin/users/{id}/status` | `ADMIN`, `SUPERADMIN` |
+| `GET /admin/users/{id}/business` | `ADMIN`, `SUPERADMIN` |
 | `POST /admin/staff` | `SUPERADMIN` |
+| `GET /catalog/businesses`, `GET /catalog/businesses/{id}` | Sesión |
+| `GET`, `PUT /merchant/business`, `PATCH /merchant/business/accepting` | `RESTAURANT`, `STORE` (propio) |
+| `GET`, `POST /merchant/products`, `PUT`, `DELETE /merchant/products/{id}` | `RESTAURANT`, `STORE` (propios) |
+| `GET /merchant/orders`, `POST /merchant/orders/{id}/{accept,reject,ready,dispatch,deliver,cancel}` | `RESTAURANT`, `STORE` (propios) |
+| `POST`, `GET /orders`, `GET /orders/{id}`, `POST /orders/{id}/{cancel,new-pin}` | `CUSTOMER` (propios) |
 
 Toda ruta no declarada queda cerrada.
+
+## Pedidos
+
+```
+PLACED ──aceptar──▶ PREPARING ──▶ READY ──enviar──▶ OUT_FOR_DELIVERY ──PIN──▶ DELIVERED
+  │ rechazar → REJECTED                └──────── PIN (recoge en el local) ──▶ DELIVERED
+  │ cancela el cliente → CANCELLED     El comercio puede cancelar desde PREPARING, con motivo
+```
+
+- Los precios los calcula el servidor. El cliente envía `expectedTotalCop`; si no coincide responde `PRICE_CHANGED`.
+- `POST /orders` exige el encabezado `Idempotency-Key`: repetirlo devuelve el mismo pedido.
+- Las existencias se reservan al pedir y se devuelven al rechazar o cancelar.
+- El **PIN de 4 dígitos** solo lo ve el cliente y es la única forma de marcar la entrega. Tras 5 fallos se bloquea hasta que el cliente genere otro.
+- Pago: **solo en efectivo**. La plataforma todavía no cobra comisión.
+- Entrega: con personal del comercio o recogiendo en el local.
+
+## Avisos en vivo
+
+WebSocket en `/ws/v1/events`. El primer mensaje es `{"type":"auth","token":"<token de acceso>"}`; el servidor responde `ready` y luego envía `{"type":"order.updated","orderId":"…"}` a quienes participan. Los datos se consultan por la API. Las conexiones viven en memoria (una sola instancia).
 
 ## Sesiones
 
@@ -102,6 +127,8 @@ Toda ruta no declarada queda cerrada.
 - Autenticación de múltiples factores.
 - Verificación del celular por SMS o WhatsApp (requiere proveedor).
 - Verificación documental y facial de quienes prestan servicios.
-- Límite de peticiones compartido entre instancias (hoy es en memoria).
+- Fotografías de productos, horarios, promociones, reportes y búsqueda por cercanía o precio.
+- Repartidores de BarboYa, chat y calificaciones.
+- Límite de peticiones y avisos en vivo compartidos entre instancias (hoy en memoria).
 - Migración de las cuentas existentes en FastAPI.
 - Imagen Docker y despliegue.
