@@ -1,12 +1,12 @@
 # BarboYa: diagnóstico técnico y plan por fases
 
-Fecha: 26 de noviembre de 2026. Base revisada: commit `f1d19c5`, más las correcciones de la Fase 0 marcadas como hechas.
+Fecha: 26 de noviembre de 2026. Base revisada: commit `f1d19c5`. Incluye las correcciones de la Fase 0, subidas a `main` en los commits `8ddfbee` y `edb64f4`. El despliegue en el servidor no se ha verificado.
 
 ## 1. Resumen
 
 - BarboYa **no está listo para operar con usuarios ni dinero reales**.
 - El backend en uso es FastAPI (Python). El backend exigido, Spring Boot, existe como esqueleto inicial con fallos graves de acceso.
-- En el panel de comercios, el panel de administración, comida, viajes, envíos y SOS, los componentes de React no llaman a la API.
+- En el panel de comercios, el panel de administración, comida, viajes y envíos, los componentes de React no llaman a la API.
 - No hay contratos inteligentes: no existe código Solidity, Hardhat ni Web3j.
 
 ## 2. Qué existe
@@ -23,29 +23,34 @@ Fecha: 26 de noviembre de 2026. Base revisada: commit `f1d19c5`, más las correc
 
 | Verificación | Resultado |
 |---|---|
+| Pruebas Python (suite completa) | 76 aprobadas en 4 corridas seguidas |
+| Prueba de punta a punta con la API real (SQLite) | Registro, ingreso, SOS, webhook y recuperación responden como se espera; en producción sin `JWT_SECRET` no arranca |
+| TypeScript (`tsc --noEmit`) y build de Vite | Correctos. La interfaz no se probó en un navegador |
 | Compilación de Spring Boot | Correcta; **0 pruebas** |
-| TypeScript (`tsc --noEmit`) y build de Vite | Correctos |
-| Pruebas Python, sin `test_blockchain_api.py` | 55 aprobadas |
-| `test_blockchain_api.py` | La primera prueba pasa y la segunda se cuelga al preparar el cliente de pruebas (hilo de `aiosqlite`). Causa raíz sin determinar |
-| `test_schema_sync.py` ejecutado solo | Falla porque no importa los modelos; pasa junto con el resto |
+| `docker compose` | No ejecutado: Docker no está instalado |
 | `ruff check` (paso del CI) | No ejecutado: Ruff no está instalado ni figura en `requirements.txt`, así que ese paso del CI debería fallar |
 | `npm audit` | 1 vulnerabilidad alta y 1 moderada (Vite y esbuild) |
 | Herramientas locales | Hay Java 21, Maven, Node 24 y PostgreSQL 16. Faltan Docker y Redis |
 
-Las pruebas se ejecutaron en una copia temporal del código, sin el archivo `.env`.
+Las pruebas de Python se ejecutaron en una copia temporal del código, sin el archivo `.env`. El cuelgue intermitente de `test_blockchain_api.py`, que ya ocurría en el último commit, se resolvió evitando el arranque completo de la app dentro de la prueba.
 
 ## 4. Hallazgos de seguridad
 
-### 4.1. FastAPI
+### 4.1. FastAPI y frontend
 
-| Gravedad | Hallazgo | Evidencia | Estado |
-|---|---|---|---|
-| Crítica | Cualquiera podía cambiar la contraseña de cualquier cuenta; el PIN era fijo y la API lo devolvía | Reproducido con una prueba | **Corregido** (recuperación desactivada) |
-| Crítica | `JWT_SECRET` tiene un valor por defecto público en el código y en Docker Compose; si no se define, se pueden falsificar tokens de administrador | Lectura de código | Pendiente |
-| Alta | La contraseña por defecto de PostgreSQL en Compose es `barboya` | Lectura de código | Pendiente |
-| Alta | El cliente puede asignar un viaje a cualquier conductor y con cualquier valor, sin que exista una oferta suya | `routers/trips.py`, `customer_accepts_offer` | Pendiente |
-| Media | El webhook de pagos acepta peticiones sin firma (hoy no mueve dinero) | `routers/webhooks.py` | Pendiente |
-| Media | CORS permite cualquier origen por defecto | `core/config.py` | Pendiente |
+| Gravedad | Hallazgo | Estado |
+|---|---|---|
+| Crítica | Cualquiera podía cambiar la contraseña de cualquier cuenta; el PIN era fijo y la API lo devolvía | **Corregido:** recuperación desactivada |
+| Crítica | El SOS afirmaba transmitir coordenadas a la policía y no enviaba nada | **Corregido:** registra la alerta y dice que no avisa a nadie |
+| Crítica | Secreto JWT con valor público en el código y en `docker-compose.yml` (el compose de Coolify ya lo exigía) | **Corregido:** en producción exige 32 caracteres o más |
+| Alta | El SOS mostraba teléfonos locales que no se pudieron verificar | **Corregido:** quedan las líneas 123 y 119 |
+| Alta | El cliente podía asignar un viaje a cualquier conductor y con cualquier valor | **Corregido:** exige una oferta vigente |
+| Media | El webhook de pagos aceptaba peticiones sin firma y usaba el secreto de sesiones | **Corregido:** `WEBHOOK_SECRET` y firma obligatoria |
+| Media | La interfaz publicada incluía accesos de demostración, también de administrador | **Corregido:** solo en desarrollo |
+| Media | CORS permite cualquier origen por defecto | Pendiente |
+| Baja | `docker-compose.yml` (local) usa `barboya` como contraseña por defecto de PostgreSQL; la base no publica puerto | Pendiente |
+
+La aplicación Flutter permite contraofertar y aceptar de inmediato el nuevo valor. Con la corrección, el conductor debe enviar primero una oferta por ese valor.
 
 ### 4.2. Spring Boot (no debe desplegarse)
 
@@ -62,8 +67,8 @@ Las pruebas se ejecutaron en una copia temporal del código, sin el archivo `.en
 
 ## 5. Brechas funcionales
 
-- **Interfaz sin conexión:** la recarga Nequi/Daviplata solo cambia el saldo en pantalla. El SOS no envía nada al servidor, aunque la pantalla afirma que las coordenadas se transmitieron. Es un riesgo para las personas y debe corregirse antes de cualquier uso.
-- **Accesos de demostración:** la pantalla de ingreso incluye botones que rellenan credenciales, también de administrador.
+- **Interfaz sin conexión:** la recarga Nequi/Daviplata solo cambia el saldo en pantalla.
+- **SOS:** la alerta queda guardada, pero nadie la atiende: falta notificar a soporte y contactos, y mostrarla en el panel de administración.
 - **Incompatibilidad:** el frontend espera campos como `access_token` y rutas que Spring Boot no tiene (usa `accessToken`). Hoy no pueden funcionar juntos.
 - **Spring Boot:** los pedidos son un marcador vacío; faltan Flyway, Actuator, correo, OpenAPI y Web3j; usa H2 y `ddl-auto: update`.
 - **Frontend:** faltan React Router, TanStack Query, React Hook Form, Zod, Axios y shadcn/ui.
@@ -71,8 +76,9 @@ Las pruebas se ejecutaron en una copia temporal del código, sin el archivo `.en
 
 ## 6. Repositorio
 
-- `frontend/node_modules`, `backend-springboot/target/` (incluye un `.jar` de decenas de MB) y una base H2 `.mv.db` están versionados.
-- `.gitignore` ya los excluye (**hecho**), pero siguen en Git hasta ejecutar `git rm -r --cached`. Ese comando no los borra del disco. El historial conservará las copias anteriores.
+- `frontend/node_modules` y `backend-springboot/target/` (con un `.jar` de decenas de MB) se retiraron del índice de Git y quedaron en `.gitignore`. El cambio ya está en `main`.
+- El historial conserva las copias anteriores.
+- Quien actualice otra copia del repositorio debe ejecutar `npm ci` en `frontend/`.
 
 ## 7. Plan por fases
 
@@ -80,7 +86,7 @@ Cada fase termina cuando sus pruebas pasan.
 
 | Fase | Alcance | Criterio de salida |
 |---|---|---|
-| 0. Contención | Recuperación de contraseña (hecho), `.gitignore` (hecho), secretos obligatorios, oferta de viajes, webhook, botones de demostración, SOS | Sin hallazgos críticos abiertos en el backend en uso |
+| 0. Contención (hecha; despliegue sin verificar) | Recuperación de contraseña, secretos, oferta de viajes, webhook, accesos de demostración, SOS y limpieza de Git | Sin hallazgos críticos abiertos en el backend en uso |
 | 1. Base Spring Boot | Módulos, Flyway, PostgreSQL, roles, JWT con refresh tokens, OTP y recuperación, OpenAPI, Actuator, CI | Pruebas de autorización por cada rol |
 | 2. Base React | Router, TanStack Query, formularios con Zod, shadcn/ui, autenticación conectada | Registro e ingreso funcionan de extremo a extremo |
 | 3. Comercio y pedidos | Comercios, productos, inventario, pedidos, PIN de entrega, tiempo real | Pedido completo probado entre cliente y comercio |
@@ -94,10 +100,9 @@ Cada fase termina cuando sus pruebas pasan.
 ## 8. Pendientes de decisión y de terceros
 
 **Decisiones del proyecto**
-1. Autorizar el retiro de `node_modules`, `target/` y la base H2 del índice de Git.
-2. Conservar o no la app Flutter.
-3. Autorizar la reorganización del esqueleto Spring Boot por módulos.
-4. Completar los requisitos: el documento recibido se corta en la sección 16 (Notificaciones).
+1. Conservar o no la app Flutter.
+2. Confirmar los teléfonos locales de emergencia antes de volver a mostrarlos.
+3. Completar los requisitos: el documento recibido se corta en la sección 16 (Notificaciones).
 
 **Cuentas y credenciales:** pasarela de pagos colombiana en sandbox, correo o SMS, proveedor de mapas, nodo RPC y billetera de red de pruebas, y acceso a la base PostgreSQL de desarrollo.
 

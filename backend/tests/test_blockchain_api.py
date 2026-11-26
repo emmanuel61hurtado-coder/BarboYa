@@ -86,8 +86,9 @@ def client():
     app.dependency_overrides[get_session] = override_session
     app.dependency_overrides[security.get_current_user] = lambda: security.CurrentUser(driver_id, "driver")
 
-    with TestClient(app, raise_server_exceptions=True) as c:
-        yield c
+    # Sin `with`: así no corre el arranque de la app (base real e indexador en
+    # segundo plano), que colgaba las pruebas de forma intermitente.
+    yield TestClient(app, raise_server_exceptions=True)
     app.dependency_overrides.clear()
 
 
