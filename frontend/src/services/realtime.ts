@@ -27,7 +27,7 @@ export function connectOrderEvents({ url, getToken, renew, onChange, createSocke
     current.onmessage = (event) => {
       const type = (JSON.parse(String(event.data)) as { type?: string }).type
       if (type === 'ready') failures = 0
-      if (type === 'ready' || type === 'order.updated') onChange()
+      if (type === 'ready' || type === 'order.updated' || type === 'offers.updated') onChange()
     }
     current.onclose = (event) => {
       if (stopped) return

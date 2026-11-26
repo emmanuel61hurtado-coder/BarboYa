@@ -7,6 +7,7 @@ import com.barboya.orders.OrderDtos.OrderResponse;
 import com.barboya.orders.OrderDtos.ReasonRequest;
 import com.barboya.security.AuthUser;
 import jakarta.validation.Valid;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -64,6 +65,16 @@ public class MerchantOrderController {
     public OrderResponse cancel(@AuthenticationPrincipal AuthUser user, @PathVariable UUID id,
                                 @Valid @RequestBody ReasonRequest body) {
         return service.cancel(user.id(), id, body.reason());
+    }
+
+    @PostMapping("/{id}/unassign")
+    public OrderResponse unassign(@AuthenticationPrincipal AuthUser user, @PathVariable UUID id) {
+        return service.unassign(user.id(), id);
+    }
+
+    @GetMapping("/{id}/evidence")
+    public ResponseEntity<byte[]> evidence(@AuthenticationPrincipal AuthUser user, @PathVariable UUID id) {
+        return EvidenceResponses.of(service.evidence(user.id(), id));
     }
 
     @PostMapping("/{id}/deliver")

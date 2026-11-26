@@ -47,6 +47,9 @@ public class Business {
     private boolean deliveryEnabled;
     private int deliveryFeeCop;
     private boolean acceptingOrders;
+    private boolean courierDeliveryEnabled;
+    private Double latitude;
+    private Double longitude;
 
     @Column(updatable = false)
     private Instant createdAt;

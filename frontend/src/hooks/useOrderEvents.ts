@@ -18,6 +18,8 @@ export function useOrderEvents(enabled: boolean) {
         void queryClient.invalidateQueries({ queryKey: ['orders'] })
         // Cada pedido reserva o devuelve existencias
         void queryClient.invalidateQueries({ queryKey: ['shop', 'products'] })
+        // Pedidos disponibles y entrega en curso del domiciliario
+        void queryClient.invalidateQueries({ queryKey: ['work'] })
       },
     })
   }, [enabled, queryClient])

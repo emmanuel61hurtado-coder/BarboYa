@@ -19,10 +19,17 @@ export const businessSchema = z
     pickupEnabled: z.boolean(),
     deliveryEnabled: z.boolean(),
     deliveryFeeCop: money(0, 100000),
+    courierDeliveryEnabled: z.boolean(),
+    latitude: z.number().min(-90).max(90).nullable(),
+    longitude: z.number().min(-180).max(180).nullable(),
   })
-  .refine((data) => data.pickupEnabled || data.deliveryEnabled, {
+  .refine((data) => data.pickupEnabled || data.deliveryEnabled || data.courierDeliveryEnabled, {
     message: 'Activa al menos una forma de entrega',
     path: ['deliveryEnabled'],
+  })
+  .refine((data) => !data.courierDeliveryEnabled || data.latitude !== null, {
+    message: 'Marca la ubicación del comercio para usar domiciliarios',
+    path: ['latitude'],
   })
 
 export const productSchema = z.object({
@@ -41,7 +48,7 @@ export const productSchema = z.object({
 
 export const checkoutSchema = z
   .object({
-    fulfillment: z.enum(['PICKUP', 'DELIVERY']),
+    fulfillment: z.enum(['PICKUP', 'DELIVERY', 'COURIER']),
     deliveryAddress: z.string().trim().max(200),
     notes: z.string().trim().max(300),
   })

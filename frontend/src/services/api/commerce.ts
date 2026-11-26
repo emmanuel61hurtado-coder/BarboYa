@@ -1,10 +1,12 @@
 import { ApiError, apiClient } from './client'
 import type { Page } from './types'
+import type { VehicleType } from './courier'
+import type { Point } from '../../utils/geo'
 
 const { http } = apiClient
 
 export type Category = 'RESTAURANT' | 'GROCERY' | 'PHARMACY' | 'BAKERY' | 'OTHER'
-export type Fulfillment = 'PICKUP' | 'DELIVERY'
+export type Fulfillment = 'PICKUP' | 'DELIVERY' | 'COURIER'
 export type OrderStatus =
   | 'PLACED'
   | 'PREPARING'
@@ -13,6 +15,7 @@ export type OrderStatus =
   | 'DELIVERED'
   | 'REJECTED'
   | 'CANCELLED'
+  | 'FAILED'
 
 export interface BusinessInput {
   name: string
@@ -25,6 +28,9 @@ export interface BusinessInput {
   pickupEnabled: boolean
   deliveryEnabled: boolean
   deliveryFeeCop: number
+  courierDeliveryEnabled: boolean
+  latitude: number | null
+  longitude: number | null
 }
 
 export type Business = Omit<BusinessInput, 'legalName' | 'nit' | 'description'> & {
@@ -56,6 +62,9 @@ export interface StoreSummary {
   deliveryEnabled: boolean
   deliveryFeeCop: number
   open: boolean
+  courierDeliveryEnabled: boolean
+  latitude: number | null
+  longitude: number | null
 }
 
 export interface MenuItem {
@@ -81,8 +90,11 @@ export interface Order {
   businessName: string
   businessPhone: string
   businessAddress: string
+  businessLocation: Point | null
   customer: { name: string; phone: string } | null
   deliveryAddress: string | null
+  deliveryLocation: Point | null
+  distanceKm: number | null
   notes: string | null
   items: { productId: string; name: string; unitPriceCop: number; quantity: number; lineTotalCop: number }[]
   subtotalCop: number
@@ -93,6 +105,15 @@ export interface Order {
   statusReason: string | null
   deliveryPin: string | null
   pinLocked: boolean
+  pickupCode: string | null
+  courier: {
+    name: string
+    phone: string | null
+    vehicleType: VehicleType
+    plate: string | null
+    location: Point | null
+  } | null
+  hasEvidence: boolean
   createdAt: string
   deliveredAt: string | null
   history: { status: OrderStatus; note: string | null; at: string }[]
@@ -106,12 +127,14 @@ export interface NewOrder {
   notes: string
   paymentMethod: 'CASH'
   expectedTotalCop: number
+  deliveryLatitude?: number
+  deliveryLongitude?: number
 }
 
 export type ShopAction =
   | { action: 'accept'; body: { prepMinutes: number } }
   | { action: 'reject' | 'cancel'; body: { reason: string } }
-  | { action: 'ready' | 'dispatch'; body?: undefined }
+  | { action: 'ready' | 'dispatch' | 'unassign'; body?: undefined }
   | { action: 'deliver'; body: { pin: string } }
 
 /** Un comercio sin datos todavía no es un error. */
@@ -140,6 +163,8 @@ export const shopApi = {
     (await http.get<Page<Order>>('/merchant/orders', { params: { finished, page, size: 20 } })).data,
   act: async (orderId: string, { action, body }: ShopAction) =>
     (await http.post<Order>(`/merchant/orders/${orderId}/${action}`, body ?? {})).data,
+  evidence: async (orderId: string) =>
+    (await http.get<Blob>(`/merchant/orders/${orderId}/evidence`, { responseType: 'blob' })).data,
   reviewBusiness: (ownerId: string) => optional(http.get<Business>(`/admin/users/${ownerId}/business`)),
 }
 
@@ -151,6 +176,12 @@ export const catalogApi = {
       })
     ).data,
   store: async (id: string) => (await http.get<Store>(`/catalog/businesses/${id}`)).data,
+  quote: async (id: string, point: Point) =>
+    (
+      await http.get<{ distanceKm: number; feeCop: number }>(`/catalog/businesses/${id}/delivery-quote`, {
+        params: { lat: point.latitude, lng: point.longitude },
+      })
+    ).data,
 }
 
 export const orderApi = {
@@ -161,4 +192,5 @@ export const orderApi = {
   get: async (id: string) => (await http.get<Order>(`/orders/${id}`)).data,
   cancel: async (id: string) => (await http.post<Order>(`/orders/${id}/cancel`)).data,
   newPin: async (id: string) => (await http.post<Order>(`/orders/${id}/new-pin`)).data,
+  evidence: async (id: string) => (await http.get<Blob>(`/orders/${id}/evidence`, { responseType: 'blob' })).data,
 }

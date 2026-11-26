@@ -7,6 +7,7 @@ import com.barboya.orders.OrderDtos.PlaceOrderRequest;
 import com.barboya.security.AuthUser;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -54,6 +55,11 @@ public class CustomerOrderController {
     @GetMapping("/{id}")
     public OrderResponse get(@AuthenticationPrincipal AuthUser user, @PathVariable UUID id) {
         return service.get(user.id(), id);
+    }
+
+    @GetMapping("/{id}/evidence")
+    public ResponseEntity<byte[]> evidence(@AuthenticationPrincipal AuthUser user, @PathVariable UUID id) {
+        return EvidenceResponses.of(service.evidence(user.id(), id));
     }
 
     @PostMapping("/{id}/cancel")

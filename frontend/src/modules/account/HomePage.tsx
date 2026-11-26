@@ -52,11 +52,15 @@ export function HomePage() {
         )}
         {user.role === 'COURIER' && (
           <Button asChild>
-            <Link to="/verificacion">Completar mi verificación</Link>
+            {user.status === 'ACTIVE' ? (
+              <Link to="/entregas">Ver pedidos para entregar</Link>
+            ) : (
+              <Link to="/verificacion">Completar mi verificación</Link>
+            )}
           </Button>
         )}
         <p className="text-sm text-slate-400">
-          Los pedidos para domiciliarios, los viajes y los pagos en línea todavía no están disponibles.
+          Los viajes y los pagos en línea todavía no están disponibles.
         </p>
       </Card>
     </>

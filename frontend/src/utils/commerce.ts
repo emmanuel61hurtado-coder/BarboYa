@@ -14,6 +14,7 @@ export const CATEGORY_LABELS: Record<Category, string> = {
 
 export const FULFILLMENT_LABELS: Record<Fulfillment, string> = {
   DELIVERY: 'A domicilio',
+  COURIER: 'Con domiciliario BarboYa',
   PICKUP: 'Recoger en el local',
 }
 
@@ -25,4 +26,5 @@ export const ORDER_STATUS_LABELS: Record<OrderStatus, string> = {
   DELIVERED: 'Entregado',
   REJECTED: 'Rechazado',
   CANCELLED: 'Cancelado',
+  FAILED: 'Entrega fallida',
 }

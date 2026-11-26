@@ -1,6 +1,8 @@
 package com.barboya.businesses;
 
 import com.barboya.products.Product;
+import jakarta.validation.constraints.DecimalMax;
+import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
@@ -26,7 +28,10 @@ public final class BusinessDtos {
             @NotBlank @Pattern(regexp = "^\\+?[0-9 ()-]{7,16}$", message = "Telefono no valido") String phone,
             @NotNull Boolean pickupEnabled,
             @NotNull Boolean deliveryEnabled,
-            @NotNull @Min(0) @Max(100000) Integer deliveryFeeCop) {
+            @NotNull @Min(0) @Max(100000) Integer deliveryFeeCop,
+            Boolean courierDeliveryEnabled,
+            @DecimalMin("-90") @DecimalMax("90") Double latitude,
+            @DecimalMin("-180") @DecimalMax("180") Double longitude) {
     }
 
     public record AcceptingRequest(@NotNull Boolean accepting) {
@@ -45,12 +50,13 @@ public final class BusinessDtos {
     public record BusinessResponse(
             UUID id, String name, String legalName, String nit, Business.Category category, String description,
             String address, String phone, boolean pickupEnabled, boolean deliveryEnabled, int deliveryFeeCop,
-            boolean acceptingOrders) {
+            boolean acceptingOrders, boolean courierDeliveryEnabled, Double latitude, Double longitude) {
 
         static BusinessResponse from(Business b) {
             return new BusinessResponse(b.getId(), b.getName(), b.getLegalName(), b.getNit(), b.getCategory(),
                     b.getDescription(), b.getAddress(), b.getPhone(), b.isPickupEnabled(), b.isDeliveryEnabled(),
-                    b.getDeliveryFeeCop(), b.isAcceptingOrders());
+                    b.getDeliveryFeeCop(), b.isAcceptingOrders(), b.isCourierDeliveryEnabled(),
+                    b.getLatitude(), b.getLongitude());
         }
     }
 
@@ -67,11 +73,13 @@ public final class BusinessDtos {
     /** Lo que ve un cliente al explorar. */
     public record StoreSummary(
             UUID id, String name, Business.Category category, String description, String address,
-            boolean pickupEnabled, boolean deliveryEnabled, int deliveryFeeCop, boolean open) {
+            boolean pickupEnabled, boolean deliveryEnabled, int deliveryFeeCop, boolean open,
+            boolean courierDeliveryEnabled, Double latitude, Double longitude) {
 
         static StoreSummary from(Business b) {
             return new StoreSummary(b.getId(), b.getName(), b.getCategory(), b.getDescription(), b.getAddress(),
-                    b.isPickupEnabled(), b.isDeliveryEnabled(), b.getDeliveryFeeCop(), b.isAcceptingOrders());
+                    b.isPickupEnabled(), b.isDeliveryEnabled(), b.getDeliveryFeeCop(), b.isAcceptingOrders(),
+                    b.isCourierDeliveryEnabled(), b.getLatitude(), b.getLongitude());
         }
     }
 

@@ -209,6 +209,18 @@ public class CourierService implements ActivationRequirement {
         }
     }
 
+    /** Para trabajar: cuenta activa y documentos vigentes hoy. */
+    @Transactional(readOnly = true)
+    public void requireOperable(UUID userId) {
+        boolean active = users.findById(userId).filter(u -> u.getStatus() == UserStatus.ACTIVE).isPresent();
+        List<String> missing = pending(profiles.findById(userId).orElse(null), documents.findByUserId(userId));
+        if (!active || !missing.isEmpty()) {
+            throw new ApiException(HttpStatus.FORBIDDEN, "COURIER_NOT_OPERABLE", missing.isEmpty()
+                    ? "Tu cuenta debe estar aprobada para operar"
+                    : "No puedes operar. Revisa: " + String.join("; ", missing));
+        }
+    }
+
     private List<String> pending(CourierProfile profile, List<CourierDocument> uploaded) {
         if (profile == null) {
             return List.of("datos y autorización del domiciliario");

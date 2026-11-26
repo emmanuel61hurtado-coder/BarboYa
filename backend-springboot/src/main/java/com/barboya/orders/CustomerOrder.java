@@ -26,7 +26,10 @@ public class CustomerOrder {
 
     public enum Fulfillment {
         PICKUP,
-        DELIVERY
+        /** Lo lleva el personal del comercio. */
+        DELIVERY,
+        /** Lo lleva un domiciliario de BarboYa. */
+        COURIER
     }
 
     public enum PaymentMethod {
@@ -69,6 +72,17 @@ public class CustomerOrder {
     private Instant createdAt;
     private Instant updatedAt;
     private Instant deliveredAt;
+
+    private UUID courierId;
+    private Double deliveryLatitude;
+    private Double deliveryLongitude;
+    private Double distanceKm;
+    private String pickupCode;
+    private int pickupAttempts;
+    private Instant assignedAt;
+    private Instant pickedUpAt;
+    private String evidenceKey;
+    private String evidenceType;
 
     @Version
     private Long version;

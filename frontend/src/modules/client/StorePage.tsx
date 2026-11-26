@@ -12,6 +12,8 @@ import { Button } from '../../components/ui/button'
 import { Alert, Card, ErrorAlert } from '../../components/ui/surface'
 import { CATEGORY_LABELS, FULFILLMENT_LABELS, formatCop } from '../../utils/commerce'
 import { Cart, setQuantity, summarize } from './cart'
+import { LocationPicker } from '../../components/map/Map'
+import type { Point } from '../../utils/geo'
 
 export function StorePage() {
   const { id = '' } = useParams()
@@ -107,13 +109,23 @@ function Checkout({ store: { business, products }, cart }: { store: Store; cart:
   const form = useForm<z.infer<typeof checkoutSchema>>({
     resolver: zodResolver(checkoutSchema),
     defaultValues: {
-      fulfillment: business.deliveryEnabled ? 'DELIVERY' : 'PICKUP',
+      fulfillment: business.deliveryEnabled ? 'DELIVERY' : business.courierDeliveryEnabled ? 'COURIER' : 'PICKUP',
       deliveryAddress: '',
       notes: '',
     },
   })
   const fulfillment = form.watch('fulfillment')
-  const summary = summarize(products, cart, fulfillment, business.deliveryFeeCop)
+  const [destination, setDestination] = useState<Point | null>(null)
+  const courier = fulfillment === 'COURIER'
+  // La tarifa del domiciliario la calcula el servidor según el punto marcado
+  const quote = useQuery({
+    queryKey: ['catalog', 'quote', business.id, destination],
+    queryFn: () => catalogApi.quote(business.id, destination!),
+    enabled: courier && destination !== null,
+  })
+  const feeCop = courier ? (quote.data?.feeCop ?? 0) : business.deliveryFeeCop
+  const summary = summarize(products, cart, fulfillment, feeCop)
+  const missingQuote = courier && !quote.data
 
   const { submit, error, sending } = useSubmit(form, async (values) => {
     const order: NewOrder = {
@@ -122,6 +134,9 @@ function Checkout({ store: { business, products }, cart }: { store: Store; cart:
       items: summary.lines.map(({ item, quantity }) => ({ productId: item.id, quantity })),
       paymentMethod: 'CASH',
       expectedTotalCop: summary.totalCop,
+      ...(values.fulfillment === 'COURIER' && destination
+        ? { deliveryLatitude: destination.latitude, deliveryLongitude: destination.longitude }
+        : {}),
     }
     // Reintentar el mismo pedido reutiliza la clave; si cambia algo, es otro pedido
     const content = JSON.stringify(order)
@@ -154,9 +169,21 @@ function Checkout({ store: { business, products }, cart }: { store: Store; cart:
           </ul>
           <SelectField label="Forma de entrega" {...form.register('fulfillment')}>
             {business.deliveryEnabled && <option value="DELIVERY">{FULFILLMENT_LABELS.DELIVERY}</option>}
+            {business.courierDeliveryEnabled && <option value="COURIER">{FULFILLMENT_LABELS.COURIER}</option>}
             {business.pickupEnabled && <option value="PICKUP">{FULFILLMENT_LABELS.PICKUP}</option>}
           </SelectField>
-          {fulfillment === 'DELIVERY' && (
+          {courier && (
+            <>
+              <LocationPicker label="Punto de entrega" value={destination} onChange={setDestination} />
+              <ErrorAlert error={quote.error} />
+              {quote.data && (
+                <p className="text-xs text-slate-400">
+                  A {quote.data.distanceKm.toLocaleString('es-CO')} km del comercio, en línea recta.
+                </p>
+              )}
+            </>
+          )}
+          {fulfillment !== 'PICKUP' && (
             <TextField
               label="Dirección de entrega"
               autoComplete="street-address"
@@ -172,17 +199,19 @@ function Checkout({ store: { business, products }, cart }: { store: Store; cart:
             </div>
             <div className="flex justify-between text-slate-400">
               <dt>Domicilio</dt>
-              <dd>{formatCop(summary.feeCop)}</dd>
+              <dd>{missingQuote ? 'Marca el punto' : formatCop(summary.feeCop)}</dd>
             </div>
             <div className="flex justify-between text-base font-bold">
               <dt>Total</dt>
               <dd>{formatCop(summary.totalCop)}</dd>
             </div>
           </dl>
-          <p className="text-xs text-slate-500">Pagas en efectivo al recibir. No hay cargos adicionales.</p>
+          <p className="text-xs text-slate-500">
+            {courier ? 'Pagas en efectivo al domiciliario.' : 'Pagas en efectivo al recibir.'} No hay cargos adicionales.
+          </p>
           <ErrorAlert error={error} />
-          <Button type="submit" className="w-full" loading={sending} disabled={!business.open}>
-            Confirmar pedido por {formatCop(summary.totalCop)}
+          <Button type="submit" className="w-full" loading={sending} disabled={!business.open || missingQuote}>
+            {missingQuote ? 'Marca el punto de entrega' : `Confirmar pedido por ${formatCop(summary.totalCop)}`}
           </Button>
         </form>
       )}

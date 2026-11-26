@@ -8,7 +8,9 @@ import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.time.Instant;
 import java.util.Collection;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -20,6 +22,20 @@ public interface OrderRepository extends JpaRepository<CustomerOrder, UUID> {
 
     Page<CustomerOrder> findByBusinessIdAndStatusInOrderByCreatedAtDesc(
             UUID businessId, Collection<OrderStatus> statuses, Pageable pageable);
+
+    List<CustomerOrder> findByFulfillmentAndCourierIdIsNullAndStatusIn(
+            CustomerOrder.Fulfillment fulfillment, Collection<OrderStatus> statuses);
+
+    Optional<CustomerOrder> findFirstByCourierIdAndStatusIn(UUID courierId, Collection<OrderStatus> statuses);
+
+    Page<CustomerOrder> findByCourierIdAndStatusInOrderByCreatedAtDesc(
+            UUID courierId, Collection<OrderStatus> statuses, Pageable pageable);
+
+    @Query("""
+            select coalesce(sum(o.deliveryFeeCop), 0) from CustomerOrder o
+            where o.courierId = :courierId and o.status = com.barboya.orders.OrderStatus.DELIVERED
+              and o.deliveredAt >= :since""")
+    long earningsSince(@Param("courierId") UUID courierId, @Param("since") Instant since);
 
     /** Bloqueado: dos acciones simultaneas sobre un pedido se aplican en orden. */
     @Lock(LockModeType.PESSIMISTIC_WRITE)

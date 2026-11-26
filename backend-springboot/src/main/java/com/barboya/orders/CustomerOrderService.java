@@ -3,7 +3,9 @@ package com.barboya.orders;
 import com.barboya.businesses.Business;
 import com.barboya.businesses.BusinessRepository;
 import com.barboya.businesses.BusinessService;
+import com.barboya.businesses.DeliveryPricing;
 import com.barboya.common.ApiException;
+import com.barboya.common.Geo;
 import com.barboya.orders.OrderDtos.LineRequest;
 import com.barboya.orders.OrderDtos.OrderPage;
 import com.barboya.orders.OrderDtos.OrderResponse;
@@ -36,13 +38,15 @@ public class CustomerOrderService {
     private final BusinessRepository businesses;
     private final BusinessService businessService;
     private final ProductRepository products;
+    private final DeliveryPricing pricing;
     private final OrderLifecycle lifecycle;
     private final OrderViews views;
     private final Clock clock;
 
     CustomerOrderService(OrderRepository orders, OrderItemRepository items, BusinessRepository businesses,
-                         BusinessService businessService, ProductRepository products, OrderLifecycle lifecycle,
-                         OrderViews views, Clock clock) {
+                         BusinessService businessService, ProductRepository products, DeliveryPricing pricing,
+                         OrderLifecycle lifecycle, OrderViews views, Clock clock) {
+        this.pricing = pricing;
         this.orders = orders;
         this.items = items;
         this.businesses = businesses;
@@ -70,9 +74,23 @@ public class CustomerOrderService {
         if (!business.isAcceptingOrders()) {
             throw conflict("BUSINESS_CLOSED", "El comercio no esta recibiendo pedidos");
         }
-        boolean delivery = request.fulfillment() == CustomerOrder.Fulfillment.DELIVERY;
-        if (delivery ? !business.isDeliveryEnabled() : !business.isPickupEnabled()) {
+        boolean offered = switch (request.fulfillment()) {
+            case PICKUP -> business.isPickupEnabled();
+            case DELIVERY -> business.isDeliveryEnabled();
+            case COURIER -> business.isCourierDeliveryEnabled();
+        };
+        if (!offered) {
             throw conflict("FULFILLMENT_UNAVAILABLE", "El comercio no ofrece esa forma de entrega");
+        }
+        boolean delivery = request.fulfillment() != CustomerOrder.Fulfillment.PICKUP;
+        DeliveryPricing.Quote quote = null;
+        if (request.fulfillment() == CustomerOrder.Fulfillment.COURIER) {
+            if (request.deliveryLatitude() == null || request.deliveryLongitude() == null) {
+                throw new ApiException(HttpStatus.BAD_REQUEST, "LOCATION_REQUIRED",
+                        "Marca en el mapa el punto de entrega");
+            }
+            quote = pricing.quote(business,
+                    new Geo.Point(request.deliveryLatitude(), request.deliveryLongitude()));
         }
         String address = request.deliveryAddress() == null ? "" : request.deliveryAddress().trim();
         if (delivery && address.length() < 5) {
@@ -110,7 +128,7 @@ public class CustomerOrderService {
                     line.quantity()));
         }
 
-        int fee = delivery ? business.getDeliveryFeeCop() : 0;
+        int fee = quote != null ? quote.feeCop() : delivery ? business.getDeliveryFeeCop() : 0;
         int total = Math.toIntExact(subtotal) + fee;
         if (total != request.expectedTotalCop()) {
             throw conflict("PRICE_CHANGED", "Los precios cambiaron; revisa el total antes de confirmar");
@@ -123,6 +141,11 @@ public class CustomerOrderService {
         order.setDeliveryFeeCop(fee);
         order.setTotalCop(total);
         order.setDeliveryPin(lifecycle.newPin());
+        if (quote != null) {
+            order.setDeliveryLatitude(request.deliveryLatitude());
+            order.setDeliveryLongitude(request.deliveryLongitude());
+            order.setDistanceKm(quote.distanceKm());
+        }
         CustomerOrder saved = orders.saveAndFlush(order);
         items.saveAll(lines);
         lifecycle.record(saved, business.getOwnerId(), customerId, null);
@@ -140,6 +163,11 @@ public class CustomerOrderService {
     @Transactional(readOnly = true)
     public OrderResponse get(UUID customerId, UUID orderId) {
         return view(own(orders.findById(orderId).orElse(null), customerId));
+    }
+
+    @Transactional(readOnly = true)
+    public OrderDtos.Evidence evidence(UUID customerId, UUID orderId) {
+        return views.evidence(own(orders.findById(orderId).orElse(null), customerId));
     }
 
     /** Solo antes de que el comercio empiece a prepararlo. */

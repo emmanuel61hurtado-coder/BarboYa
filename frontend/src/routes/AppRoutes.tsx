@@ -19,6 +19,7 @@ import { OrderBoardPage } from '../modules/business/OrderBoardPage'
 import { ProductsPage } from '../modules/business/ProductsPage'
 import { BusinessPage } from '../modules/business/BusinessPage'
 import { VerificationPage } from '../modules/couriers/VerificationPage'
+import { DeliveriesPage } from '../modules/couriers/DeliveriesPage'
 
 // Estas guardas solo ordenan la navegación: quien decide el acceso es el backend
 
@@ -69,6 +70,7 @@ export function AppRoutes() {
           </Route>
           <Route element={<Allow roles={['COURIER']} />}>
             <Route path="/verificacion" element={<VerificationPage />} />
+            <Route path="/entregas" element={<DeliveriesPage />} />
           </Route>
           <Route element={<Allow roles={['ADMIN', 'SUPERADMIN']} />}>
             <Route path="/admin/usuarios" element={<UsersPage />} />

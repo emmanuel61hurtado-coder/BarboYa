@@ -1,6 +1,10 @@
 package com.barboya.orders;
 
+import com.barboya.common.Geo;
+import com.barboya.couriers.VehicleType;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.DecimalMax;
+import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
@@ -29,7 +33,30 @@ public final class OrderDtos {
             @Size(max = 200) String deliveryAddress,
             @Size(max = 300) String notes,
             @NotNull CustomerOrder.PaymentMethod paymentMethod,
-            @NotNull Integer expectedTotalCop) {
+            @NotNull Integer expectedTotalCop,
+            @DecimalMin("-90") @DecimalMax("90") Double deliveryLatitude,
+            @DecimalMin("-180") @DecimalMax("180") Double deliveryLongitude) {
+    }
+
+    public record PickupRequest(
+            @NotBlank @Pattern(regexp = "^\\d{4}$", message = "El codigo tiene 4 digitos") String code) {
+    }
+
+    /** Un pedido disponible, sin datos personales del cliente. */
+    public record DeliveryOffer(
+            UUID id, long number, OrderStatus status, String businessName, String businessAddress,
+            double pickupDistanceKm, double deliveryDistanceKm, int feeCop, int payAtPickupCop,
+            int collectCop) {
+    }
+
+    /** {@code location} es nula si no hay una posicion reciente. */
+    public record CourierInfo(String name, String phone, VehicleType vehicleType, String plate, Geo.Point location) {
+    }
+
+    public record Evidence(byte[] content, String contentType) {
+    }
+
+    public record Earnings(long todayCop, long last7DaysCop, long last30DaysCop) {
     }
 
     public record AcceptRequest(@NotNull @Min(1) @Max(240) Integer prepMinutes) {
@@ -57,9 +84,11 @@ public final class OrderDtos {
     public record OrderResponse(
             UUID id, long number, OrderStatus status, CustomerOrder.Fulfillment fulfillment,
             UUID businessId, String businessName, String businessPhone, String businessAddress,
-            Contact customer, String deliveryAddress, String notes, List<Line> items,
+            Geo.Point businessLocation, Contact customer, String deliveryAddress, Geo.Point deliveryLocation,
+            Double distanceKm, String notes, List<Line> items,
             int subtotalCop, int deliveryFeeCop, int totalCop, CustomerOrder.PaymentMethod paymentMethod,
             Integer prepMinutes, String statusReason, String deliveryPin, boolean pinLocked,
+            String pickupCode, CourierInfo courier, boolean hasEvidence,
             Instant createdAt, Instant deliveredAt, List<Step> history) {
     }
 

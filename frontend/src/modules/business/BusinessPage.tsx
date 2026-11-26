@@ -10,6 +10,7 @@ import { businessSchema } from '../../validations/commerce'
 import { SelectField, TextField } from '../../components/ui/field'
 import { Button } from '../../components/ui/button'
 import { Alert, Card, ErrorAlert } from '../../components/ui/surface'
+import { LocationPicker } from '../../components/map/Map'
 import { CATEGORY_LABELS } from '../../utils/commerce'
 
 export function BusinessPage() {
@@ -69,6 +70,9 @@ function BusinessForm({ business }: { business: Business | null }) {
       pickupEnabled: business?.pickupEnabled ?? true,
       deliveryEnabled: business?.deliveryEnabled ?? false,
       deliveryFeeCop: business?.deliveryFeeCop ?? 0,
+      courierDeliveryEnabled: business?.courierDeliveryEnabled ?? false,
+      latitude: business?.latitude ?? null,
+      longitude: business?.longitude ?? null,
     },
   })
   const [saved, setSaved] = useState(false)
@@ -80,6 +84,7 @@ function BusinessForm({ business }: { business: Business | null }) {
   })
   const { errors, isDirty } = form.formState
   const delivers = form.watch('deliveryEnabled')
+  const [latitude, longitude] = form.watch(['latitude', 'longitude'])
 
   return (
     <Card title="Datos del comercio" description="El equipo de BarboYa los revisa antes de aprobar tu cuenta.">
@@ -107,6 +112,9 @@ function BusinessForm({ business }: { business: Business | null }) {
           <label className="flex items-center gap-2 text-sm">
             <input type="checkbox" {...form.register('deliveryEnabled')} /> Entrego a domicilio con mi personal
           </label>
+          <label className="flex items-center gap-2 text-sm">
+            <input type="checkbox" {...form.register('courierDeliveryEnabled')} /> Usar domiciliarios de BarboYa
+          </label>
           {errors.deliveryEnabled && (
             <p role="alert" className="text-xs text-rose-400">
               {errors.deliveryEnabled.message}
@@ -124,6 +132,19 @@ function BusinessForm({ business }: { business: Business | null }) {
               {...form.register('deliveryFeeCop', { valueAsNumber: true })}
             />
           </div>
+        )}
+        <LocationPicker
+          label="Ubicación del comercio (necesaria para los domiciliarios)"
+          value={latitude !== null && longitude !== null ? { latitude, longitude } : null}
+          onChange={(point) => {
+            form.setValue('latitude', point.latitude, { shouldDirty: true })
+            form.setValue('longitude', point.longitude, { shouldDirty: true, shouldValidate: true })
+          }}
+        />
+        {errors.latitude && (
+          <p role="alert" className="text-xs text-rose-400">
+            {errors.latitude.message}
+          </p>
         )}
         <ErrorAlert error={error} />
         {saved && !isDirty && <Alert variant="success">Datos guardados.</Alert>}

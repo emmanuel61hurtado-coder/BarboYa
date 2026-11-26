@@ -10,9 +10,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.nio.charset.StandardCharsets;
-import java.security.MessageDigest;
-import java.time.Clock;
 import java.util.UUID;
 import java.util.function.BiConsumer;
 
@@ -25,15 +22,13 @@ public class MerchantOrderService {
     private final BusinessService businesses;
     private final OrderLifecycle lifecycle;
     private final OrderViews views;
-    private final Clock clock;
 
     MerchantOrderService(OrderRepository orders, BusinessService businesses, OrderLifecycle lifecycle,
-                         OrderViews views, Clock clock) {
+                         OrderViews views) {
         this.orders = orders;
         this.businesses = businesses;
         this.lifecycle = lifecycle;
         this.views = views;
-        this.clock = clock;
     }
 
     @Transactional(readOnly = true)
@@ -76,7 +71,7 @@ public class MerchantOrderService {
             lifecycle.require(order, OrderStatus.READY);
             if (order.getFulfillment() != CustomerOrder.Fulfillment.DELIVERY) {
                 throw new ApiException(HttpStatus.CONFLICT, "INVALID_TRANSITION",
-                        "El cliente recoge este pedido");
+                        "Este pedido no lo envia el comercio");
             }
             lifecycle.move(order, OrderStatus.OUT_FOR_DELIVERY, ownerId, ownerId, null);
         });
@@ -85,33 +80,50 @@ public class MerchantOrderService {
     public OrderResponse cancel(UUID ownerId, UUID orderId, String reason) {
         return change(ownerId, orderId, (order, business) -> {
             lifecycle.require(order, OrderStatus.PREPARING, OrderStatus.READY, OrderStatus.OUT_FOR_DELIVERY);
+            if (order.getFulfillment() == CustomerOrder.Fulfillment.COURIER
+                    && order.getStatus() == OrderStatus.OUT_FOR_DELIVERY) {
+                throw new ApiException(HttpStatus.CONFLICT, "ALREADY_PICKED_UP",
+                        "El domiciliario ya lo recogio");
+            }
             lifecycle.releaseStock(order);
             lifecycle.move(order, OrderStatus.CANCELLED, ownerId, ownerId, reason.trim());
         });
     }
 
+    /** El comercio puede pedir otro domiciliario si el asignado no llega. */
+    public OrderResponse unassign(UUID ownerId, UUID orderId) {
+        return change(ownerId, orderId, (order, business) -> {
+            lifecycle.require(order, OrderStatus.PREPARING, OrderStatus.READY);
+            if (order.getCourierId() == null) {
+                throw new ApiException(HttpStatus.CONFLICT, "NO_COURIER", "El pedido no tiene domiciliario");
+            }
+            lifecycle.unassign(order, ownerId, ownerId, "El comercio pidio otro domiciliario");
+        });
+    }
+
+    @Transactional(readOnly = true)
+    public OrderDtos.Evidence evidence(UUID ownerId, UUID orderId) {
+        Business business = businesses.requireOwned(ownerId);
+        return views.evidence(orders.findById(orderId)
+                .filter(o -> o.getBusinessId().equals(business.getId()))
+                .orElseThrow(OrderLifecycle::notFound));
+    }
+
     /**
-     * Solo el PIN del cliente marca la entrega. {@code noRollbackFor}: los
-     * intentos fallidos quedan contados aunque se responda con error.
+     * Entregas que hace el propio comercio o recogidas en el local.
+     * {@code noRollbackFor}: los intentos fallidos quedan contados.
      */
     @Transactional(noRollbackFor = ApiException.class)
     public OrderResponse deliver(UUID ownerId, UUID orderId, String pin) {
         businesses.requireActiveAccount(ownerId);
         return change(ownerId, orderId, (order, business) -> {
+            if (order.getFulfillment() == CustomerOrder.Fulfillment.COURIER) {
+                throw new ApiException(HttpStatus.CONFLICT, "INVALID_TRANSITION",
+                        "La entrega la confirma el domiciliario");
+            }
             lifecycle.require(order, order.getFulfillment() == CustomerOrder.Fulfillment.DELIVERY
                     ? OrderStatus.OUT_FOR_DELIVERY : OrderStatus.READY);
-            if (order.getPinAttempts() >= lifecycle.maxPinAttempts()) {
-                throw new ApiException(HttpStatus.CONFLICT, "PIN_LOCKED",
-                        "Demasiados intentos. Pide al cliente que genere un PIN nuevo");
-            }
-            boolean matches = MessageDigest.isEqual(order.getDeliveryPin().getBytes(StandardCharsets.US_ASCII),
-                    pin.getBytes(StandardCharsets.US_ASCII));
-            if (!matches) {
-                order.setPinAttempts(order.getPinAttempts() + 1);
-                throw new ApiException(HttpStatus.BAD_REQUEST, "WRONG_PIN", "PIN incorrecto");
-            }
-            order.setDeliveredAt(clock.instant());
-            lifecycle.move(order, OrderStatus.DELIVERED, ownerId, ownerId, "Entrega confirmada con PIN");
+            lifecycle.confirmDelivery(order, ownerId, ownerId, pin);
         });
     }
 

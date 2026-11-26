@@ -6,7 +6,7 @@ export function StatusBadge({ status }: { status: Order['status'] }) {
   const tone =
     status === 'DELIVERED'
       ? 'bg-emerald-500/15 text-emerald-300'
-      : status === 'REJECTED' || status === 'CANCELLED'
+      : status === 'REJECTED' || status === 'CANCELLED' || status === 'FAILED'
         ? 'bg-rose-500/15 text-rose-300'
         : 'bg-sky-500/15 text-sky-300'
   return (

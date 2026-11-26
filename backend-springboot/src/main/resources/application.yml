@@ -72,6 +72,11 @@ barboya:
     max-per-day: 5
   mail:
     from: ${MAIL_FROM:}
+  # Entregas con domiciliarios (distancias en linea recta)
+  delivery:
+    base-fee-cop: ${DELIVERY_BASE_FEE_COP:3000}
+    per-km-cop: ${DELIVERY_PER_KM_COP:1000}
+    max-distance-km: ${DELIVERY_MAX_KM:8}
   # Documentos de domiciliarios: cifrados con FILES_KEY (32 bytes en base64)
   files:
     directory: ${FILES_DIRECTORY:./data/files}

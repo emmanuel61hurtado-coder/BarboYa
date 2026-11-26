@@ -7,13 +7,47 @@ import { Alert, Card, ErrorAlert } from '../../components/ui/surface'
 import { ORDER_STATUS_LABELS } from '../../utils/commerce'
 import { formatDate } from '../../utils/labels'
 import { OrderSummary, StatusBadge } from '../orders/OrderSummary'
+import { Map } from '../../components/map/Map'
+import { DocumentPreview } from '../couriers/DocumentPreview'
+import { VEHICLE_LABELS } from '../couriers/labels'
+
+function CourierCard({ order }: { order: Order }) {
+  const courier = order.courier!
+  const active = ['PREPARING', 'READY', 'OUT_FOR_DELIVERY'].includes(order.status)
+  const markers = [
+    ...(order.businessLocation ? [{ position: order.businessLocation, label: 'Comercio', color: '#f97316' }] : []),
+    ...(order.deliveryLocation ? [{ position: order.deliveryLocation, label: 'Entrega', color: '#10b981' }] : []),
+    ...(courier.location ? [{ position: courier.location, label: 'Domiciliario', color: '#0ea5e9' }] : []),
+  ]
+
+  return (
+    <Card title="Tu domiciliario">
+      <p className="text-sm">
+        {courier.name} · {VEHICLE_LABELS[courier.vehicleType]}
+        {courier.plate && ` · Placa ${courier.plate}`}
+      </p>
+      {courier.phone && (
+        <a href={`tel:${courier.phone}`} className="text-sm text-sky-400 hover:underline">
+          Llamar: {courier.phone}
+        </a>
+      )}
+      {active && (
+        <>
+          <Map markers={markers} />
+          {!courier.location && <p className="text-xs text-slate-500">No hay una posición reciente.</p>}
+        </>
+      )}
+    </Card>
+  )
+}
 
 export function OrderPage() {
   const { id = '' } = useParams()
   const order = useQuery({
     queryKey: ['orders', 'mine', 'detail', id],
     queryFn: () => orderApi.get(id),
-    refetchInterval: 30_000,
+    // Con domiciliario asignado se consulta más seguido para mover su posición
+    refetchInterval: (query) => (query.state.data?.courier ? 10_000 : 30_000),
   })
 
   if (!order.data) {
@@ -50,6 +84,12 @@ function OrderView({ order }: { order: Order }) {
           <Button variant="secondary" size="sm" loading={renew.isPending} onClick={() => renew.mutate()}>
             Generar otro PIN
           </Button>
+        </Card>
+      )}
+      {order.courier && <CourierCard order={order} />}
+      {order.hasEvidence && (
+        <Card title="Foto de la entrega">
+          <DocumentPreview label="Foto de la entrega" contentType="image/*" load={() => orderApi.evidence(order.id)} />
         </Card>
       )}
       <Card title={order.businessName} description={order.businessAddress}>

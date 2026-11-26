@@ -9,8 +9,10 @@ public enum OrderStatus {
     OUT_FOR_DELIVERY,
     DELIVERED,
     REJECTED,
-    CANCELLED;
+    CANCELLED,
+    /** Recogido por un domiciliario y no entregado. */
+    FAILED;
 
     public static final Set<OrderStatus> ACTIVE = Set.of(PLACED, PREPARING, READY, OUT_FOR_DELIVERY);
-    public static final Set<OrderStatus> FINISHED = Set.of(DELIVERED, REJECTED, CANCELLED);
+    public static final Set<OrderStatus> FINISHED = Set.of(DELIVERED, REJECTED, CANCELLED, FAILED);
 }

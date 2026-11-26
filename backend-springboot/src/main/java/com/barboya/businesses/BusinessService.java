@@ -48,9 +48,15 @@ public class BusinessService {
 
     /** Se puede completar mientras la cuenta esta en revision. */
     public BusinessResponse save(UUID ownerId, BusinessRequest request) {
-        if (!request.pickupEnabled() && !request.deliveryEnabled()) {
+        boolean couriers = Boolean.TRUE.equals(request.courierDeliveryEnabled());
+        if (!request.pickupEnabled() && !request.deliveryEnabled() && !couriers) {
             throw new ApiException(HttpStatus.BAD_REQUEST, "NO_FULFILLMENT",
                     "Activa al menos una forma de entrega");
+        }
+        boolean located = request.latitude() != null && request.longitude() != null;
+        if (couriers && !located) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "LOCATION_REQUIRED",
+                    "Marca la ubicacion del comercio para usar domiciliarios");
         }
         Business business = businesses.findByOwnerId(ownerId)
                 .orElseGet(() -> Business.create(ownerId, clock.instant()));
@@ -64,8 +70,18 @@ public class BusinessService {
         business.setPickupEnabled(request.pickupEnabled());
         business.setDeliveryEnabled(request.deliveryEnabled());
         business.setDeliveryFeeCop(request.deliveryEnabled() ? request.deliveryFeeCop() : 0);
+        business.setCourierDeliveryEnabled(couriers);
+        business.setLatitude(located ? request.latitude() : null);
+        business.setLongitude(located ? request.longitude() : null);
         business.setUpdatedAt(clock.instant());
         return BusinessResponse.from(businesses.saveAndFlush(business));
+    }
+
+    @Transactional(readOnly = true)
+    public Business approved(UUID businessId) {
+        return businesses.findById(businessId)
+                .filter(b -> isApproved(b.getOwnerId()))
+                .orElseThrow(BusinessService::notFound);
     }
 
     public BusinessResponse setAccepting(UUID ownerId, boolean accepting) {

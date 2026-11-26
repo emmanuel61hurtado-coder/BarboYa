@@ -22,6 +22,6 @@ export function summarize(menu: MenuItem[], cart: Cart, fulfillment: Fulfillment
     .filter((item) => !item.soldOut && (cart[item.id] ?? 0) > 0)
     .map((item) => ({ item, quantity: cart[item.id], totalCop: item.priceCop * cart[item.id] }))
   const subtotalCop = lines.reduce((sum, line) => sum + line.totalCop, 0)
-  const feeCop = fulfillment === 'DELIVERY' ? deliveryFeeCop : 0
+  const feeCop = fulfillment === 'PICKUP' ? 0 : deliveryFeeCop
   return { lines, subtotalCop, feeCop, totalCop: subtotalCop + feeCop }
 }

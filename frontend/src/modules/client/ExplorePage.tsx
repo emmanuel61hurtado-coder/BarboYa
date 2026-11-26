@@ -75,6 +75,7 @@ export function ExplorePage() {
               <p className="text-xs text-slate-500">
                 {[
                   store.deliveryEnabled && `${FULFILLMENT_LABELS.DELIVERY} ${formatCop(store.deliveryFeeCop)}`,
+                  store.courierDeliveryEnabled && FULFILLMENT_LABELS.COURIER,
                   store.pickupEnabled && FULFILLMENT_LABELS.PICKUP,
                 ]
                   .filter(Boolean)

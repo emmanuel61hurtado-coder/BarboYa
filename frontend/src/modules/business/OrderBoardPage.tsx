@@ -13,6 +13,9 @@ import { Button } from '../../components/ui/button'
 import { Alert, Card, ErrorAlert, Pager } from '../../components/ui/surface'
 import { formatDate } from '../../utils/labels'
 import { OrderSummary, StatusBadge } from '../orders/OrderSummary'
+import { formatCop } from '../../utils/commerce'
+import { DocumentPreview } from '../couriers/DocumentPreview'
+import { VEHICLE_LABELS } from '../couriers/labels'
 
 export function OrderBoardPage() {
   const [finished, setFinished] = useState(false)
@@ -96,8 +99,37 @@ function ShopOrder({ order }: { order: Order }) {
         </p>
       )}
       <OrderSummary order={order} />
+      {order.fulfillment === 'COURIER' && <CourierStatus order={order} />}
+      {order.hasEvidence && (
+        <DocumentPreview label="Foto de la entrega" contentType="image/*" load={() => shopApi.evidence(order.id)} />
+      )}
       <Actions order={order} />
     </Card>
+  )
+}
+
+function CourierStatus({ order }: { order: Order }) {
+  if (!order.courier) {
+    return order.status === 'PREPARING' || order.status === 'READY' ? (
+      <Alert variant="warning">Buscando domiciliario.</Alert>
+    ) : null
+  }
+  return (
+    <div className="space-y-2 text-sm">
+      <p>
+        Domiciliario: {order.courier.name} · {VEHICLE_LABELS[order.courier.vehicleType]}
+        {order.courier.plate && ` · Placa ${order.courier.plate}`}
+        {order.courier.phone && ` · ${order.courier.phone}`}
+      </p>
+      {order.pickupCode && (
+        <Alert>
+          Cuando te pague {formatCop(order.subtotalCop)}, dale el código de recogida{' '}
+          <strong aria-label="Código de recogida" className="font-mono text-lg tracking-widest">
+            {order.pickupCode}
+          </strong>
+        </Alert>
+      )}
+    </div>
   )
 }
 
@@ -110,8 +142,11 @@ function Actions({ order }: { order: Order }) {
   })
   const run = async (change: ShopAction) => void (await act.mutateAsync(change))
 
-  if (order.status === 'DELIVERED' || order.status === 'REJECTED' || order.status === 'CANCELLED') return null
+  if (['DELIVERED', 'REJECTED', 'CANCELLED', 'FAILED'].includes(order.status)) return null
 
+  const courier = order.fulfillment === 'COURIER'
+  // Recogido por un domiciliario: el resto lo hace esa persona
+  if (courier && order.status === 'OUT_FOR_DELIVERY') return null
   const deliverable =
     order.status === 'OUT_FOR_DELIVERY' || (order.status === 'READY' && order.fulfillment === 'PICKUP')
   const stop = order.status === 'PLACED' ? 'reject' : 'cancel'
@@ -136,7 +171,12 @@ function Actions({ order }: { order: Order }) {
           <PinForm onConfirm={(pin) => run({ action: 'deliver', body: { pin } })} />
         ))}
       {/* Los errores de los formularios se muestran dentro de cada formulario */}
-      {(act.variables?.action === 'ready' || act.variables?.action === 'dispatch') && <ErrorAlert error={act.error} />}
+      {courier && order.courier && (
+        <Button variant="secondary" size="sm" loading={act.isPending} onClick={() => act.mutate({ action: 'unassign' })}>
+          Pedir otro domiciliario
+        </Button>
+      )}
+      {['ready', 'dispatch', 'unassign'].includes(act.variables?.action ?? '') && <ErrorAlert error={act.error} />}
       {stopping ? (
         <ReasonForm
           label={stop === 'reject' ? 'Motivo del rechazo' : 'Motivo de la cancelación'}
