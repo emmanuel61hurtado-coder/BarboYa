@@ -108,6 +108,7 @@ export function createApiClient(adapter?: AxiosAdapter) {
     setAccessToken(token: string | null) {
       accessToken = token
     },
+    getAccessToken: () => accessToken,
     onSessionRenewed(listener: (session: TokenResponse) => void) {
       renewedListeners.add(listener)
       return () => void renewedListeners.delete(listener)

@@ -1,0 +1,164 @@
+import { ApiError, apiClient } from './client'
+import type { Page } from './types'
+
+const { http } = apiClient
+
+export type Category = 'RESTAURANT' | 'GROCERY' | 'PHARMACY' | 'BAKERY' | 'OTHER'
+export type Fulfillment = 'PICKUP' | 'DELIVERY'
+export type OrderStatus =
+  | 'PLACED'
+  | 'PREPARING'
+  | 'READY'
+  | 'OUT_FOR_DELIVERY'
+  | 'DELIVERED'
+  | 'REJECTED'
+  | 'CANCELLED'
+
+export interface BusinessInput {
+  name: string
+  legalName: string
+  nit: string
+  category: Category
+  description: string
+  address: string
+  phone: string
+  pickupEnabled: boolean
+  deliveryEnabled: boolean
+  deliveryFeeCop: number
+}
+
+export type Business = Omit<BusinessInput, 'legalName' | 'nit' | 'description'> & {
+  id: string
+  legalName: string | null
+  nit: string | null
+  description: string | null
+  acceptingOrders: boolean
+}
+
+export interface ProductInput {
+  name: string
+  description: string
+  category: string
+  priceCop: number
+  stock: number | null
+  available: boolean
+}
+
+export type Product = Omit<ProductInput, 'description'> & { id: string; description: string | null }
+
+export interface StoreSummary {
+  id: string
+  name: string
+  category: Category
+  description: string | null
+  address: string
+  pickupEnabled: boolean
+  deliveryEnabled: boolean
+  deliveryFeeCop: number
+  open: boolean
+}
+
+export interface MenuItem {
+  id: string
+  name: string
+  description: string | null
+  category: string
+  priceCop: number
+  soldOut: boolean
+}
+
+export interface Store {
+  business: StoreSummary
+  products: MenuItem[]
+}
+
+export interface Order {
+  id: string
+  number: number
+  status: OrderStatus
+  fulfillment: Fulfillment
+  businessId: string
+  businessName: string
+  businessPhone: string
+  businessAddress: string
+  customer: { name: string; phone: string } | null
+  deliveryAddress: string | null
+  notes: string | null
+  items: { productId: string; name: string; unitPriceCop: number; quantity: number; lineTotalCop: number }[]
+  subtotalCop: number
+  deliveryFeeCop: number
+  totalCop: number
+  paymentMethod: 'CASH'
+  prepMinutes: number | null
+  statusReason: string | null
+  deliveryPin: string | null
+  pinLocked: boolean
+  createdAt: string
+  deliveredAt: string | null
+  history: { status: OrderStatus; note: string | null; at: string }[]
+}
+
+export interface NewOrder {
+  businessId: string
+  items: { productId: string; quantity: number }[]
+  fulfillment: Fulfillment
+  deliveryAddress: string
+  notes: string
+  paymentMethod: 'CASH'
+  expectedTotalCop: number
+}
+
+export type ShopAction =
+  | { action: 'accept'; body: { prepMinutes: number } }
+  | { action: 'reject' | 'cancel'; body: { reason: string } }
+  | { action: 'ready' | 'dispatch'; body?: undefined }
+  | { action: 'deliver'; body: { pin: string } }
+
+/** Un comercio sin datos todavía no es un error. */
+async function optional<T>(request: Promise<{ data: T }>): Promise<T | null> {
+  try {
+    return (await request).data
+  } catch (error) {
+    if (error instanceof ApiError && error.code === 'BUSINESS_NOT_FOUND') return null
+    throw error
+  }
+}
+
+export const shopApi = {
+  business: () => optional(http.get<Business>('/merchant/business')),
+  saveBusiness: async (data: BusinessInput) => (await http.put<Business>('/merchant/business', data)).data,
+  setAccepting: async (accepting: boolean) =>
+    (await http.patch<Business>('/merchant/business/accepting', { accepting })).data,
+  products: async () => (await http.get<Product[]>('/merchant/products')).data,
+  saveProduct: async (data: ProductInput, id?: string) =>
+    (id
+      ? await http.put<Product>(`/merchant/products/${id}`, data)
+      : await http.post<Product>('/merchant/products', data)
+    ).data,
+  archiveProduct: async (id: string) => void (await http.delete(`/merchant/products/${id}`)),
+  orders: async (finished: boolean, page: number) =>
+    (await http.get<Page<Order>>('/merchant/orders', { params: { finished, page, size: 20 } })).data,
+  act: async (orderId: string, { action, body }: ShopAction) =>
+    (await http.post<Order>(`/merchant/orders/${orderId}/${action}`, body ?? {})).data,
+  reviewBusiness: (ownerId: string) => optional(http.get<Business>(`/admin/users/${ownerId}/business`)),
+}
+
+export const catalogApi = {
+  search: async (q: string, category: Category | '', page: number) =>
+    (
+      await http.get<Page<StoreSummary>>('/catalog/businesses', {
+        params: { q: q || undefined, category: category || undefined, page, size: 20 },
+      })
+    ).data,
+  store: async (id: string) => (await http.get<Store>(`/catalog/businesses/${id}`)).data,
+}
+
+export const orderApi = {
+  /** Repetir con la misma clave devuelve el mismo pedido, nunca crea otro. */
+  place: async (order: NewOrder, idempotencyKey: string) =>
+    (await http.post<Order>('/orders', order, { headers: { 'Idempotency-Key': idempotencyKey } })).data,
+  list: async (page: number) => (await http.get<Page<Order>>('/orders', { params: { page, size: 10 } })).data,
+  get: async (id: string) => (await http.get<Order>(`/orders/${id}`)).data,
+  cancel: async (id: string) => (await http.post<Order>(`/orders/${id}/cancel`)).data,
+  newPin: async (id: string) => (await http.post<Order>(`/orders/${id}/new-pin`)).data,
+}

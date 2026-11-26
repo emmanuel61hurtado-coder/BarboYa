@@ -4,6 +4,7 @@ import { LogOut } from 'lucide-react'
 import { useAuth, useCurrentUser } from '../contexts/AuthContext'
 import { Button } from '../components/ui/button'
 import { ErrorAlert } from '../components/ui/surface'
+import { useOrderEvents } from '../hooks/useOrderEvents'
 import { ROLE_LABELS } from '../utils/labels'
 import { cn } from '../utils/cn'
 
@@ -14,8 +15,25 @@ export function AppLayout() {
   const [leaving, setLeaving] = useState(false)
 
   const staff = user.role === 'ADMIN' || user.role === 'SUPERADMIN'
+  const customer = user.role === 'CUSTOMER'
+  const merchant = user.role === 'RESTAURANT' || user.role === 'STORE'
+  useOrderEvents(customer || merchant)
+
   const links = [
     { to: '/', label: 'Inicio' },
+    ...(customer
+      ? [
+          { to: '/comercios', label: 'Comercios' },
+          { to: '/pedidos', label: 'Mis pedidos' },
+        ]
+      : []),
+    ...(merchant
+      ? [
+          { to: '/recibidos', label: 'Pedidos' },
+          { to: '/productos', label: 'Productos' },
+          { to: '/mi-comercio', label: 'Mi comercio' },
+        ]
+      : []),
     { to: '/seguridad', label: 'Seguridad' },
     ...(staff
       ? [

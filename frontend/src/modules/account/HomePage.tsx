@@ -40,8 +40,18 @@ export function HomePage() {
         </dl>
       </Card>
       <Card title="Servicios">
+        {user.role === 'CUSTOMER' && (
+          <Button asChild>
+            <Link to="/comercios">Pedir en un comercio</Link>
+          </Button>
+        )}
+        {(user.role === 'RESTAURANT' || user.role === 'STORE') && (
+          <Button asChild>
+            <Link to="/mi-comercio">Administrar mi comercio</Link>
+          </Button>
+        )}
         <p className="text-sm text-slate-400">
-          Los pedidos, domicilios y viajes todavía no están disponibles en esta versión.
+          Los domiciliarios de BarboYa, los viajes y los pagos en línea todavía no están disponibles.
         </p>
       </Card>
     </>

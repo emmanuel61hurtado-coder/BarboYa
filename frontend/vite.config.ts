@@ -12,6 +12,12 @@ export default defineConfig({
         target: process.env.BARBOYA_API_V1 || 'http://localhost:8081',
         changeOrigin: false
       },
+      // Avisos en vivo del backend Spring Boot
+      '/ws/v1': {
+        target: process.env.BARBOYA_API_V1 || 'http://localhost:8081',
+        changeOrigin: false,
+        ws: true
+      },
       // Backend FastAPI
       '/api': {
         target: 'http://localhost:8000',

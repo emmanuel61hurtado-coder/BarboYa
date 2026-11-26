@@ -4,6 +4,7 @@ import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import type { z } from 'zod'
 import { adminApi } from '../../services/api/admin'
+import { shopApi } from '../../services/api/commerce'
 import type { User, UserStatus } from '../../services/api/types'
 import { useCurrentUser } from '../../contexts/AuthContext'
 import { useSubmit } from '../../hooks/useSubmit'
@@ -12,6 +13,7 @@ import { SelectField, TextField } from '../../components/ui/field'
 import { Button } from '../../components/ui/button'
 import { Card, ErrorAlert, Pager } from '../../components/ui/surface'
 import { ROLE_LABELS, STATUS_LABELS, formatDate } from '../../utils/labels'
+import { CATEGORY_LABELS, formatCop } from '../../utils/commerce'
 
 type Decision = 'ACTIVE' | 'SUSPENDED'
 
@@ -61,6 +63,8 @@ function UserRow({ user }: { user: User }) {
   const actor = useCurrentUser()
   const [decision, setDecision] = useState<Decision | null>(null)
   const staff = user.role === 'ADMIN' || user.role === 'SUPERADMIN'
+  const merchant = user.role === 'RESTAURANT' || user.role === 'STORE'
+  const [reviewing, setReviewing] = useState(false)
   // El backend aplica estas mismas reglas; aquí solo se ocultan acciones imposibles
   const manageable = user.id !== actor.id && (!staff || actor.role === 'SUPERADMIN')
 
@@ -91,8 +95,46 @@ function UserRow({ user }: { user: User }) {
           </div>
         )}
       </div>
+      {merchant && (
+        <Button variant="link" size="inline" aria-expanded={reviewing} onClick={() => setReviewing(!reviewing)}>
+          {reviewing ? 'Ocultar comercio' : 'Ver comercio'}
+        </Button>
+      )}
+      {reviewing && <BusinessReview ownerId={user.id} />}
       {decision && <DecisionForm user={user} decision={decision} onClose={() => setDecision(null)} />}
     </li>
+  )
+}
+
+function BusinessReview({ ownerId }: { ownerId: string }) {
+  const business = useQuery({
+    queryKey: ['admin', 'business', ownerId],
+    queryFn: () => shopApi.reviewBusiness(ownerId),
+  })
+  if (business.error) return <ErrorAlert error={business.error} />
+  if (business.data === undefined) return <p className="text-sm text-slate-400">Cargando…</p>
+  if (business.data === null) {
+    return <p className="text-sm text-amber-300">Todavía no ha registrado los datos de su comercio.</p>
+  }
+  const data = business.data
+  const rows = [
+    ['Nombre', data.name],
+    ['Categoría', CATEGORY_LABELS[data.category]],
+    ['Razón social', data.legalName ?? 'No indicada'],
+    ['NIT', data.nit ?? 'No indicado'],
+    ['Dirección', data.address],
+    ['Teléfono', data.phone],
+    ['Domicilio', data.deliveryEnabled ? formatCop(data.deliveryFeeCop) : 'No ofrece'],
+  ]
+  return (
+    <dl className="grid gap-2 rounded-2xl border border-slate-700 p-3 sm:grid-cols-2">
+      {rows.map(([term, value]) => (
+        <div key={term}>
+          <dt className="text-xs text-slate-500">{term}</dt>
+          <dd className="text-sm break-words">{value}</dd>
+        </div>
+      ))}
+    </dl>
   )
 }
 

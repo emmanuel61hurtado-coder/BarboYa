@@ -11,6 +11,13 @@ import { SecurityPage } from '../modules/account/SecurityPage'
 import { UsersPage } from '../modules/admin/UsersPage'
 import { AuditPage } from '../modules/admin/AuditPage'
 import { NewAdminPage } from '../modules/admin/NewAdminPage'
+import { ExplorePage } from '../modules/client/ExplorePage'
+import { StorePage } from '../modules/client/StorePage'
+import { MyOrdersPage } from '../modules/client/MyOrdersPage'
+import { OrderPage } from '../modules/client/OrderPage'
+import { OrderBoardPage } from '../modules/business/OrderBoardPage'
+import { ProductsPage } from '../modules/business/ProductsPage'
+import { BusinessPage } from '../modules/business/BusinessPage'
 
 // Estas guardas solo ordenan la navegación: quien decide el acceso es el backend
 
@@ -48,6 +55,17 @@ export function AppRoutes() {
         <Route element={<AppLayout />}>
           <Route path="/" element={<HomePage />} />
           <Route path="/seguridad" element={<SecurityPage />} />
+          <Route element={<Allow roles={['CUSTOMER']} />}>
+            <Route path="/comercios" element={<ExplorePage />} />
+            <Route path="/comercios/:id" element={<StorePage />} />
+            <Route path="/pedidos" element={<MyOrdersPage />} />
+            <Route path="/pedidos/:id" element={<OrderPage />} />
+          </Route>
+          <Route element={<Allow roles={['RESTAURANT', 'STORE']} />}>
+            <Route path="/recibidos" element={<OrderBoardPage />} />
+            <Route path="/productos" element={<ProductsPage />} />
+            <Route path="/mi-comercio" element={<BusinessPage />} />
+          </Route>
           <Route element={<Allow roles={['ADMIN', 'SUPERADMIN']} />}>
             <Route path="/admin/usuarios" element={<UsersPage />} />
             <Route path="/admin/auditoria" element={<AuditPage />} />
