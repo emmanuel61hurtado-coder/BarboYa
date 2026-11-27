@@ -11,7 +11,7 @@ public final class SpaRoutes {
 
     public static final String[] PAGES = {
             "/", "/ingresar", "/registro", "/recuperar", "/seguridad",
-            "/comercios", "/comercios/*", "/pedidos", "/pedidos/*",
+            "/comercios", "/comercios/*", "/pedidos", "/pedidos/*", "/direcciones",
             "/recibidos", "/productos", "/mi-comercio",
             "/verificacion", "/entregas", "/comisiones",
             "/soporte", "/soporte/*", "/calificaciones", "/admin/calificaciones",

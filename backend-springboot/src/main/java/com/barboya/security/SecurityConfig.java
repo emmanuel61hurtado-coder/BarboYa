@@ -88,7 +88,7 @@ public class SecurityConfig {
                         .requestMatchers("/api/v1/merchant/**").hasAnyRole("RESTAURANT", "STORE")
                         .requestMatchers("/api/v1/courier/**").hasRole("COURIER")
                         .requestMatchers("/api/v1/finance/**").hasAnyRole("RESTAURANT", "STORE", "COURIER")
-                        .requestMatchers("/api/v1/orders/**").hasRole("CUSTOMER")
+                        .requestMatchers("/api/v1/orders/**", "/api/v1/addresses/**").hasRole("CUSTOMER")
                         // El WebSocket se autentica con su primer mensaje
                         .requestMatchers(HttpMethod.GET, "/ws/v1/events").permitAll()
                         .requestMatchers("/api/v1/**").authenticated()

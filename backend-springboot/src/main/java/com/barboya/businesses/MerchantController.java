@@ -6,6 +6,7 @@ import com.barboya.businesses.BusinessDtos.BusinessResponse;
 import com.barboya.businesses.BusinessDtos.HoursRequest;
 import com.barboya.businesses.BusinessDtos.ProductRequest;
 import com.barboya.businesses.BusinessDtos.ProductResponse;
+import com.barboya.businesses.BusinessDtos.PromotionRequest;
 import com.barboya.security.AuthUser;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
@@ -91,6 +92,17 @@ public class MerchantController {
     @DeleteMapping("/products/{id}/photo")
     public ProductResponse removePhoto(@AuthenticationPrincipal AuthUser user, @PathVariable UUID id) {
         return photos.remove(user.id(), id);
+    }
+
+    @PutMapping("/products/{id}/promotion")
+    public ProductResponse promote(@AuthenticationPrincipal AuthUser user, @PathVariable UUID id,
+                                   @Valid @RequestBody PromotionRequest body) {
+        return service.setPromotion(user.id(), id, body);
+    }
+
+    @DeleteMapping("/products/{id}/promotion")
+    public ProductResponse endPromotion(@AuthenticationPrincipal AuthUser user, @PathVariable UUID id) {
+        return service.removePromotion(user.id(), id);
     }
 
     @PutMapping("/business/hours")

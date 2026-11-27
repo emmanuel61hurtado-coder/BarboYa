@@ -2,6 +2,7 @@ package com.barboya.businesses;
 
 import com.barboya.businesses.BusinessDtos.ProductResponse;
 import com.barboya.common.ApiException;
+import com.barboya.common.Colombia;
 import com.barboya.files.FileStorage;
 import com.barboya.files.ProductPhotos;
 import com.barboya.files.Uploads;
@@ -76,6 +77,6 @@ public class ProductPhotoService {
                 }
             }
         });
-        return ProductResponse.from(products.saveAndFlush(product));
+        return ProductResponse.from(products.saveAndFlush(product), Colombia.today(clock));
     }
 }

@@ -6,9 +6,11 @@ import com.barboya.businesses.BusinessDtos.MenuItem;
 import com.barboya.businesses.BusinessDtos.PageResponse;
 import com.barboya.businesses.BusinessDtos.ProductRequest;
 import com.barboya.businesses.BusinessDtos.ProductResponse;
+import com.barboya.businesses.BusinessDtos.PromotionRequest;
 import com.barboya.businesses.BusinessDtos.Store;
 import com.barboya.businesses.BusinessDtos.StoreSummary;
 import com.barboya.common.ApiException;
+import com.barboya.common.Colombia;
 import com.barboya.common.Contacts;
 import com.barboya.finance.LedgerService;
 import com.barboya.products.Product;
@@ -22,6 +24,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Clock;
 import java.time.Instant;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Locale;
 import java.util.UUID;
@@ -29,6 +32,8 @@ import java.util.UUID;
 @Service
 @Transactional
 public class BusinessService {
+
+    private static final int MAX_PROMOTION_DAYS = 90;
 
     private final BusinessRepository businesses;
     private final ProductRepository products;
@@ -116,20 +121,54 @@ public class BusinessService {
 
     @Transactional(readOnly = true)
     public List<ProductResponse> ownedProducts(UUID ownerId) {
+        LocalDate today = Colombia.today(clock);
         return products.findByBusinessIdAndArchivedFalseOrderByCategoryAscNameAsc(requireOwned(ownerId).getId())
-                .stream().map(ProductResponse::from).toList();
+                .stream().map(p -> ProductResponse.from(p, today)).toList();
+    }
+
+    public ProductResponse setPromotion(UUID ownerId, UUID productId, PromotionRequest request) {
+        Product product = requireProduct(ownerId, productId);
+        LocalDate today = Colombia.today(clock);
+        if (request.priceCop() >= product.getPriceCop()) {
+            throw invalidPromotion("El precio de la promocion debe ser menor que el precio normal");
+        }
+        if (request.endsOn().isBefore(request.startsOn()) || request.endsOn().isBefore(today)) {
+            throw invalidPromotion("Revisa las fechas: la promocion debe terminar hoy o despues");
+        }
+        if (request.endsOn().isAfter(today.plusDays(MAX_PROMOTION_DAYS))) {
+            throw invalidPromotion("La promocion puede terminar maximo en 90 dias");
+        }
+        product.promote(request.priceCop(), request.startsOn(), request.endsOn());
+        product.setUpdatedAt(clock.instant());
+        return ProductResponse.from(products.saveAndFlush(product), today);
+    }
+
+    public ProductResponse removePromotion(UUID ownerId, UUID productId) {
+        Product product = requireProduct(ownerId, productId);
+        product.endPromotion();
+        product.setUpdatedAt(clock.instant());
+        return ProductResponse.from(products.saveAndFlush(product), Colombia.today(clock));
     }
 
     public ProductResponse addProduct(UUID ownerId, ProductRequest request) {
         Product product = Product.create(requireOwned(ownerId).getId(), clock.instant());
         apply(product, request);
-        return ProductResponse.from(products.saveAndFlush(product));
+        return ProductResponse.from(products.saveAndFlush(product), Colombia.today(clock));
     }
 
     public ProductResponse updateProduct(UUID ownerId, UUID productId, ProductRequest request) {
         Product product = requireProduct(ownerId, productId);
+        LocalDate today = Colombia.today(clock);
+        if (product.getPromoPriceCop() != null) {
+            if (product.getPromoEndsOn().isBefore(today)) {
+                product.endPromotion();
+            } else if (request.priceCop() <= product.getPromoPriceCop()) {
+                throw new ApiException(HttpStatus.CONFLICT, "PROMOTION_CONFLICT",
+                        "El precio debe ser mayor que el de la promocion; quitala o cambiala primero");
+            }
+        }
         apply(product, request);
-        return ProductResponse.from(products.saveAndFlush(product));
+        return ProductResponse.from(products.saveAndFlush(product), today);
     }
 
 
@@ -154,8 +193,9 @@ public class BusinessService {
         Business business = businesses.findById(businessId)
                 .filter(b -> isApproved(b.getOwnerId()))
                 .orElseThrow(BusinessService::notFound);
+        LocalDate today = Colombia.today(clock);
         List<MenuItem> menu = products.findByBusinessIdAndArchivedFalseOrderByCategoryAscNameAsc(businessId)
-                .stream().filter(Product::isAvailable).map(MenuItem::from).toList();
+                .stream().filter(Product::isAvailable).map(p -> MenuItem.from(p, today)).toList();
         boolean open = business.isAcceptingOrders() && business.isOpenAt(clock.instant())
                 && !ledger.isOverLimit(business.getOwnerId());
         return new Store(StoreSummary.from(business, open), business.schedule(), menu);
@@ -194,6 +234,10 @@ public class BusinessService {
 
     private static String blankToNull(String value) {
         return value == null || value.isBlank() ? null : value.trim();
+    }
+
+    private static ApiException invalidPromotion(String message) {
+        return new ApiException(HttpStatus.BAD_REQUEST, "INVALID_PROMOTION", message);
     }
 
     private static ApiException notFound() {

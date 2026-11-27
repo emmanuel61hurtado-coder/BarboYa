@@ -11,6 +11,7 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
 
@@ -51,6 +52,21 @@ public final class BusinessDtos {
             @NotNull Boolean available) {
     }
 
+    public record PromotionRequest(
+            @NotNull @Min(100) @Max(10000000) Integer priceCop,
+            @NotNull LocalDate startsOn,
+            @NotNull LocalDate endsOn) {
+    }
+
+    /** {@code active}: si el precio rebajado se cobra hoy. */
+    public record Promotion(int priceCop, LocalDate startsOn, LocalDate endsOn, boolean active) {
+
+        static Promotion from(Product p, LocalDate today) {
+            return p.getPromoPriceCop() == null ? null : new Promotion(p.getPromoPriceCop(), p.getPromoStartsOn(),
+                    p.getPromoEndsOn(), p.onPromotion(today));
+        }
+    }
+
     /** Vista del propietario y del administrador: incluye los datos legales. */
     public record BusinessResponse(
             UUID id, String name, String legalName, String nit, Business.Category category, String description,
@@ -68,11 +84,12 @@ public final class BusinessDtos {
 
     public record ProductResponse(
             UUID id, String name, String description, String category, int priceCop, Integer stock,
-            boolean available, String photoUrl) {
+            boolean available, String photoUrl, Promotion promotion) {
 
-        static ProductResponse from(Product p) {
+        static ProductResponse from(Product p, LocalDate today) {
             return new ProductResponse(p.getId(), p.getName(), p.getDescription(), p.getCategory(),
-                    p.getPriceCop(), p.getStock(), p.isAvailable(), p.photoUrl());
+                    p.getPriceCop(), p.getStock(), p.isAvailable(), p.photoUrl(),
+                    Promotion.from(p, today));
         }
     }
 
@@ -93,11 +110,14 @@ public final class BusinessDtos {
     /** Del inventario solo se publica si hay existencias, no cuantas. */
     public record MenuItem(
             UUID id, String name, String description, String category, int priceCop, boolean soldOut,
-            String photoUrl) {
+            String photoUrl, Integer regularPriceCop, LocalDate promoEndsOn) {
 
-        static MenuItem from(Product p) {
-            return new MenuItem(p.getId(), p.getName(), p.getDescription(), p.getCategory(), p.getPriceCop(),
-                    !p.canSell(1), p.photoUrl());
+        /** {@code priceCop} es lo que se cobra hoy; con rebaja vienen ademas el precio normal y hasta cuando. */
+        static MenuItem from(Product p, LocalDate today) {
+            boolean promo = p.onPromotion(today);
+            return new MenuItem(p.getId(), p.getName(), p.getDescription(), p.getCategory(), p.priceOn(today),
+                    !p.canSell(1), p.photoUrl(), promo ? p.getPriceCop() : null,
+                    promo ? p.getPromoEndsOn() : null);
         }
     }
 

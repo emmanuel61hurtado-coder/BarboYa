@@ -5,6 +5,7 @@ import com.barboya.businesses.BusinessRepository;
 import com.barboya.businesses.BusinessService;
 import com.barboya.businesses.DeliveryPricing;
 import com.barboya.common.ApiException;
+import com.barboya.common.Colombia;
 import com.barboya.common.Geo;
 import com.barboya.config.FinanceProperties;
 import com.barboya.finance.LedgerService;
@@ -21,6 +22,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Clock;
 import java.time.Instant;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -119,6 +121,7 @@ public class CustomerOrderService {
         Instant now = clock.instant();
         CustomerOrder order = CustomerOrder.create(customerId, business.getId(), idempotencyKey, now);
         List<OrderItem> lines = new ArrayList<>();
+        LocalDate today = Colombia.today(clock);
         long subtotal = 0;
         for (LineRequest line : request.items()) {
             Product product = catalog.get(line.productId());
@@ -130,12 +133,13 @@ public class CustomerOrderService {
             }
             product.take(line.quantity());
             product.setUpdatedAt(now);
-            subtotal += (long) product.getPriceCop() * line.quantity();
+            // El precio del dia: una promocion vencida ya no aplica
+            int price = product.priceOn(today);
+            subtotal += (long) price * line.quantity();
             if (subtotal > MAX_TOTAL_COP) {
                 throw conflict("ORDER_TOO_LARGE", "El pedido supera el valor maximo permitido");
             }
-            lines.add(new OrderItem(order.getId(), product.getId(), product.getName(), product.getPriceCop(),
-                    line.quantity()));
+            lines.add(new OrderItem(order.getId(), product.getId(), product.getName(), price, line.quantity()));
         }
 
         int fee = quote != null ? quote.feeCop() : delivery ? business.getDeliveryFeeCop() : 0;
