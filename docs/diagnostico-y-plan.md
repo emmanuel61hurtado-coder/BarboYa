@@ -26,10 +26,10 @@ Fecha: 26 de noviembre de 2026. Base revisada: commit `f1d19c5`. Incluye las cor
 | Pruebas Python (suite completa) | 76 aprobadas en 4 corridas seguidas |
 | Prueba de punta a punta con la API real (SQLite) | Registro, ingreso, SOS, webhook y recuperación responden como se espera; en producción sin `JWT_SECRET` no arranca |
 | TypeScript y build de Vite (ambos modos, Node 20) | Correctos |
-| Pruebas de Spring Boot (PostgreSQL 16 real) | 200 aprobadas |
-| Entorno de pruebas reproducido sin Docker (perfil `prod`, API sirviendo la interfaz) | Comprobador de despliegue y 76 pasos en Chrome aprobados. La imagen Docker la construye el CI; falta ver ese resultado |
-| Pruebas del frontend (`npm test`) | 34 aprobadas |
-| Flujos de la interfaz `v1` en Chrome (API, PostgreSQL y correo de prueba) | 76 pasos (cuentas, pedido, verificación, entrega, comisiones, soporte, calificaciones, fotos y horarios), sin errores de consola; teselas del mapa simuladas |
+| Pruebas de Spring Boot (PostgreSQL 16 real) | 207 aprobadas |
+| Entorno de pruebas reproducido sin Docker (perfil `prod`, API sirviendo la interfaz) | Comprobador de despliegue y 83 pasos en Chrome aprobados. La imagen Docker la construye el CI; falta ver ese resultado |
+| Pruebas del frontend (`npm test`) | 37 aprobadas |
+| Flujos de la interfaz `v1` en Chrome (API, PostgreSQL y correo de prueba) | 83 pasos (cuentas, pedido, verificación, entrega, comisiones, soporte, calificaciones, fotos, horarios, promociones y direcciones), sin errores de consola; teselas del mapa simuladas |
 | App actual en Chrome tras actualizar herramientas | Carga, cambia de pestaña y abre el SOS sin errores |
 | `.jar` de Spring Boot con perfil `prod` | Arranca, aplica migraciones y responde por HTTP como se espera; sin `JWT_SECRET` no arranca |
 | `docker compose` | No ejecutado: Docker no está instalado |
