@@ -359,6 +359,47 @@ class CourierDeliveryTest extends CommerceFixtures {
                 .andExpect(jsonPath("$.deliveryPin").doesNotExist());
         mvc.perform(get("/api/v1/courier/earnings").header("Authorization", courier.bearer()))
                 .andExpect(jsonPath("$.todayCop").value(0));
+
+        // La falla abre un caso de soporte a nombre del domiciliario
+        Account admin = accountWithRole(Role.ADMIN);
+        JsonNode mine = body(mvc.perform(get("/api/v1/support/tickets").header("Authorization", courier.bearer()))
+                .andReturn());
+        assertThat(mine.get("total").asInt()).isEqualTo(1);
+        JsonNode ticket = mine.get("items").get(0);
+        assertThat(ticket.get("category").asText()).isEqualTo("DELIVERY_FAILED");
+        assertThat(ticket.get("orderId").asText()).isEqualTo(id);
+        mvc.perform(get("/api/v1/admin/support/tickets/" + ticket.get("id").asText())
+                        .header("Authorization", admin.bearer()))
+                .andExpect(jsonPath("$.opener.role").value("COURIER"))
+                .andExpect(jsonPath("$.messages[0].body").value("Nadie atendio en la direccion"));
+        mvc.perform(get("/api/v1/admin/orders/" + id).header("Authorization", admin.bearer()))
+                .andExpect(jsonPath("$.customer.phone").value(customer.phone()))
+                .andExpect(jsonPath("$.courier.phone").value(courier.phone()))
+                .andExpect(jsonPath("$.deliveryPin").doesNotExist())
+                .andExpect(jsonPath("$.pickupCode").doesNotExist());
+    }
+
+    @Test
+    void staffCanCloseADeliveryThatGotStuckOnTheRoad() throws Exception {
+        Shop shop = courierShop();
+        Account customer = register(Role.CUSTOMER);
+        Account courier = onlineCourier();
+        String id = preparingOrder(shop, customer).get("id").asText();
+        act(courier, "offers/" + id + "/accept", Map.of());
+        String code = pickupCode(shop);
+        merchantAction(shop, id, "ready", Map.of());
+        act(courier, "delivery/" + id + "/pickup", Map.of("code", code));
+        Account admin = accountWithRole(Role.ADMIN);
+
+        mvc.perform(postJson("/api/v1/admin/orders/" + id + "/close", Map.of("reason", "Sin noticias hace horas"))
+                        .header("Authorization", admin.bearer()))
+                .andExpect(jsonPath("$.status").value("FAILED"))
+                .andExpect(jsonPath("$.statusReason").value("Cerrado por soporte: Sin noticias hace horas"));
+        mvc.perform(get("/api/v1/courier/delivery").header("Authorization", courier.bearer()))
+                .andExpect(status().isNoContent());
+        act(courier, "delivery/" + id + "/deliver", Map.of("pin", "0000")).andExpect(status().is4xxClientError());
+        mvc.perform(get("/api/v1/courier/earnings").header("Authorization", courier.bearer()))
+                .andExpect(jsonPath("$.todayCop").value(0));
     }
 
     @Test

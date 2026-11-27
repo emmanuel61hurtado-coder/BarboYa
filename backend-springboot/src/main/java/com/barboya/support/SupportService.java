@@ -146,6 +146,13 @@ public class SupportService {
     }
 
     private void add(Ticket ticket, UUID authorId, boolean staff, String body) {
+        // Reabrir no puede dejar dos casos abiertos del mismo pedido
+        if (ticket.getStatus() == Ticket.Status.RESOLVED && ticket.getOrderId() != null
+                && tickets.existsByOpenerIdAndOrderIdAndStatusNot(
+                        ticket.getOpenerId(), ticket.getOrderId(), Ticket.Status.RESOLVED)) {
+            throw new ApiException(HttpStatus.CONFLICT, "TICKET_EXISTS",
+                    "Ya hay otro caso abierto sobre este pedido; continua alli");
+        }
         Instant now = clock.instant();
         messages.save(new TicketMessage(ticket.getId(), authorId, staff, body, now));
         ticket.replied(staff, now);
