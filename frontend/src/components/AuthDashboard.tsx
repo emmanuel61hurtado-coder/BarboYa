@@ -30,33 +30,31 @@ const ROLE_DATA: Record<SelectableRole, {
   benefits: string[]
 }> = {
   customer: {
-    label: 'Pasajero',
-    title: 'Cliente / Pasajero',
-    subtitle: 'Viajes seguros, comida local y envíos express en Barbosa',
+    label: 'Cliente',
+    title: 'Cliente',
+    subtitle: 'Comida y comercios locales de Barbosa',
     icon: User,
     accentColor: '#0ea5e9',
     borderClass: 'border-sky-500/40 hover:border-sky-500',
     bgClass: 'bg-sky-500/10',
     badgeClass: 'bg-sky-500/15 text-sky-400 border-sky-500/30',
     benefits: [
-      'Negocia tarifas justas sin cobros ocultos ni dinámicas abusivas',
-      'Pide en tus restaurantes favoritos de Barbosa con tracking real',
+      'Pide en tus restaurantes y comercios de Barbosa',
       'Botón SOS con registro de alertas y llamada al 123'
     ]
   },
   driver: {
-    label: 'Conductor',
-    title: 'Conductor / Repartidor',
-    subtitle: 'Gana el 100% de tu tarifa pactada sin comisiones abusivas',
+    label: 'Repartidor',
+    title: 'Repartidor',
+    subtitle: 'Domicilios para comercios locales',
     icon: Bike,
     accentColor: '#10b981',
     borderClass: 'border-emerald-500/40 hover:border-emerald-500',
     bgClass: 'bg-emerald-500/10',
     badgeClass: 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30',
     benefits: [
-      'Conserva la totalidad de lo que cobras al pasajero',
-      'Sistema de bolsa prepago transparente de bajo costo',
-      'Filtro exclusivo para conductoras mujeres y verificación de identidad'
+      'Recibe entregas de comercios cercanos',
+      'El equipo revisa tus documentos antes de activarte'
     ]
   },
   merchant_owner: {
@@ -77,7 +75,7 @@ const ROLE_DATA: Record<SelectableRole, {
   admin: {
     label: 'Admin',
     title: 'Central / Administrador',
-    subtitle: 'Auditoría, telemetría y verificación de conductores de Barbosa',
+    subtitle: 'Auditoría y verificación de repartidores de Barbosa',
     icon: ShieldCheck,
     accentColor: '#8b5cf6',
     borderClass: 'border-purple-500/40 hover:border-purple-500',
@@ -119,7 +117,8 @@ export const AuthDashboard: React.FC<AuthDashboardProps> = ({
   const [fullName, setFullName] = useState('')
   const [registerPhone, setRegisterPhone] = useState('')
   const [registerEmail, setRegisterEmail] = useState('')
-  const [acceptTerms, setAcceptTerms] = useState(true)
+  // Nunca marcada de antemano: la autorización debe ser expresa (Ley 1581 de 2012)
+  const [acceptTerms, setAcceptTerms] = useState(false)
 
   // Driver fields
   const [vehicleType, setVehicleType] = useState<'moto' | 'car'>('moto')
@@ -279,7 +278,7 @@ export const AuthDashboard: React.FC<AuthDashboardProps> = ({
                 </span>
               </div>
               <p className="text-xs text-slate-400">
-                Ecosistema digital de movilidad, comercio y logística · Barbosa, Santander
+                Comercio y domicilios · Barbosa, Santander
               </p>
             </div>
           </div>

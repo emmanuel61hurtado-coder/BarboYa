@@ -40,6 +40,11 @@ class Settings(BaseSettings):
 
     cors_origins: list[str] = ["*"]
 
+    # Suspendidos hasta tener concepto juridico (docs/revision-legal.md).
+    # Se encienden con ENABLE_TRIPS=true y ENABLE_CRYPTO_PAYMENTS=true.
+    enable_trips: bool = False  # viajes de pasajeros y envios entre personas
+    enable_crypto_payments: bool = False  # recargas nuevas con criptomonedas
+
     # Firma HMAC de los webhooks de pago. Vacío = el webhook rechaza todo.
     webhook_secret: str = ""
 

@@ -9,6 +9,8 @@ import { Navbar } from './components/Navbar'
 import { InteractiveMap } from './components/InteractiveMap'
 import { RealMap } from './components/RealMap'
 import { MoveView } from './components/MoveView'
+import { TripsSuspended } from './components/TripsSuspended'
+import { useFeatures } from './utils/features'
 import { FoodView } from './components/FoodView'
 import { PackageView } from './components/PackageView'
 import { OrderTrackingView } from './components/OrderTrackingView'
@@ -24,7 +26,8 @@ import { api } from './utils/api'
 
 export default function App() {
   const [activeTab, setActiveTab] = useState<AppTab>('client')
-  const [serviceMode, setServiceMode] = useState<ServiceMode>('move')
+  const [serviceMode, setServiceMode] = useState<ServiceMode>('food')
+  const features = useFeatures()
   const [sosOpen, setSosOpen] = useState<boolean>(false)
   const [sosBannerActive, setSosBannerActive] = useState<boolean>(false)
   const [toast, setToast] = useState<string | null>(null)
@@ -192,7 +195,7 @@ export default function App() {
 
         {/* Footer */}
         <footer className="pro-surface border-t border-slate-800/80 py-4 text-slate-500 text-xs text-center font-mono">
-          © 2026 BarboYa. Plataforma de Movilidad, Comercio y Logística de Barbosa Santander. Acceso Seguro Requerido.
+          © 2026 BarboYa. Comercio y domicilios en Barbosa, Santander.
         </footer>
       </div>
     )
@@ -260,26 +263,28 @@ export default function App() {
                   </span>
                 </h1>
                 <p className="text-xs text-slate-400 font-medium">
-                  Movilidad sin comisiones abusivas, restaurantes locales y mensajería en tiempo real.
+                  Restaurantes y comercios locales de Barbosa.
                 </p>
               </div>
 
               {/* Sub-modes Toggle */}
               <div className="flex items-center space-x-1.5 bg-nexus-900/90 p-1 rounded-2xl border border-slate-800 shadow-inner">
-                <button
-                  onClick={() => {
-                    setServiceMode('move')
-                    sound.tick()
-                  }}
-                  className={`px-3 py-2 rounded-xl border flex items-center space-x-1.5 transition-all ${
-                    serviceMode === 'move'
-                      ? 'bg-cyan-500/15 border-cyan-500 text-cyan-300 shadow-cyan-glow font-bold'
-                      : 'bg-nexus-950/70 border-slate-800 text-slate-400 hover:text-white hover:border-slate-700'
-                  }`}
-                >
-                  <Car className="w-4 h-4" />
-                  <span className="text-[11px] font-mono">Viajar</span>
-                </button>
+                {features.trips && (
+                  <button
+                    onClick={() => {
+                      setServiceMode('move')
+                      sound.tick()
+                    }}
+                    className={`px-3 py-2 rounded-xl border flex items-center space-x-1.5 transition-all ${
+                      serviceMode === 'move'
+                        ? 'bg-cyan-500/15 border-cyan-500 text-cyan-300 shadow-cyan-glow font-bold'
+                        : 'bg-nexus-950/70 border-slate-800 text-slate-400 hover:text-white hover:border-slate-700'
+                    }`}
+                  >
+                    <Car className="w-4 h-4" />
+                    <span className="text-[11px] font-mono">Viajar</span>
+                  </button>
+                )}
 
                 <button
                   onClick={() => {
@@ -296,20 +301,22 @@ export default function App() {
                   <span className="text-[11px] font-mono">Comida</span>
                 </button>
 
-                <button
-                  onClick={() => {
-                    setServiceMode('package')
-                    sound.tick()
-                  }}
-                  className={`px-3 py-2 rounded-xl border flex items-center space-x-1.5 transition-all ${
-                    serviceMode === 'package'
-                      ? 'bg-neon-emerald/15 border-neon-emerald text-neon-emerald shadow-emerald-glow font-bold'
-                      : 'bg-nexus-950/70 border-slate-800 text-slate-400 hover:text-white hover:border-slate-700'
-                  }`}
-                >
-                  <Package className="w-4 h-4" />
-                  <span className="text-[11px] font-mono">Envíos</span>
-                </button>
+                {features.trips && (
+                  <button
+                    onClick={() => {
+                      setServiceMode('package')
+                      sound.tick()
+                    }}
+                    className={`px-3 py-2 rounded-xl border flex items-center space-x-1.5 transition-all ${
+                      serviceMode === 'package'
+                        ? 'bg-neon-emerald/15 border-neon-emerald text-neon-emerald shadow-emerald-glow font-bold'
+                        : 'bg-nexus-950/70 border-slate-800 text-slate-400 hover:text-white hover:border-slate-700'
+                    }`}
+                  >
+                    <Package className="w-4 h-4" />
+                    <span className="text-[11px] font-mono">Envíos</span>
+                  </button>
+                )}
 
                 <button
                   onClick={() => {
@@ -332,7 +339,7 @@ export default function App() {
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
               {/* Left Column: Active Service Interaction (5 cols) */}
               <div className="lg:col-span-5 w-full">
-                {serviceMode === 'move' && (
+                {features.trips && serviceMode === 'move' && (
                   <MoveView
                     onShowToast={showToast}
                     onUpdateOriginDest={(o, d) => {
@@ -342,7 +349,7 @@ export default function App() {
                   />
                 )}
                 {serviceMode === 'food' && <FoodView onShowToast={showToast} />}
-                {serviceMode === 'package' && <PackageView onShowToast={showToast} />}
+                {features.trips && serviceMode === 'package' && <PackageView onShowToast={showToast} />}
                 {serviceMode === 'tracking' && <OrderTrackingView onShowToast={showToast} />}
               </div>
 
@@ -385,10 +392,6 @@ export default function App() {
                       </button>
                     </div>
                   </div>
-
-                  <span className="text-[11px] font-mono text-neon-emerald hidden sm:inline">
-                    ● Geocerca 3.0 km activa
-                  </span>
                 </div>
 
                 {/* Render active map */}
@@ -424,20 +427,6 @@ export default function App() {
                   />
                 )}
 
-                {/* Quick Info Bar below map */}
-                <div className="glass-surface p-3.5 rounded-xl border border-slate-800/80 flex flex-wrap items-center justify-between gap-3 text-xs text-slate-400">
-                  <div className="flex items-center space-x-2">
-                    <span className="w-2 h-2 rounded-full bg-neon-emerald animate-pulse" />
-                    <span className="text-slate-300 font-mono text-[11px]">
-                      Conductores activos en Barbosa: <strong className="text-white">34 verificados</strong>
-                    </span>
-                  </div>
-                  <div className="flex items-center space-x-4 text-[11px] font-mono">
-                    <span>Soporte 24/7 Barbosa</span>
-                    <span className="text-slate-600">·</span>
-                    <span className="text-cyan-300">Garantía de Cobro Justo</span>
-                  </div>
-                </div>
               </div>
             </div>
           </div>
@@ -469,7 +458,12 @@ export default function App() {
         )}
 
         {/* ======================= DRIVER VIEW ======================= */}
-        {activeTab === 'driver' && <DriverPanel onShowToast={showToast} />}
+        {activeTab === 'driver' &&
+          (features.trips ? (
+            <DriverPanel onShowToast={showToast} cryptoEnabled={features.crypto} />
+          ) : (
+            <TripsSuspended />
+          ))}
 
         {/* ======================= MERCHANT VIEW ======================= */}
         {activeTab === 'merchant' && <MerchantPanel onShowToast={showToast} />}
@@ -544,7 +538,7 @@ export default function App() {
           </div>
 
           <div className="text-[11px] font-mono text-slate-500 text-center sm:text-right">
-            © 2026 BarboYa. Movilidad, Gastronomía y Logística Urbana. Todos los derechos reservados.
+            © 2026 BarboYa. Comercio y domicilios. Todos los derechos reservados.
           </div>
         </div>
       </footer>
@@ -555,6 +549,7 @@ export default function App() {
         setActiveTab={setActiveTab}
         serviceMode={serviceMode}
         setServiceMode={setServiceMode}
+        tripsEnabled={features.trips}
         session={session}
         onOpenAuth={() => setActiveTab('auth')}
         onTriggerSOS={handleTriggerSOS}

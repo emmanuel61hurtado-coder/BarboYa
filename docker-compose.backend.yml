@@ -49,6 +49,9 @@ services:
       USE_SQLITE: "false"
       JWT_SECRET: "${JWT_SECRET:?Define JWT_SECRET en las variables de entorno de Coolify}"
       WEBHOOK_SECRET: ${WEBHOOK_SECRET:-}
+      # Suspendidos por la revision legal; poner "true" solo con concepto juridico
+      ENABLE_TRIPS: ${ENABLE_TRIPS:-false}
+      ENABLE_CRYPTO_PAYMENTS: ${ENABLE_CRYPTO_PAYMENTS:-false}
       CORS_ORIGINS: '${CORS_ORIGINS:-${ALLOWED_ORIGINS:-["*"]}}'
       # Pagos blockchain (EVM). Ver docs/blockchain-payments.md
       CHAIN_RPC_URL: ${CHAIN_RPC_URL:-}

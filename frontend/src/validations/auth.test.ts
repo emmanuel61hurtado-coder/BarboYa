@@ -8,6 +8,9 @@ const valid = {
   phone: '300 123 4567',
   password: 'Segura12345',
   confirmPassword: 'Segura12345',
+  adult: true,
+  acceptTerms: true,
+  authorizeData: true,
 }
 
 describe('validaciones de cuenta', () => {
@@ -22,6 +25,9 @@ describe('validaciones de cuenta', () => {
     ['contraseñas distintas', { confirmPassword: 'Otra1234567' }],
     ['correo inválido', { email: 'ana' }],
     ['celular inválido', { phone: '123' }],
+    ['un menor de edad', { adult: false }],
+    ['términos sin aceptar', { acceptTerms: false }],
+    ['datos sin autorizar', { authorizeData: false }],
   ])('rechaza %s', (_, change) => {
     expect(registerSchema.safeParse({ ...valid, ...change }).success).toBe(false)
   })

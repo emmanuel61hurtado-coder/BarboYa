@@ -11,6 +11,7 @@ const item = (id: string, priceCop: number, soldOut = false) => ({
   photoUrl: null,
   regularPriceCop: null,
   promoEndsOn: null,
+  promoWhileStockLasts: false,
 })
 
 describe('carrito', () => {

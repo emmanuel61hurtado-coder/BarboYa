@@ -6,6 +6,8 @@ import { Button } from '../components/ui/button'
 import { ErrorAlert } from '../components/ui/surface'
 import { useOrderEvents } from '../hooks/useOrderEvents'
 import { ROLE_LABELS } from '../utils/labels'
+import { LegalFooter } from '../modules/legal/LegalFooter'
+import { PendingAcceptance } from '../modules/legal/PendingAcceptance'
 import { cn } from '../utils/cn'
 
 export function AppLayout() {
@@ -110,8 +112,10 @@ export function AppLayout() {
       </header>
       <main className="mx-auto max-w-5xl px-4 py-6 space-y-5">
         <ErrorAlert error={error} />
+        {!staff && <PendingAcceptance />}
         <Outlet />
       </main>
+      <LegalFooter />
     </div>
   )
 }

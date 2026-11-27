@@ -109,9 +109,14 @@ function ProfileForm({ view: { profile } }: { view: CourierView }) {
         <label className="flex items-start gap-2 text-sm text-slate-300">
           <input type="checkbox" className="mt-1" {...form.register('acceptsDataProcessing')} />
           <span>
-            Autorizo a BarboYa a tratar mis datos personales y mis documentos, incluida la foto de mi rostro (dato
-            sensible), para verificar mi identidad y habilitar mi cuenta. Puedo eliminar mis documentos; sin ellos no
-            podré operar.
+            Autorizo a BarboYa a tratar mis documentos y la foto de mi rostro para verificar mi identidad y habilitar
+            mi cuenta. La foto es un dato sensible y no estoy obligado a autorizar su tratamiento; puedo consultar,
+            corregir y eliminar mis documentos. Sin los documentos obligatorios no se puede activar la cuenta. Más en
+            la{' '}
+            <a href="/privacidad" target="_blank" rel="noreferrer" className="text-sky-400 underline">
+              política de datos
+            </a>
+            .
           </span>
         </label>
         {errors.acceptsDataProcessing && (

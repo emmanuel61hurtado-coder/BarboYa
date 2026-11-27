@@ -32,13 +32,20 @@ export interface BusinessInput {
   courierDeliveryEnabled: boolean
   latitude: number | null
   longitude: number | null
+  notificationAddress: string
+  contactEmail: string
 }
 
-export type Business = Omit<BusinessInput, 'legalName' | 'nit' | 'description'> & {
+export type Business = Omit<
+  BusinessInput,
+  'legalName' | 'nit' | 'description' | 'notificationAddress' | 'contactEmail'
+> & {
   id: string
   legalName: string | null
   nit: string | null
   description: string | null
+  notificationAddress: string | null
+  contactEmail: string | null
   acceptingOrders: boolean
   /** Vacío: no usa horario. */
   hours: Shift[]
@@ -92,12 +99,22 @@ export interface MenuItem {
   /** Con promoción: el precio normal; priceCop es lo que se cobra. */
   regularPriceCop: number | null
   promoEndsOn: string | null
+  /** La rebaja depende de las existencias y hay que avisarlo. */
+  promoWhileStockLasts: boolean
 }
 
 export interface Store {
   business: StoreSummary
   hours: Shift[]
   products: MenuItem[]
+  /** Quién vende; nulo si el comercio aún no completó sus datos. */
+  seller: {
+    legalName: string
+    identification: string
+    notificationAddress: string
+    phone: string
+    email: string
+  } | null
 }
 
 export interface Order {

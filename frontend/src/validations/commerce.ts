@@ -10,8 +10,10 @@ const money = (min: number, max: number) =>
 export const businessSchema = z
   .object({
     name: z.string().trim().min(2, 'Escribe el nombre del negocio').max(120),
-    legalName: z.string().trim().max(160),
-    nit: z.string().trim().regex(/^$|^[0-9.]{6,15}(-[0-9])?$/, 'NIT no válido, por ejemplo 900123456-7'),
+    legalName: z.string().trim().min(3, 'Escribe el nombre o razón social de quien vende').max(160),
+    nit: z.string().trim().regex(/^[0-9.]{6,15}(-[0-9])?$/, 'Cédula o NIT no válido, por ejemplo 900123456-7'),
+    notificationAddress: z.string().trim().min(5, 'Escribe la dirección de notificaciones').max(200),
+    contactEmail: z.email('Escribe un correo válido').max(254),
     category: z.enum(['RESTAURANT', 'GROCERY', 'PHARMACY', 'BAKERY', 'OTHER']),
     description: z.string().trim().max(500),
     address: z.string().trim().min(5, 'Escribe la dirección').max(200),

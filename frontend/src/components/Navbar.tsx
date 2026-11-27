@@ -96,7 +96,7 @@ export const Navbar: React.FC<NavbarProps> = ({
             }`}
           >
             <Car className="w-3.5 h-3.5" />
-            <span>Conductor</span>
+            <span>Repartidor</span>
           </button>
 
           <button

@@ -26,7 +26,10 @@ public final class AuthDtos {
             @NotBlank @Email @Size(max = 254) String email,
             @NotBlank @Pattern(regexp = "^\\+?[0-9 ()-]{10,20}$", message = "Celular no valido") String phone,
             @NotBlank @Pattern(regexp = PASSWORD_PATTERN, message = PASSWORD_MESSAGE) String password,
-            Role role) {
+            Role role,
+            Boolean adult,
+            @Size(max = 40) String termsVersion,
+            @Size(max = 40) String privacyVersion) {
 
         @Override
         public String toString() {

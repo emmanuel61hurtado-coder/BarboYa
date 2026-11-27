@@ -72,6 +72,19 @@ barboya:
     max-per-day: 5
   mail:
     from: ${MAIL_FROM:}
+  # Quien opera la plataforma: aparece en los terminos y en la politica de datos
+  legal:
+    operator-name: ${LEGAL_OPERATOR_NAME:}
+    operator-id: ${LEGAL_OPERATOR_ID:}
+    operator-address: ${LEGAL_OPERATOR_ADDRESS:}
+    operator-phone: ${LEGAL_OPERATOR_PHONE:}
+    operator-email: ${LEGAL_OPERATOR_EMAIL:}
+    # Solo "true" cuando un abogado haya aprobado los documentos
+    reviewed: ${LEGAL_REVIEWED:false}
+  # Apagados hasta cumplir sus requisitos legales
+  features:
+    pharmacy: ${ENABLE_PHARMACY:false}
+    driver-registration: ${ENABLE_DRIVER_REGISTRATION:false}
   # Un pedido sin respuesta del comercio se cancela solo
   orders:
     accept-timeout: ${ORDER_ACCEPT_TIMEOUT:15m}

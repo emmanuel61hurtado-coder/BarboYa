@@ -25,6 +25,7 @@ import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
                 "com.barboya.couriers",
                 "com.barboya.files",
                 "com.barboya.finance",
+                "com.barboya.legal",
                 "com.barboya.notifications",
                 "com.barboya.orders",
                 "com.barboya.products",
@@ -39,12 +40,14 @@ import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 @ConfigurationPropertiesScan("com.barboya.config")
 @EntityScan({"com.barboya.addresses", "com.barboya.audit",
         "com.barboya.auth", "com.barboya.businesses", "com.barboya.couriers",
-        "com.barboya.finance", "com.barboya.orders", "com.barboya.products", "com.barboya.ratings",
+        "com.barboya.finance", "com.barboya.legal",
+        "com.barboya.orders", "com.barboya.products", "com.barboya.ratings",
         "com.barboya.support",
         "com.barboya.users"})
 @EnableJpaRepositories({"com.barboya.addresses", "com.barboya.audit",
         "com.barboya.auth", "com.barboya.businesses", "com.barboya.couriers",
-        "com.barboya.finance", "com.barboya.orders", "com.barboya.products", "com.barboya.ratings",
+        "com.barboya.finance", "com.barboya.legal",
+        "com.barboya.orders", "com.barboya.products", "com.barboya.ratings",
         "com.barboya.support",
         "com.barboya.users"})
 public class BarboyaApplication {

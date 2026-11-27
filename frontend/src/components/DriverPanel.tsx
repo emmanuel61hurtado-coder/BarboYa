@@ -8,6 +8,7 @@ import { api } from '../utils/api'
 
 interface DriverPanelProps {
   onShowToast: (msg: string) => void
+  cryptoEnabled: boolean
 }
 
 interface CryptoConfig {
@@ -24,7 +25,7 @@ interface CryptoConfig {
   max_cop: number
 }
 
-export const DriverPanel: React.FC<DriverPanelProps> = ({ onShowToast }) => {
+export const DriverPanel: React.FC<DriverPanelProps> = ({ onShowToast, cryptoEnabled }) => {
   const [isOnline, setIsOnline] = useState<boolean>(true)
   const [walletBalance, setWalletBalance] = useState<number>(18500)
   const [todayEarnings, setTodayEarnings] = useState<number>(74000)
@@ -343,16 +344,18 @@ export const DriverPanel: React.FC<DriverPanelProps> = ({ onShowToast }) => {
               >
                 💸 Nequi / Daviplata
               </button>
-              <button
-                onClick={openCryptoTab}
-                className={`p-2 rounded-xl border text-xs font-bold transition ${
-                  topupMethod === 'crypto'
-                    ? 'bg-cyan-500/20 border-cyan-400 text-cyan-300'
-                    : 'bg-nexus-950 border-slate-800 text-slate-400'
-                }`}
-              >
-                🦊 Cripto {cryptoConfig ? `(${cryptoConfig.token_symbol})` : '(USDC)'}
-              </button>
+              {cryptoEnabled && (
+                <button
+                  onClick={openCryptoTab}
+                  className={`p-2 rounded-xl border text-xs font-bold transition ${
+                    topupMethod === 'crypto'
+                      ? 'bg-cyan-500/20 border-cyan-400 text-cyan-300'
+                      : 'bg-nexus-950 border-slate-800 text-slate-400'
+                  }`}
+                >
+                  🦊 Cripto {cryptoConfig ? `(${cryptoConfig.token_symbol})` : '(USDC)'}
+                </button>
+              )}
             </div>
 
             <div className="grid grid-cols-3 gap-2">

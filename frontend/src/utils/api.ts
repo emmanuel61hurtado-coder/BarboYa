@@ -241,6 +241,11 @@ class ApiService {
 
   // ──────────────────────── PAGOS CRIPTO (blockchain EVM) ────────────────────────
   /** Config para pagar desde la billetera: red, token y tesorería. */
+  /** Servicios encendidos en el servidor. */
+  async getFeatures(): Promise<{ trips: boolean; crypto: boolean }> {
+    return this.request('/features')
+  }
+
   async getCryptoConfig(): Promise<{
     enabled: boolean
     chain_id: number

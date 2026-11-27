@@ -36,6 +36,10 @@ public abstract class CommerceFixtures extends IntegrationTest {
         data.put("pickupEnabled", true);
         data.put("deliveryEnabled", true);
         data.put("deliveryFeeCop", 3000);
+        data.put("legalName", "Responsable de Prueba");
+        data.put("nit", "900123456-7");
+        data.put("notificationAddress", "Carrera 1 # 2-3, Barbosa");
+        data.put("contactEmail", "comercio@barboya.test");
         return data;
     }
 

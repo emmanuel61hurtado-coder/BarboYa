@@ -51,6 +51,8 @@ Guárdalos en un gestor de contraseñas. **Si pierdes `FILES_KEY`, los documento
 | `SPRING_MAIL_HOST`, `SPRING_MAIL_PORT`, `SPRING_MAIL_USERNAME`, `SPRING_MAIL_PASSWORD`, `MAIL_FROM` | No | Datos SMTP. Exige TLS (STARTTLS), normalmente puerto `587` |
 | `DELIVERY_BASE_FEE_COP`, `DELIVERY_PER_KM_COP`, `DELIVERY_MAX_KM` | No | `3000`, `1000`, `8` |
 | `MERCHANT_COMMISSION_BPS`, `COURIER_COMMISSION_BPS`, `DEBT_LIMIT_COP` | No | `1000` (10 %), `1000`, `50000` |
+| `LEGAL_OPERATOR_NAME`, `_ID`, `_ADDRESS`, `_PHONE`, `_EMAIL` | Antes de usar datos reales | Quien opera; sin ellos los documentos muestran «PENDIENTE» |
+| `LEGAL_REVIEWED` | No | `true` solo cuando un abogado apruebe los documentos; quita el aviso de borrador |
 
 Sin las variables de correo la aplicación funciona, pero la verificación de correo y la recuperación de contraseña responden «no disponible».
 

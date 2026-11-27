@@ -28,6 +28,7 @@ import { TicketPage } from '../modules/support/TicketPage'
 import { OrdersPage } from '../modules/admin/OrdersPage'
 import { SupportQueuePage } from '../modules/admin/SupportQueuePage'
 import { SupportTicketPage } from '../modules/admin/SupportTicketPage'
+import { LegalPage } from '../modules/legal/LegalPage'
 import { MyRatingsPage } from '../modules/ratings/MyRatingsPage'
 import { RatingsModerationPage } from '../modules/admin/RatingsModerationPage'
 
@@ -56,6 +57,8 @@ function Allow({ roles }: { roles: Role[] }) {
 export function AppRoutes() {
   return (
     <Routes>
+      <Route path="/terminos" element={<LegalPage slug="terminos" />} />
+      <Route path="/privacidad" element={<LegalPage slug="privacidad" />} />
       <Route element={<SignedOut />}>
         <Route element={<AuthLayout />}>
           <Route path="/ingresar" element={<LoginPage />} />

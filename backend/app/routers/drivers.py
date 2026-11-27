@@ -67,7 +67,8 @@ class DriverDocumentsIn(BaseModel):
     soat_expires_at: datetime | None = None
     tech_doc_url: str | None = None
     tech_expires_at: datetime | None = None
-    selfie_reference_url: str = Field(min_length=5, examples=["https://storage.barboya.co/docs/selfie_123.jpg"])
+    # Dato biometrico sensible: no se puede exigir como condicion (Decreto 1377 de 2013, art. 6)
+    selfie_reference_url: str | None = Field(default=None, min_length=5)
 
 
 class DriverTripHistoryItem(BaseModel):

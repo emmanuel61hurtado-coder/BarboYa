@@ -8,6 +8,8 @@ import com.barboya.common.ApiException;
 import com.barboya.common.ClientInfo;
 import com.barboya.common.Contacts;
 import com.barboya.config.AppProperties;
+import com.barboya.config.FeatureProperties;
+import com.barboya.legal.LegalService;
 import com.barboya.notifications.MailRequested;
 import com.barboya.security.JwtService;
 import com.barboya.security.SecretKeys;
@@ -52,12 +54,17 @@ public class AuthService {
     private final ApplicationEventPublisher events;
     private final AppProperties.Security settings;
     private final Clock clock;
+    private final LegalService legal;
+    private final FeatureProperties features;
     /** Iguala el tiempo de respuesta cuando la cuenta no existe. */
     private final String decoyHash;
 
     public AuthService(UserRepository users, AuthSessionRepository sessions, RefreshTokenRepository refreshTokens,
                        PasswordEncoder encoder, JwtService jwt, AuditService audit,
-                       ApplicationEventPublisher events, AppProperties properties, Clock clock) {
+                       ApplicationEventPublisher events, AppProperties properties, Clock clock,
+                       LegalService legal, FeatureProperties features) {
+        this.legal = legal;
+        this.features = features;
         this.users = users;
         this.sessions = sessions;
         this.refreshTokens = refreshTokens;
@@ -77,6 +84,15 @@ public class AuthService {
             throw new ApiException(HttpStatus.FORBIDDEN, "ROLE_NOT_ALLOWED",
                     "Ese rol no se puede registrar de forma publica");
         }
+        if ((role == Role.MOTO_DRIVER || role == Role.CAR_DRIVER) && !features.driverRegistration()) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "ROLE_UNAVAILABLE",
+                    "El transporte de pasajeros no esta disponible");
+        }
+        if (!Boolean.TRUE.equals(request.adult())) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "ADULT_REQUIRED",
+                    "Debes declarar que eres mayor de 18 anos");
+        }
+        legal.requireCurrent(request.termsVersion(), request.privacyVersion());
         String email = Contacts.email(request.email());
         String phone = Contacts.phone(request.phone());
         if (!phone.matches("^\\+\\d{10,15}$")) {
@@ -91,6 +107,7 @@ public class AuthService {
         User user = users.saveAndFlush(User.create(request.fullName().trim(), email, phone,
                 encoder.encode(request.password()), role, clock.instant()));
         audit.record(AuditAction.REGISTERED, user.getId(), user.getId(), role.name(), client);
+        legal.recordRegistration(user.getId(), client);
         return openSession(user, client);
     }
 

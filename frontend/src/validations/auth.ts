@@ -30,6 +30,10 @@ export const registerSchema = z
     phone,
     password,
     confirmPassword: z.string(),
+    // Ninguna casilla viene marcada: la autorización debe ser expresa
+    adult: z.boolean().refine(Boolean, 'Debes ser mayor de 18 años'),
+    acceptTerms: z.boolean().refine(Boolean, 'Debes aceptar los términos'),
+    authorizeData: z.boolean().refine(Boolean, 'Sin tu autorización no podemos crear la cuenta'),
   })
   .refine(passwordsMatch.check, passwordsMatch.error)
 

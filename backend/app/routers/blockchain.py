@@ -64,6 +64,11 @@ def _out(p: BlockchainPayment) -> CryptoPaymentOut:
 
 
 def _check_enabled() -> None:
+    if not settings.enable_crypto_payments:
+        raise HTTPException(
+            status.HTTP_503_SERVICE_UNAVAILABLE,
+            {"code": "CRYPTO_DISABLED", "message": "Las recargas con criptomonedas están suspendidas"},
+        )
     if not settings.payment_token_address:
         raise HTTPException(
             status.HTTP_503_SERVICE_UNAVAILABLE,

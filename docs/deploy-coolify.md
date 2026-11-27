@@ -44,6 +44,8 @@ En **Environment Variables** define:
 |---|---|---|
 | `JWT_SECRET` | **Sí** | secreto aleatorio de 64+ caracteres (mínimo 32) |
 | `WEBHOOK_SECRET` | Opcional | secreto para firmar webhooks de pago; sin él se rechazan |
+| `ENABLE_TRIPS` | No (`false`) | viajes de pasajeros y envíos: **suspendidos** por la [revisión legal](revision-legal.md) |
+| `ENABLE_CRYPTO_PAYMENTS` | No (`false`) | recargas nuevas con criptomonedas: **suspendidas** por la misma razón |
 | `POSTGRES_PASSWORD` | **Sí** | contraseña aleatoria y única |
 | `DATABASE_URL` | Opcional | `postgresql+asyncpg://barboya:UnaClaveLargaYUnica@db:5432/barboya` |
 | `POSTGRES_USER` / `POSTGRES_DB` | Opcional | `barboya` (por defecto) |

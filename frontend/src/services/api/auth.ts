@@ -4,6 +4,10 @@ import type { AccessEvent, PublicRole, Session, TokenResponse, User } from './ty
 const { http } = apiClient
 
 export interface Registration {
+  adult: boolean
+  /** Versiones que la persona vio al aceptar. */
+  termsVersion: string
+  privacyVersion: string
   fullName: string
   email: string
   phone: string

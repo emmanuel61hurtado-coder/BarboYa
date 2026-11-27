@@ -1,4 +1,5 @@
 import { Outlet } from 'react-router-dom'
+import { LegalFooter } from '../modules/legal/LegalFooter'
 
 export function AuthLayout() {
   return (
@@ -9,9 +10,7 @@ export function AuthLayout() {
       <main className="w-full max-w-md">
         <Outlet />
       </main>
-      <a href="tel:123" className="mt-8 text-xs text-slate-500 hover:text-rose-300">
-        ¿Emergencia? Llama al 123
-      </a>
+      <LegalFooter />
     </div>
   )
 }

@@ -12,6 +12,7 @@ import com.barboya.businesses.BusinessDtos.StoreSummary;
 import com.barboya.common.ApiException;
 import com.barboya.common.Colombia;
 import com.barboya.common.Contacts;
+import com.barboya.config.FeatureProperties;
 import com.barboya.finance.LedgerService;
 import com.barboya.products.Product;
 import com.barboya.products.ProductRepository;
@@ -40,9 +41,11 @@ public class BusinessService {
     private final UserRepository users;
     private final LedgerService ledger;
     private final Clock clock;
+    private final FeatureProperties features;
 
     public BusinessService(BusinessRepository businesses, ProductRepository products, UserRepository users,
-                           LedgerService ledger, Clock clock) {
+                           LedgerService ledger, Clock clock, FeatureProperties features) {
+        this.features = features;
         this.ledger = ledger;
         this.businesses = businesses;
         this.products = products;
@@ -57,6 +60,10 @@ public class BusinessService {
 
     /** Se puede completar mientras la cuenta esta en revision. */
     public BusinessResponse save(UUID ownerId, BusinessRequest request) {
+        if (request.category() == Business.Category.PHARMACY && !features.pharmacy()) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "CATEGORY_UNAVAILABLE",
+                    "La venta de medicamentos no esta disponible en la plataforma");
+        }
         boolean couriers = Boolean.TRUE.equals(request.courierDeliveryEnabled());
         if (!request.pickupEnabled() && !request.deliveryEnabled() && !couriers) {
             throw new ApiException(HttpStatus.BAD_REQUEST, "NO_FULFILLMENT",
@@ -81,6 +88,8 @@ public class BusinessService {
         business.setDescription(blankToNull(request.description()));
         business.setAddress(request.address().trim());
         business.setPhone(phone);
+        business.setNotificationAddress(request.notificationAddress().trim());
+        business.setContactEmail(Contacts.email(request.contactEmail()));
         business.setPickupEnabled(request.pickupEnabled());
         business.setDeliveryEnabled(request.deliveryEnabled());
         business.setDeliveryFeeCop(request.deliveryEnabled() ? request.deliveryFeeCop() : 0);
@@ -107,6 +116,10 @@ public class BusinessService {
             }
         }
         Business business = requireOwned(ownerId);
+        if (accepting && !business.isIdentified()) {
+            throw new ApiException(HttpStatus.CONFLICT, "IDENTIFICATION_REQUIRED",
+                    "Completa nombre o razon social, documento, direccion de notificaciones y correo");
+        }
         business.setAcceptingOrders(accepting);
         business.setUpdatedAt(clock.instant());
         return BusinessResponse.from(businesses.saveAndFlush(business));
@@ -138,6 +151,11 @@ public class BusinessService {
         if (request.endsOn().isAfter(today.plusDays(MAX_PROMOTION_DAYS))) {
             throw invalidPromotion("La promocion puede terminar maximo en 90 dias");
         }
+        // Una promocion anunciada obliga hasta su fecha final: solo se puede mejorar
+        if (product.onPromotion(today) && (request.priceCop() > product.getPromoPriceCop()
+                || request.startsOn().isAfter(today) || request.endsOn().isBefore(product.getPromoEndsOn()))) {
+            throw bindingPromotion("La promocion vigente solo se puede mejorar: bajar su precio o ampliar su fecha");
+        }
         product.promote(request.priceCop(), request.startsOn(), request.endsOn());
         product.setUpdatedAt(clock.instant());
         return ProductResponse.from(products.saveAndFlush(product), today);
@@ -145,9 +163,13 @@ public class BusinessService {
 
     public ProductResponse removePromotion(UUID ownerId, UUID productId) {
         Product product = requireProduct(ownerId, productId);
+        LocalDate today = Colombia.today(clock);
+        if (product.onPromotion(today)) {
+            throw bindingPromotion("La ley obliga a cumplir una promocion anunciada hasta su fecha final");
+        }
         product.endPromotion();
         product.setUpdatedAt(clock.instant());
-        return ProductResponse.from(products.saveAndFlush(product), Colombia.today(clock));
+        return ProductResponse.from(products.saveAndFlush(product), today);
     }
 
     public ProductResponse addProduct(UUID ownerId, ProductRequest request) {
@@ -162,6 +184,9 @@ public class BusinessService {
         if (product.getPromoPriceCop() != null) {
             if (product.getPromoEndsOn().isBefore(today)) {
                 product.endPromotion();
+            } else if (product.onPromotion(today) && request.priceCop() > product.getPriceCop()) {
+                // Subirlo agrandaria artificialmente el descuento que se esta mostrando
+                throw bindingPromotion("No puedes subir el precio normal mientras la promocion esta vigente");
             } else if (request.priceCop() <= product.getPromoPriceCop()) {
                 throw new ApiException(HttpStatus.CONFLICT, "PROMOTION_CONFLICT",
                         "El precio debe ser mayor que el de la promocion; quitala o cambiala primero");
@@ -198,7 +223,8 @@ public class BusinessService {
                 .stream().filter(Product::isAvailable).map(p -> MenuItem.from(p, today)).toList();
         boolean open = business.isAcceptingOrders() && business.isOpenAt(clock.instant())
                 && !ledger.isOverLimit(business.getOwnerId());
-        return new Store(StoreSummary.from(business, open), business.schedule(), menu);
+        return new Store(StoreSummary.from(business, open), business.schedule(), menu,
+                BusinessDtos.Seller.from(business));
     }
 
     public Business requireOwned(UUID ownerId) {
@@ -234,6 +260,11 @@ public class BusinessService {
 
     private static String blankToNull(String value) {
         return value == null || value.isBlank() ? null : value.trim();
+    }
+
+    /** Estatuto del Consumidor (Ley 1480 de 2011), articulo 33. */
+    private static ApiException bindingPromotion(String message) {
+        return new ApiException(HttpStatus.CONFLICT, "PROMOTION_BINDING", message);
     }
 
     private static ApiException invalidPromotion(String message) {

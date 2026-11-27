@@ -9,12 +9,15 @@ import com.barboya.common.Colombia;
 import com.barboya.common.Geo;
 import com.barboya.config.FinanceProperties;
 import com.barboya.finance.LedgerService;
+import com.barboya.notifications.MailRequested;
 import com.barboya.orders.OrderDtos.LineRequest;
 import com.barboya.orders.OrderDtos.OrderPage;
 import com.barboya.orders.OrderDtos.OrderResponse;
 import com.barboya.orders.OrderDtos.PlaceOrderRequest;
 import com.barboya.products.Product;
 import com.barboya.products.ProductRepository;
+import com.barboya.users.UserRepository;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -48,11 +51,16 @@ public class CustomerOrderService {
     private final OrderLifecycle lifecycle;
     private final OrderViews views;
     private final Clock clock;
+    private final UserRepository users;
+    private final ApplicationEventPublisher publisher;
 
     CustomerOrderService(OrderRepository orders, OrderItemRepository items, BusinessRepository businesses,
                          BusinessService businessService, ProductRepository products, DeliveryPricing pricing,
                          OrderLifecycle lifecycle, OrderViews views, LedgerService ledger,
-                         FinanceProperties finance, Clock clock) {
+                         FinanceProperties finance, Clock clock, UserRepository users,
+                         ApplicationEventPublisher publisher) {
+        this.users = users;
+        this.publisher = publisher;
         this.ledger = ledger;
         this.finance = finance;
         this.pricing = pricing;
@@ -165,7 +173,33 @@ public class CustomerOrderService {
         CustomerOrder saved = orders.saveAndFlush(order);
         items.saveAll(lines);
         lifecycle.record(saved, business.getOwnerId(), customerId, null);
+        confirmByMail(saved, lines, business);
         return view(saved);
+    }
+
+    /** Acuse de recibo con lo que se compro, a quien y como reclamar. */
+    private void confirmByMail(CustomerOrder order, List<OrderItem> lines, Business business) {
+        StringBuilder body = new StringBuilder("Recibimos tu pedido ").append(order.getNumber())
+                .append(".\n\nVende: ").append(business.getName());
+        if (business.isIdentified()) {
+            body.append(" (").append(business.getLegalName()).append(", ").append(business.getNit())
+                    .append(", ").append(business.getNotificationAddress()).append(", ")
+                    .append(business.getContactEmail()).append(")");
+        }
+        body.append("\n\n");
+        for (OrderItem line : lines) {
+            body.append(line.getQuantity()).append(" x ").append(line.getName()).append(": $")
+                    .append(line.getLineTotalCop()).append('\n');
+        }
+        body.append("Domicilio: $").append(order.getDeliveryFeeCop())
+                .append("\nTotal en pesos, impuestos incluidos: $").append(order.getTotalCop())
+                .append("\nPago: efectivo al recibir.")
+                .append("\n\nEl comercio debe confirmarlo; el tiempo de preparacion aparece en BarboYa.")
+                .append("\nRetracto: 5 dias habiles, salvo las excepciones de ley (por ejemplo, alimentos ")
+                .append("preparados y perecederos).")
+                .append("\nReclamos: abre un caso en Soporte. Autoridad: https://www.sic.gov.co");
+        users.findById(order.getCustomerId()).ifPresent(customer -> publisher.publishEvent(new MailRequested(
+                customer.getEmail(), "Confirmacion de tu pedido " + order.getNumber(), body.toString())));
     }
 
     @Transactional(readOnly = true)

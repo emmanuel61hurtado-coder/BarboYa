@@ -41,9 +41,10 @@ export function ProductPromotion({ product }: { product: Product }) {
       ) : (
         <div className="flex flex-wrap gap-3">
           <button type="button" className="text-xs text-sky-400 hover:underline" onClick={() => setOpen(true)}>
-            {promotion ? 'Cambiar promoción' : 'Crear promoción'}
+            {!promotion ? 'Crear promoción' : promotion.active ? 'Mejorar o ampliar promoción' : 'Cambiar promoción'}
           </button>
-          {promotion && (
+          {/* Una promoción vigente obliga hasta su fecha final: no se ofrece quitarla */}
+          {promotion && !promotion.active && (
             <button
               type="button"
               className="text-xs text-slate-400 hover:underline disabled:opacity-40"
@@ -97,6 +98,10 @@ function PromotionForm({ product, onSaved, onClose }: {
         <TextField label="Desde" type="date" error={errors.startsOn?.message} {...form.register('startsOn')} />
         <TextField label="Hasta (incluido)" type="date" min={today} error={errors.endsOn?.message} {...form.register('endsOn')} />
       </div>
+      <p className="text-xs text-slate-400">
+        Desde que empiece no podrás quitarla, subir su precio ni acortarla: la ley obliga a cumplirla (Ley 1480 de
+        2011, artículo 33). Revisa bien el valor y las fechas.
+      </p>
       <ErrorAlert error={error} />
       <div className="flex gap-2">
         <Button type="submit" size="sm" loading={sending}>

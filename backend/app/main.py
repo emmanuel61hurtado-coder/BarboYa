@@ -144,6 +144,13 @@ async def health():
     return {"status": "ok", "app": "Barboya"}
 
 
+@app.get("/features", tags=["meta"])
+async def features():
+    """Que servicios estan encendidos, para que la interfaz no ofrezca los suspendidos."""
+    current = get_settings()
+    return {"trips": current.enable_trips, "crypto": current.enable_crypto_payments}
+
+
 # ───────────────────── SERVIR FRONTEND SPA CON FASTAPI ─────────────────────
 FRONTEND_DIST = Path(__file__).resolve().parent.parent.parent / "frontend" / "dist"
 

@@ -23,14 +23,14 @@ Fecha: 26 de noviembre de 2026. Base revisada: commit `f1d19c5`. Incluye las cor
 
 | Verificación | Resultado |
 |---|---|
-| Pruebas Python (suite completa) | 76 aprobadas en 4 corridas seguidas |
+| Pruebas Python (suite completa) | 85 aprobadas |
 | Prueba de punta a punta con la API real (SQLite) | Registro, ingreso, SOS, webhook y recuperación responden como se espera; en producción sin `JWT_SECRET` no arranca |
 | TypeScript y build de Vite (ambos modos, Node 20) | Correctos |
-| Pruebas de Spring Boot (PostgreSQL 16 real) | 207 aprobadas |
-| Entorno de pruebas reproducido sin Docker (perfil `prod`, API sirviendo la interfaz) | Comprobador de despliegue y 83 pasos en Chrome aprobados. La imagen Docker la construye el CI; falta ver ese resultado |
-| Pruebas del frontend (`npm test`) | 37 aprobadas |
-| Flujos de la interfaz `v1` en Chrome (API, PostgreSQL y correo de prueba) | 83 pasos (cuentas, pedido, verificación, entrega, comisiones, soporte, calificaciones, fotos, horarios, promociones y direcciones), sin errores de consola; teselas del mapa simuladas |
-| App actual en Chrome tras actualizar herramientas | Carga, cambia de pestaña y abre el SOS sin errores |
+| Pruebas de Spring Boot (PostgreSQL 16 real) | 217 aprobadas |
+| Entorno de pruebas reproducido sin Docker (perfil `prod`, API sirviendo la interfaz) | Comprobador de despliegue y 89 pasos en Chrome aprobados. La imagen Docker la construye el CI; falta ver ese resultado |
+| Pruebas del frontend (`npm test`) | 41 aprobadas |
+| Flujos de la interfaz `v1` en Chrome (API, PostgreSQL y correo de prueba) | 89 pasos (cuentas, pedido, verificación, entrega, comisiones, soporte, calificaciones, fotos, horarios, promociones, direcciones y obligaciones legales), sin errores de consola; teselas del mapa simuladas |
+| App actual en Chrome | Carga, abre el SOS y no ofrece los servicios suspendidos |
 | `.jar` de Spring Boot con perfil `prod` | Arranca, aplica migraciones y responde por HTTP como se espera; sin `JWT_SECRET` no arranca |
 | `docker compose` | No ejecutado: Docker no está instalado |
 | `ruff check` (paso del CI) | No ejecutado: Ruff no está instalado ni figura en `requirements.txt`, así que ese paso del CI debería fallar |
@@ -119,4 +119,4 @@ Cada fase termina cuando sus pruebas pasan.
 
 **Cuentas y credenciales:** pasarela de pagos colombiana en sandbox, correo o SMS, proveedor de mapas, nodo RPC y billetera de red de pruebas, y acceso a la base PostgreSQL de desarrollo.
 
-**Revisión legal (antes de operar):** transporte de pasajeros, en especial en motocicleta; tratamiento de datos personales y biométricos (Ley 1581 de 2012); y manejo de dinero de terceros en billetera y liquidaciones.
+**Revisión legal (antes de operar):** hay una [revisión preliminar](revision-legal.md) que un abogado y un contador deben validar. Temas mínimos: transporte de pasajeros, en especial en motocicleta; tratamiento de datos personales y biométricos (Ley 1581 de 2012); y manejo de dinero de terceros en billetera y liquidaciones.

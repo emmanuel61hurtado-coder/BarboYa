@@ -76,6 +76,8 @@ public class SecurityConfig {
                                 "/api/v1/auth/password/forgot",
                                 "/api/v1/auth/password/reset").permitAll()
                         .requestMatchers(HttpMethod.GET, "/actuator/health").permitAll()
+                        // Terminos y politica de datos se leen antes de tener cuenta
+                        .requestMatchers(HttpMethod.GET, "/api/v1/legal", "/api/v1/legal/documents/*").permitAll()
                         // Fotos del catalogo: las pide el navegador sin encabezado de sesion
                         .requestMatchers(HttpMethod.GET, "/api/v1/photos/*").permitAll()
                         // Interfaz publica: los datos se piden despues a la API, con sesion

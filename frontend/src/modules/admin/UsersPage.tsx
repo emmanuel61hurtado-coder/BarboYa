@@ -128,8 +128,10 @@ function BusinessReview({ ownerId }: { ownerId: string }) {
   const rows = [
     ['Nombre', data.name],
     ['Categoría', CATEGORY_LABELS[data.category]],
-    ['Razón social', data.legalName ?? 'No indicada'],
-    ['NIT', data.nit ?? 'No indicado'],
+    ['Nombre o razón social', data.legalName ?? 'No indicado'],
+    ['Cédula o NIT', data.nit ?? 'No indicado'],
+    ['Dirección de notificaciones', data.notificationAddress ?? 'No indicada'],
+    ['Correo de contacto', data.contactEmail ?? 'No indicado'],
     ['Dirección', data.address],
     ['Teléfono', data.phone],
     ['Domicilio', data.deliveryEnabled ? formatCop(data.deliveryFeeCop) : 'No ofrece'],

@@ -122,10 +122,52 @@ class PromotionTest extends CommerceFixtures {
         promote(shop.owner(), product, 15000, today, today).andExpect(status().isOk());
         reprice(shop.owner(), product, 15000).andExpect(jsonPath("$.code").value("PROMOTION_CONFLICT"));
         reprice(shop.owner(), product, 18000).andExpect(jsonPath("$.promotion.priceCop").value(15000));
-        mvc.perform(delete("/api/v1/merchant/products/" + product + "/promotion")
-                        .header("Authorization", shop.owner().bearer()))
-                .andExpect(jsonPath("$.promotion").doesNotExist());
-        reprice(shop.owner(), product, 14000).andExpect(status().isOk());
+    }
+
+    private ResultActions remove(Account owner, UUID product) throws Exception {
+        return mvc.perform(delete("/api/v1/merchant/products/" + product + "/promotion")
+                .header("Authorization", owner.bearer()));
+    }
+
+    @Test
+    void anAnnouncedDiscountMustBeHonouredUntilItsLastDay() throws Exception {
+        Shop shop = openShop("Obliga " + UUID.randomUUID());
+        UUID product = addProduct(shop, "Bandeja", 20000, null);
+        LocalDate today = today();
+        promote(shop.owner(), product, 15000, today, today.plusDays(3)).andExpect(status().isOk());
+
+        for (ResultActions worse : new ResultActions[]{
+                remove(shop.owner(), product),
+                promote(shop.owner(), product, 16000, today, today.plusDays(3)),
+                promote(shop.owner(), product, 15000, today, today.plusDays(2)),
+                promote(shop.owner(), product, 15000, today.plusDays(1), today.plusDays(3)),
+                reprice(shop.owner(), product, 25000)}) {
+            worse.andExpect(status().isConflict()).andExpect(jsonPath("$.code").value("PROMOTION_BINDING"));
+        }
+        // Mejorarla si se puede
+        promote(shop.owner(), product, 14000, today, today.plusDays(5))
+                .andExpect(jsonPath("$.promotion.priceCop").value(14000));
+        reprice(shop.owner(), product, 19000).andExpect(status().isOk());
+        menu(register(Role.CUSTOMER), shop)
+                .andExpect(jsonPath("$.products[0].priceCop").value(14000))
+                .andExpect(jsonPath("$.products[0].promoWhileStockLasts").value(false));
+
+        clock.advance(Duration.ofDays(6));
+        Account owner = account(login(shop.owner().email(), PASSWORD, "pruebas"));
+        remove(owner, product).andExpect(jsonPath("$.promotion").doesNotExist());
+    }
+
+    @Test
+    void aDiscountThatHasNotStartedCanStillBeWithdrawn() throws Exception {
+        Shop shop = openShop("Futura " + UUID.randomUUID());
+        UUID product = addProduct(shop, "Bandeja", 20000, 3);
+        promote(shop.owner(), product, 15000, today().plusDays(2), today().plusDays(4)).andExpect(status().isOk());
+
+        remove(shop.owner(), product).andExpect(jsonPath("$.promotion").doesNotExist());
+
+        promote(shop.owner(), product, 15000, today(), today()).andExpect(status().isOk());
+        menu(register(Role.CUSTOMER), shop)
+                .andExpect(jsonPath("$.products[0].promoWhileStockLasts").value(true));
     }
 
     @Test

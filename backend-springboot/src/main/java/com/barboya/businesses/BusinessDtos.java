@@ -4,6 +4,7 @@ import com.barboya.products.Product;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.DecimalMax;
 import jakarta.validation.constraints.DecimalMin;
+import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
@@ -22,8 +23,8 @@ public final class BusinessDtos {
 
     public record BusinessRequest(
             @NotBlank @Size(min = 2, max = 120) String name,
-            @Size(max = 160) String legalName,
-            @Pattern(regexp = "^$|^[0-9.]{6,15}(-[0-9])?$", message = "NIT no valido") String nit,
+            @NotBlank @Size(min = 3, max = 160) String legalName,
+            @NotBlank @Pattern(regexp = "^[0-9.]{6,15}(-[0-9])?$", message = "Cedula o NIT no valido") String nit,
             @NotNull Business.Category category,
             @Size(max = 500) String description,
             @NotBlank @Size(min = 5, max = 200) String address,
@@ -33,7 +34,9 @@ public final class BusinessDtos {
             @NotNull @Min(0) @Max(100000) Integer deliveryFeeCop,
             Boolean courierDeliveryEnabled,
             @DecimalMin("-90") @DecimalMax("90") Double latitude,
-            @DecimalMin("-180") @DecimalMax("180") Double longitude) {
+            @DecimalMin("-180") @DecimalMax("180") Double longitude,
+            @NotBlank @Size(min = 5, max = 200) String notificationAddress,
+            @NotBlank @Email @Size(max = 254) String contactEmail) {
     }
 
     public record AcceptingRequest(@NotNull Boolean accepting) {
@@ -72,13 +75,13 @@ public final class BusinessDtos {
             UUID id, String name, String legalName, String nit, Business.Category category, String description,
             String address, String phone, boolean pickupEnabled, boolean deliveryEnabled, int deliveryFeeCop,
             boolean acceptingOrders, boolean courierDeliveryEnabled, Double latitude, Double longitude,
-            List<OpeningHours> hours) {
+            List<OpeningHours> hours, String notificationAddress, String contactEmail) {
 
         static BusinessResponse from(Business b) {
             return new BusinessResponse(b.getId(), b.getName(), b.getLegalName(), b.getNit(), b.getCategory(),
                     b.getDescription(), b.getAddress(), b.getPhone(), b.isPickupEnabled(), b.isDeliveryEnabled(),
                     b.getDeliveryFeeCop(), b.isAcceptingOrders(), b.isCourierDeliveryEnabled(),
-                    b.getLatitude(), b.getLongitude(), b.schedule());
+                    b.getLatitude(), b.getLongitude(), b.schedule(), b.getNotificationAddress(), b.getContactEmail());
         }
     }
 
@@ -110,18 +113,30 @@ public final class BusinessDtos {
     /** Del inventario solo se publica si hay existencias, no cuantas. */
     public record MenuItem(
             UUID id, String name, String description, String category, int priceCop, boolean soldOut,
-            String photoUrl, Integer regularPriceCop, LocalDate promoEndsOn) {
+            String photoUrl, Integer regularPriceCop, LocalDate promoEndsOn, boolean promoWhileStockLasts) {
 
         /** {@code priceCop} es lo que se cobra hoy; con rebaja vienen ademas el precio normal y hasta cuando. */
         static MenuItem from(Product p, LocalDate today) {
             boolean promo = p.onPromotion(today);
             return new MenuItem(p.getId(), p.getName(), p.getDescription(), p.getCategory(), p.priceOn(today),
                     !p.canSell(1), p.photoUrl(), promo ? p.getPriceCop() : null,
-                    promo ? p.getPromoEndsOn() : null);
+                    promo ? p.getPromoEndsOn() : null,
+                    // Hay que avisar cuando la rebaja depende de las existencias, sin publicar cuantas son
+                    promo && p.getStock() != null);
         }
     }
 
-    public record Store(StoreSummary business, List<OpeningHours> hours, List<MenuItem> products) {
+    /** Quien vende: la ley obliga a mostrarlo al comprador. */
+    public record Seller(
+            String legalName, String identification, String notificationAddress, String phone, String email) {
+
+        static Seller from(Business b) {
+            return b.isIdentified() ? new Seller(b.getLegalName(), b.getNit(), b.getNotificationAddress(),
+                    b.getPhone(), b.getContactEmail()) : null;
+        }
+    }
+
+    public record Store(StoreSummary business, List<OpeningHours> hours, List<MenuItem> products, Seller seller) {
     }
 
     public record PageResponse<T>(List<T> items, int page, int size, long total) {

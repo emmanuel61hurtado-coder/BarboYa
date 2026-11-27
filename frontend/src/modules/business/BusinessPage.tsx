@@ -13,6 +13,7 @@ import { Alert, Card, ErrorAlert } from '../../components/ui/surface'
 import { LocationPicker } from '../../components/map/Map'
 import { CATEGORY_LABELS } from '../../utils/commerce'
 import { HoursCard } from './HoursCard'
+import { legalApi } from '../../services/api/legal'
 
 export function BusinessPage() {
   const business = useQuery({ queryKey: ['shop', 'business'], queryFn: shopApi.business })
@@ -69,6 +70,8 @@ function BusinessForm({ business }: { business: Business | null }) {
       description: business?.description ?? '',
       address: business?.address ?? '',
       phone: business?.phone ?? '',
+      notificationAddress: business?.notificationAddress ?? '',
+      contactEmail: business?.contactEmail ?? '',
       pickupEnabled: business?.pickupEnabled ?? true,
       deliveryEnabled: business?.deliveryEnabled ?? false,
       deliveryFeeCop: business?.deliveryFeeCop ?? 0,
@@ -77,6 +80,7 @@ function BusinessForm({ business }: { business: Business | null }) {
       longitude: business?.longitude ?? null,
     },
   })
+  const legal = useQuery({ queryKey: ['legal', 'info'], queryFn: legalApi.info })
   const [saved, setSaved] = useState(false)
   const { submit, error, sending } = useSubmit(form, async (values) => {
     setSaved(false)
@@ -94,18 +98,38 @@ function BusinessForm({ business }: { business: Business | null }) {
         <div className="grid gap-4 sm:grid-cols-2">
           <TextField label="Nombre del negocio" error={errors.name?.message} {...form.register('name')} />
           <SelectField label="Categoría" {...form.register('category')}>
-            {businessSchema.shape.category.options.map((value) => (
+            {businessSchema.shape.category.options
+              .filter((value) => value !== 'PHARMACY' || legal.data?.pharmacy)
+              .map((value) => (
               <option key={value} value={value}>
                 {CATEGORY_LABELS[value]}
               </option>
             ))}
           </SelectField>
-          <TextField label="Razón social (si aplica)" error={errors.legalName?.message} {...form.register('legalName')} />
-          <TextField label="NIT (si aplica)" error={errors.nit?.message} {...form.register('nit')} />
           <TextField label="Dirección" error={errors.address?.message} {...form.register('address')} />
           <TextField label="Teléfono del negocio" type="tel" error={errors.phone?.message} {...form.register('phone')} />
         </div>
         <TextField label="Descripción (opcional)" maxLength={500} {...form.register('description')} />
+        <fieldset className="space-y-3">
+          <legend className="text-xs font-medium text-slate-300">
+            Quién vende (la ley obliga a mostrarlo a los compradores)
+          </legend>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <TextField label="Nombre o razón social" error={errors.legalName?.message} {...form.register('legalName')} />
+            <TextField label="Cédula o NIT" error={errors.nit?.message} {...form.register('nit')} />
+            <TextField
+              label="Dirección de notificaciones"
+              error={errors.notificationAddress?.message}
+              {...form.register('notificationAddress')}
+            />
+            <TextField
+              label="Correo de contacto"
+              type="email"
+              error={errors.contactEmail?.message}
+              {...form.register('contactEmail')}
+            />
+          </div>
+        </fieldset>
         <fieldset className="space-y-2">
           <legend className="text-xs font-medium text-slate-300 mb-1">Formas de entrega</legend>
           <label className="flex items-center gap-2 text-sm">

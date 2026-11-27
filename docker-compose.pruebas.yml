@@ -28,6 +28,13 @@ services:
       DB_PASSWORD: ${DB_PASSWORD:?Define DB_PASSWORD}
       JWT_SECRET: ${JWT_SECRET:?Define JWT_SECRET (32 caracteres o mas)}
       FILES_KEY: ${FILES_KEY:?Define FILES_KEY (32 bytes en base64)}
+      # Quien opera: aparece en los terminos y la politica de datos
+      LEGAL_OPERATOR_NAME: ${LEGAL_OPERATOR_NAME:-}
+      LEGAL_OPERATOR_ID: ${LEGAL_OPERATOR_ID:-}
+      LEGAL_OPERATOR_ADDRESS: ${LEGAL_OPERATOR_ADDRESS:-}
+      LEGAL_OPERATOR_PHONE: ${LEGAL_OPERATOR_PHONE:-}
+      LEGAL_OPERATOR_EMAIL: ${LEGAL_OPERATOR_EMAIL:-}
+      LEGAL_REVIEWED: ${LEGAL_REVIEWED:-false}
       # Primer superadministrador: borra la clave despues del primer arranque
       BOOTSTRAP_ADMIN_EMAIL: ${BOOTSTRAP_ADMIN_EMAIL:-}
       BOOTSTRAP_ADMIN_PHONE: ${BOOTSTRAP_ADMIN_PHONE:-}

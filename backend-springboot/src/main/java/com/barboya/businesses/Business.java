@@ -54,6 +54,8 @@ public class Business {
     private String description;
     private String address;
     private String phone;
+    private String notificationAddress;
+    private String contactEmail;
     private boolean pickupEnabled;
     private boolean deliveryEnabled;
     private int deliveryFeeCop;
@@ -76,6 +78,11 @@ public class Business {
 
     @Version
     private Long version;
+
+    /** Datos exigidos a quien vende por un portal de contacto (Ley 1480, articulos 50 y 53). */
+    public boolean isIdentified() {
+        return legalName != null && nit != null && notificationAddress != null && contactEmail != null;
+    }
 
     /** Los horarios son hora de Colombia. */
     public boolean isOpenAt(Instant moment) {

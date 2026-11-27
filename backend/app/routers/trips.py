@@ -33,6 +33,21 @@ NEARBY_RADIUS_M = 3_000
 settings = get_settings()
 
 
+def require_trips_enabled() -> None:
+    """Corta los viajes nuevos; los que ya estan en curso se pueden terminar o cancelar."""
+    if not get_settings().enable_trips:
+        raise HTTPException(
+            status.HTTP_503_SERVICE_UNAVAILABLE,
+            {
+                "code": "TRIPS_DISABLED",
+                "message": "Los viajes y envíos están suspendidos mientras se confirman los requisitos legales.",
+            },
+        )
+
+
+STARTS_TRIPS = [Depends(require_trips_enabled)]
+
+
 def _point(lat: float, lng: float):
     return func.ST_SetSRID(func.ST_MakePoint(lng, lat), 4326)
 
@@ -44,13 +59,13 @@ def _offer_expired(offer: TripOffer) -> bool:
     return datetime.now(timezone.utc) - created > timedelta(seconds=settings.offer_ttl_seconds)
 
 
-@router.post("/quote", response_model=FareQuoteOut)
+@router.post("/quote", response_model=FareQuoteOut, dependencies=STARTS_TRIPS)
 async def quote_fare(data: FareQuoteIn, session: AsyncSession = Depends(get_session)):
     q = await fares.quote(session, (data.pickup.lat, data.pickup.lng), (data.dropoff.lat, data.dropoff.lng))
     return FareQuoteOut(**{k: v for k, v in q.items() if k != "zone_id"})
 
 
-@router.post("", response_model=TripCreatedOut, status_code=201)
+@router.post("", response_model=TripCreatedOut, status_code=201, dependencies=STARTS_TRIPS)
 async def create_trip(
     data: TripCreateIn,
     user: CurrentUser = Depends(require_role("customer")),
@@ -118,7 +133,7 @@ async def create_trip(
     return out
 
 
-@router.post("/{trip_id}/offers", status_code=202)
+@router.post("/{trip_id}/offers", status_code=202, dependencies=STARTS_TRIPS)
 async def driver_offer(
     trip_id: UUID,
     data: DriverOfferIn,
@@ -167,7 +182,7 @@ async def driver_offer(
     return {"sent": True}
 
 
-@router.post("/{trip_id}/counter", status_code=202)
+@router.post("/{trip_id}/counter", status_code=202, dependencies=STARTS_TRIPS)
 async def customer_counter(
     trip_id: UUID,
     data: CustomerCounterIn,
@@ -181,7 +196,7 @@ async def customer_counter(
     return {"delivered": delivered}
 
 
-@router.post("/{trip_id}/accept", response_model=TripOut)
+@router.post("/{trip_id}/accept", response_model=TripOut, dependencies=STARTS_TRIPS)
 async def customer_accepts_offer(
     trip_id: UUID,
     data: AcceptOfferIn,
@@ -227,7 +242,7 @@ async def customer_accepts_offer(
     return TripOut.model_validate(trip, from_attributes=True)
 
 
-@router.post("/{trip_id}/driver-accept", response_model=TripOut)
+@router.post("/{trip_id}/driver-accept", response_model=TripOut, dependencies=STARTS_TRIPS)
 async def driver_accepts_at_offered_price(
     trip_id: UUID,
     user: CurrentUser = Depends(require_role("driver")),

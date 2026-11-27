@@ -1,5 +1,6 @@
 package com.barboya.support;
 
+import com.barboya.legal.LegalDocument;
 import com.barboya.users.Role;
 import com.barboya.users.User;
 import com.barboya.users.UserRepository;
@@ -139,7 +140,10 @@ public abstract class IntegrationTest {
                 "email", uniqueEmail(),
                 "phone", uniquePhone(),
                 "password", PASSWORD,
-                "role", role.name()))).andReturn();
+                "role", role.name(),
+                "adult", true,
+                "termsVersion", LegalDocument.TERMS.version(),
+                "privacyVersion", LegalDocument.PRIVACY.version()))).andReturn();
         assertThat(result.getResponse().getStatus()).isEqualTo(201);
         return account(result);
     }

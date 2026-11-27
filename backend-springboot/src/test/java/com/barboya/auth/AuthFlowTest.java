@@ -1,5 +1,6 @@
 package com.barboya.auth;
 
+import com.barboya.legal.LegalDocument;
 import com.barboya.support.IntegrationTest;
 import com.barboya.users.Role;
 import jakarta.servlet.http.Cookie;
@@ -24,7 +25,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 class AuthFlowTest extends IntegrationTest {
 
     private Map<String, Object> registration(String email, String phone, String password, String role) {
-        return Map.of("fullName", "Ana Prueba", "email", email, "phone", phone, "password", password, "role", role);
+        return Map.of("fullName", "Ana Prueba", "email", email, "phone", phone, "password", password, "role", role,
+                "adult", true, "termsVersion", LegalDocument.TERMS.version(),
+                "privacyVersion", LegalDocument.PRIVACY.version());
     }
 
     private MvcResult refresh(Cookie cookie) throws Exception {

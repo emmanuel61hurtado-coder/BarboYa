@@ -66,6 +66,29 @@ function Schedule({ hours }: { hours: Store['hours'] }) {
   )
 }
 
+function SellerCard({ seller }: { seller: Store['seller'] }) {
+  if (!seller) return null
+  const rows = [
+    ['Nombre o razón social', seller.legalName],
+    ['Cédula o NIT', seller.identification],
+    ['Dirección de notificaciones', seller.notificationAddress],
+    ['Teléfono', seller.phone],
+    ['Correo', seller.email],
+  ]
+  return (
+    <Card title="Quién vende">
+      <dl className="grid gap-2 sm:grid-cols-2">
+        {rows.map(([term, value]) => (
+          <div key={term}>
+            <dt className="text-xs text-slate-500">{term}</dt>
+            <dd className="break-words text-sm">{value}</dd>
+          </div>
+        ))}
+      </dl>
+    </Card>
+  )
+}
+
 function StoreView({ store }: { store: Store }) {
   const { business, products } = store
   const [cart, setCart] = useState<Cart>({})
@@ -117,7 +140,10 @@ function StoreView({ store }: { store: Store }) {
                             {formatCop(product.priceCop)}
                           </p>
                           {product.promoEndsOn && (
-                            <p className="text-xs text-amber-300">Oferta hasta el {formatDay(product.promoEndsOn)}</p>
+                            <p className="text-xs text-amber-300">
+                              Oferta hasta el {formatDay(product.promoEndsOn)}
+                              {product.promoWhileStockLasts && ' o hasta agotar existencias'}
+                            </p>
                           )}
                         </div>
                         {product.soldOut ? (
@@ -160,6 +186,7 @@ function StoreView({ store }: { store: Store }) {
           <Checkout store={store} cart={cart} />
         </div>
       </div>
+      <SellerCard seller={store.seller} />
       <StoreReviews businessId={business.id} />
     </>
   )
@@ -291,6 +318,13 @@ function Checkout({ store: { business, products }, cart }: { store: Store; cart:
           </dl>
           <p className="text-xs text-slate-500">
             {courier ? 'Pagas en efectivo al domiciliario.' : 'Pagas en efectivo al recibir.'} No hay cargos adicionales.
+          </p>
+          <p className="text-xs text-slate-500">
+            Precios en pesos con impuestos incluidos. Tienes 5 días hábiles de retracto, salvo excepciones como los
+            alimentos preparados y perecederos. El comercio indica el tiempo de preparación al confirmar.{' '}
+            <a href="/terminos" target="_blank" rel="noreferrer" className="text-sky-400 underline">
+              Ver términos
+            </a>
           </p>
           <ErrorAlert error={error} />
           <Button type="submit" className="w-full" loading={sending} disabled={!business.open || missingQuote}>

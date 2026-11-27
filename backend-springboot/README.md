@@ -73,6 +73,9 @@ Levantan un PostgreSQL 16 propio y temporal; no necesitan Docker ni tocan tu bas
 | `MERCHANT_COMMISSION_BPS`, `COURIER_COMMISSION_BPS` | No | Comisiones en puntos básicos (`1000` = 10 %) |
 | `DEBT_LIMIT_COP` | No | Tope de comisiones sin pagar: `50000` |
 | `ORDER_ACCEPT_TIMEOUT` | No | Plazo del comercio para responder un pedido: `15m` |
+| `LEGAL_OPERATOR_NAME`, `_ID`, `_ADDRESS`, `_PHONE`, `_EMAIL` | Antes de operar | Responsable que muestran los documentos legales |
+| `LEGAL_REVIEWED` | No | `true` cuando un abogado apruebe los documentos |
+| `ENABLE_PHARMACY`, `ENABLE_DRIVER_REGISTRATION` | No (`false`) | Apagados por la revisión legal |
 | `PORT` | No | `8081` |
 
 ## Rutas
@@ -120,6 +123,8 @@ Base: `/api/v1`. Los errores usan `application/problem+json` con un campo `code`
 | `GET /photos/{clave}` | Público (solo fotos de productos) |
 | `PUT`, `DELETE /merchant/products/{id}/promotion` | `RESTAURANT`, `STORE` (propios) |
 | `GET`, `POST /addresses`, `PUT`, `DELETE /addresses/{id}` | `CUSTOMER` (propias) |
+| `GET /legal`, `GET /legal/documents/{terminos,privacidad}` | Público |
+| `GET /legal/pending`, `POST /legal/acceptances` | Sesión |
 
 Toda ruta no declarada queda cerrada.
 
@@ -149,6 +154,7 @@ PLACED ──aceptar──▶ PREPARING ──▶ READY ──enviar──▶ OU
 ## Promociones
 
 - Precio rebajado de un producto entre dos fechas incluidas, en hora de Colombia; menor que el normal y con fin a máximo 90 días.
+- **Una promoción vigente obliga hasta su fecha final** (Ley 1480, art. 33): no se puede quitar, acortar ni subir su precio, ni subir el precio normal; solo mejorarla. Antes de empezar sí se puede retirar. Si depende de existencias, el cliente lo ve. No hay vía para corregir un error de digitación ya publicado; retirar el producto o marcarlo no disponible sigue siendo posible y debe vigilarse.
 - La **asume el comercio**: la comisión se calcula sobre lo cobrado. El servidor aplica el precio del día; si cambió mientras el cliente decidía, responde `PRICE_CHANGED`.
 - El cliente ve el precio normal tachado y hasta cuándo dura. Nada verifica que ese precio se haya cobrado antes: **revisar las reglas de publicidad (Ley 1480 de 2011) antes de operar.**
 - No hay cupones, descuentos por pedido ni promociones pagadas por la plataforma.
@@ -157,6 +163,16 @@ PLACED ──aceptar──▶ PREPARING ──▶ READY ──enviar──▶ OU
 
 - Hasta 10 por cliente, con nombre único, indicaciones y punto en el mapa opcional. Solo su dueño las ve y puede borrarlas.
 - El pedido copia la dirección: cambiarla o borrarla no altera pedidos anteriores.
+
+## Obligaciones legales
+
+Ver la [revisión legal](../docs/revision-legal.md); nada de esto reemplaza a un abogado.
+
+- El registro exige mayoría de edad, aceptar los términos y autorizar los datos (casillas sin marcar). Queda prueba con versión, fecha, IP y navegador, que no se puede editar ni borrar.
+- Los textos están en `src/main/resources/legal/` y son **borradores**. Al cambiar un texto hay que subir su versión en `LegalDocument`: la plataforma vuelve a pedir la aceptación.
+- Un comercio debe registrar nombre o razón social, documento, dirección de notificaciones y correo para recibir pedidos; el comprador los ve.
+- Cada pedido envía un acuse de recibo por correo (si el correo está configurado).
+- Farmacias y registro de transporte de pasajeros están apagados.
 
 ## Verificación de domiciliarios
 

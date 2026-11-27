@@ -5,10 +5,11 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.config import get_settings
 from app.core.database import get_session
 from app.core.security import CurrentUser, require_role
 from app.models.billing import WalletTransaction
-from app.models.enums import WalletTxStatus
+from app.models.enums import PaymentMethod, WalletTxStatus
 from app.models.user import DriverProfile
 from app.schemas.schemas import (
     BillingConfigIn,
@@ -57,6 +58,11 @@ async def request_topup(
     user: CurrentUser = Depends(require_role("driver")),
     session: AsyncSession = Depends(get_session),
 ):
+    if data.payment_method == PaymentMethod.crypto and not get_settings().enable_crypto_payments:
+        raise HTTPException(
+            status.HTTP_503_SERVICE_UNAVAILABLE,
+            {"code": "CRYPTO_DISABLED", "message": "Las recargas con criptomonedas están suspendidas"},
+        )
     tx = await billing.request_topup(
         session, user.id, data.amount_cop, data.payment_method, data.payment_reference, data.proof_url
     )
