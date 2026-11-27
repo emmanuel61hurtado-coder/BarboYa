@@ -56,6 +56,8 @@ public class Business {
     private String phone;
     private String notificationAddress;
     private String contactEmail;
+    /** Maximo prometido entre el pedido y la entrega. */
+    private Integer maxDeliveryMinutes;
     private boolean pickupEnabled;
     private boolean deliveryEnabled;
     private int deliveryFeeCop;
@@ -82,6 +84,11 @@ public class Business {
     /** Datos exigidos a quien vende por un portal de contacto (Ley 1480, articulos 50 y 53). */
     public boolean isIdentified() {
         return legalName != null && nit != null && notificationAddress != null && contactEmail != null;
+    }
+
+    /** Para recibir pedidos: identificado y con un plazo de entrega que ofrecer. */
+    public boolean isReadyToSell() {
+        return isIdentified() && maxDeliveryMinutes != null;
     }
 
     /** Los horarios son hora de Colombia. */

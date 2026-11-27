@@ -32,11 +32,11 @@ public final class SupportDtos {
 
     public record TicketSummary(
             UUID id, long number, Ticket.Category category, String subject, Ticket.Status status, UUID orderId,
-            Instant createdAt, Instant updatedAt) {
+            Instant createdAt, Instant updatedAt, Instant dueAt) {
 
         static TicketSummary from(Ticket t) {
             return new TicketSummary(t.getId(), t.getNumber(), t.getCategory(), t.getSubject(), t.getStatus(),
-                    t.getOrderId(), t.getCreatedAt(), t.getUpdatedAt());
+                    t.getOrderId(), t.getCreatedAt(), t.getUpdatedAt(), t.getDueAt());
         }
     }
 

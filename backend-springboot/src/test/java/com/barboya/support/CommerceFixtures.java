@@ -40,6 +40,7 @@ public abstract class CommerceFixtures extends IntegrationTest {
         data.put("nit", "900123456-7");
         data.put("notificationAddress", "Carrera 1 # 2-3, Barbosa");
         data.put("contactEmail", "comercio@barboya.test");
+        data.put("maxDeliveryMinutes", 60);
         return data;
     }
 

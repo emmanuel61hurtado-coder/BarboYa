@@ -55,15 +55,33 @@ public class CourierService implements ActivationRequirement {
     private final FileStorage storage;
     private final AuditService audit;
     private final Clock clock;
+    private final CourierPresenceRepository presence;
 
     public CourierService(CourierProfileRepository profiles, CourierDocumentRepository documents,
-                          UserRepository users, FileStorage storage, AuditService audit, Clock clock) {
+                          UserRepository users, FileStorage storage, AuditService audit, Clock clock,
+                          CourierPresenceRepository presence) {
+        this.presence = presence;
         this.profiles = profiles;
         this.documents = documents;
         this.users = users;
         this.storage = storage;
         this.audit = audit;
         this.clock = clock;
+    }
+
+    /**
+     * Al eliminar la cuenta: borra documentos y ubicacion y reemplaza el numero y la
+     * placa. El perfil queda porque los pedidos entregados lo referencian.
+     */
+    @Transactional
+    public void forget(UUID userId) {
+        documents.findByUserId(userId).forEach(this::remove);
+        presence.deleteById(userId);
+        profiles.findById(userId).ifPresent(profile -> {
+            profile.setDocumentNumber("x" + userId.toString().replace("-", "").substring(0, 15));
+            profile.setPlate(null);
+            profile.setUpdatedAt(clock.instant());
+        });
     }
 
     @Transactional(readOnly = true)

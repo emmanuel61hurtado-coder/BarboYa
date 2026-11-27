@@ -72,6 +72,11 @@ public class AddressService {
         return save(own(userId, id), request);
     }
 
+    /** Al eliminar la cuenta. */
+    public void removeAll(UUID userId) {
+        addresses.deleteAll(addresses.findByUserIdOrderByLabel(userId));
+    }
+
     public void remove(UUID userId, UUID id) {
         addresses.delete(own(userId, id));
     }

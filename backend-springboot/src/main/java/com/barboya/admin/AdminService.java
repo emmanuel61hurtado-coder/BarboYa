@@ -60,6 +60,9 @@ public class AdminService {
             throw new ApiException(HttpStatus.FORBIDDEN, "FORBIDDEN",
                     "Solo un superadministrador gestiona cuentas internas");
         }
+        if (target.getDeletedAt() != null) {
+            throw new ApiException(HttpStatus.CONFLICT, "ACCOUNT_DELETED", "La cuenta fue eliminada");
+        }
         if (request.status() == UserStatus.ACTIVE) {
             requirements.forEach(requirement -> requirement.verify(target));
         }

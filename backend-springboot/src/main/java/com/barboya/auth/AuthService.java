@@ -200,6 +200,26 @@ public class AuthService {
                 .filter(replacement -> replacement.getUsedAt() == null);
     }
 
+    /** Vuelve a pedir la contrasena antes de algo irreversible; los fallos cuentan como al ingresar. */
+    @Transactional(noRollbackFor = ApiException.class)
+    public void confirmPassword(UUID userId, String password) {
+        User user = users.lockById(userId).orElseThrow(AuthService::invalidSession);
+        Instant now = clock.instant();
+        boolean matches = encoder.matches(password, user.getPasswordHash());
+        if (user.isLocked(now) || !matches) {
+            if (!user.isLocked(now)) {
+                user.setFailedLogins(user.getFailedLogins() + 1);
+                if (user.getFailedLogins() >= settings.maxFailedLogins()) {
+                    user.setFailedLogins(0);
+                    user.setLockedUntil(now.plus(settings.lockDuration()));
+                }
+            }
+            throw new ApiException(HttpStatus.BAD_REQUEST, "WRONG_PASSWORD",
+                    "Contrasena incorrecta. Tras varios intentos la cuenta se bloquea unos minutos");
+        }
+        user.setFailedLogins(0);
+    }
+
     @Transactional
     public void logout(String rawToken, ClientInfo client) {
         findToken(rawToken)

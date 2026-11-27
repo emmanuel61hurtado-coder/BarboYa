@@ -1,5 +1,7 @@
 package com.barboya.support;
 
+import com.barboya.common.BusinessDays;
+import com.barboya.common.Colombia;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -14,6 +16,7 @@ import org.hibernate.annotations.Generated;
 import org.hibernate.generator.EventType;
 
 import java.time.Instant;
+import java.time.LocalDate;
 import java.util.UUID;
 
 @Entity
@@ -27,7 +30,13 @@ public class Ticket {
         DELIVERY_FAILED,
         PAYMENT,
         ACCOUNT,
-        OTHER
+        OTHER,
+        PERSONAL_DATA;
+
+        /** Dias habiles para responder: las consultas de datos personales tienen el plazo mas corto. */
+        int businessDays() {
+            return this == PERSONAL_DATA ? 10 : 15;
+        }
     }
 
     public enum Status {
@@ -60,6 +69,8 @@ public class Ticket {
     @Column(updatable = false)
     private Instant createdAt;
     private Instant updatedAt;
+    /** Fecha limite legal de respuesta. */
+    private Instant dueAt;
 
     @Version
     private Long version;
@@ -73,10 +84,19 @@ public class Ticket {
         this.status = Status.OPEN;
         this.createdAt = now;
         this.updatedAt = now;
+        this.dueAt = deadlineFrom(now);
+    }
+
+    private Instant deadlineFrom(Instant now) {
+        return BusinessDays.deadline(LocalDate.ofInstant(now, Colombia.ZONE), category.businessDays());
     }
 
     /** Un mensaje nuevo reabre un caso resuelto. */
     void replied(boolean byStaff, Instant now) {
+        // Reabrir un caso inicia un plazo nuevo
+        if (status == Status.RESOLVED) {
+            dueAt = deadlineFrom(now);
+        }
         status = byStaff ? Status.ANSWERED : Status.OPEN;
         resolution = null;
         resolvedBy = null;

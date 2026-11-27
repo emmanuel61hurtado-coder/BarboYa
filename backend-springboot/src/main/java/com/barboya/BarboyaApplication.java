@@ -15,6 +15,7 @@ import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
  */
 @SpringBootApplication(
         scanBasePackages = {
+                "com.barboya.account",
                 "com.barboya.addresses",
                 "com.barboya.admin",
                 "com.barboya.audit",

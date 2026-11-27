@@ -30,6 +30,11 @@ public class OrderAccess {
                 o.getStatus() == OrderStatus.DELIVERED, o.getDeliveredAt()));
     }
 
+    /** Pedidos sin terminar en los que participa, como cliente, comercio o domiciliario. */
+    public boolean hasActiveOrders(UUID userId) {
+        return orders.countParticipating(userId, OrderStatus.ACTIVE) > 0;
+    }
+
     /** Cliente, dueno del comercio o domiciliario asignado. */
     public boolean participates(UUID orderId, UUID userId) {
         return orders.findById(orderId)

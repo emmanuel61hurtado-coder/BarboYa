@@ -24,6 +24,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Clock;
+import java.time.Duration;
+import java.time.format.DateTimeFormatter;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.ArrayList;
@@ -39,6 +41,8 @@ import java.util.stream.Collectors;
 public class CustomerOrderService {
 
     private static final long MAX_TOTAL_COP = 20_000_000;
+    private static final DateTimeFormatter DEADLINE =
+            DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm").withZone(Colombia.ZONE);
 
     private final OrderRepository orders;
     private final OrderItemRepository items;
@@ -165,6 +169,9 @@ public class CustomerOrderService {
         order.setMerchantCommissionCop(finance.merchantCommission(order.getSubtotalCop()));
         order.setCourierCommissionCop(quote == null ? 0 : finance.courierCommission(fee));
         order.setDeliveryPin(lifecycle.newPin());
+        // Sin plazo del comercio rige el maximo legal de 30 dias
+        order.setDeliverBy(now.plus(business.getMaxDeliveryMinutes() == null
+                ? Duration.ofDays(30) : Duration.ofMinutes(business.getMaxDeliveryMinutes())));
         if (quote != null) {
             order.setDeliveryLatitude(request.deliveryLatitude());
             order.setDeliveryLongitude(request.deliveryLongitude());
@@ -194,6 +201,8 @@ public class CustomerOrderService {
         body.append("Domicilio: $").append(order.getDeliveryFeeCop())
                 .append("\nTotal en pesos, impuestos incluidos: $").append(order.getTotalCop())
                 .append("\nPago: efectivo al recibir.")
+                .append("\nEntrega a mas tardar: ").append(DEADLINE.format(order.getDeliverBy()))
+                .append(" (hora de Colombia). Si se vence, puedes cancelar el pedido.")
                 .append("\n\nEl comercio debe confirmarlo; el tiempo de preparacion aparece en BarboYa.")
                 .append("\nRetracto: 5 dias habiles, salvo las excepciones de ley (por ejemplo, alimentos ")
                 .append("preparados y perecederos).")
@@ -223,9 +232,22 @@ public class CustomerOrderService {
     /** Solo antes de que el comercio empiece a prepararlo. */
     public OrderResponse cancel(UUID customerId, UUID orderId) {
         CustomerOrder order = own(orders.lockById(orderId).orElse(null), customerId);
-        lifecycle.require(order, OrderStatus.PLACED);
-        lifecycle.releaseStock(order);
-        lifecycle.move(order, OrderStatus.CANCELLED, merchantOf(order), customerId, "Cancelado por el cliente");
+        if (!OrderRules.customerCanCancel(order, clock.instant())) {
+            throw conflict("INVALID_TRANSITION",
+                    "Ya fue aceptado: podras cancelarlo si se vence el plazo de entrega, o pide ayuda en Soporte");
+        }
+        boolean late = order.getStatus() != OrderStatus.PLACED;
+        boolean left = order.getStatus() == OrderStatus.OUT_FOR_DELIVERY;
+        if (!left) {
+            lifecycle.releaseStock(order);
+        }
+        String reason = late ? "El cliente cancelo porque se vencio el plazo de entrega" : "Cancelado por el cliente";
+        lifecycle.move(order, OrderStatus.CANCELLED, merchantOf(order), customerId, reason);
+        if (left && order.getCourierId() != null) {
+            // El domiciliario ya pago los productos: el equipo debe resolverlo
+            publisher.publishEvent(new DeliveryFailed(order.getId(), order.getNumber(), order.getCourierId(),
+                    reason));
+        }
         return view(order);
     }
 

@@ -42,6 +42,10 @@ public interface OrderRepository extends JpaRepository<CustomerOrder, UUID> {
     List<UUID> findIdsCreatedBefore(@Param("status") OrderStatus status, @Param("before") Instant before,
                                     Pageable pageable);
 
+    @Query("select count(o) from CustomerOrder o where o.status in :statuses and (o.customerId = :user "
+            + "or o.courierId = :user or o.businessId in (select b.id from Business b where b.ownerId = :user))")
+    long countParticipating(@Param("user") UUID userId, @Param("statuses") Collection<OrderStatus> statuses);
+
     Page<CustomerOrder> findByNumber(Long number, Pageable pageable);
 
     Page<CustomerOrder> findByStatusIn(Collection<OrderStatus> statuses, Pageable pageable);

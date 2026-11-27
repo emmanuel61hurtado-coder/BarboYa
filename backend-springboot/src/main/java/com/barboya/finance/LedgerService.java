@@ -69,6 +69,12 @@ public class LedgerService {
         }
     }
 
+    /** Comisiones pendientes de pago. */
+    @Transactional(readOnly = true)
+    public long balanceOf(UUID partyId) {
+        return lines.balanceOf(partyId);
+    }
+
     @Transactional(readOnly = true)
     public boolean isOverLimit(UUID partyId) {
         return lines.balanceOf(partyId) > settings.debtLimitCop();

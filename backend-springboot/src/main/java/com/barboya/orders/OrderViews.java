@@ -134,7 +134,9 @@ class OrderViews {
                     order.getDeliveredAt(),
                     history.getOrDefault(order.getId(), List.of()).stream()
                             .map(e -> new Step(e.getStatus(), e.getNote(), e.getCreatedAt()))
-                            .toList());
+                            .toList(),
+                    order.getDeliverBy(),
+                    viewer == Viewer.CUSTOMER && OrderRules.customerCanCancel(order, clock.instant()));
         }).toList();
     }
 

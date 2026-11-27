@@ -92,11 +92,11 @@ public class SupportService {
         return page(tickets.findByOpenerId(userId, request(page, Sort.by("updatedAt").descending())));
     }
 
-    /** Los casos que esperan respuesta salen primero los mas antiguos. */
+    /** Entre los que esperan respuesta sale primero el que vence antes. */
     @Transactional(readOnly = true)
     public TicketPage queue(Ticket.Status status, int page) {
         var sort = status == Ticket.Status.OPEN
-                ? Sort.by("updatedAt").ascending() : Sort.by("updatedAt").descending();
+                ? Sort.by("dueAt").ascending() : Sort.by("updatedAt").descending();
         return page(tickets.findByStatusIn(Set.of(status), request(page, sort)));
     }
 

@@ -90,6 +90,7 @@ public class BusinessService {
         business.setPhone(phone);
         business.setNotificationAddress(request.notificationAddress().trim());
         business.setContactEmail(Contacts.email(request.contactEmail()));
+        business.setMaxDeliveryMinutes(request.maxDeliveryMinutes());
         business.setPickupEnabled(request.pickupEnabled());
         business.setDeliveryEnabled(request.deliveryEnabled());
         business.setDeliveryFeeCop(request.deliveryEnabled() ? request.deliveryFeeCop() : 0);
@@ -116,9 +117,9 @@ public class BusinessService {
             }
         }
         Business business = requireOwned(ownerId);
-        if (accepting && !business.isIdentified()) {
+        if (accepting && !business.isReadyToSell()) {
             throw new ApiException(HttpStatus.CONFLICT, "IDENTIFICATION_REQUIRED",
-                    "Completa nombre o razon social, documento, direccion de notificaciones y correo");
+                    "Completa nombre o razon social, documento, direccion de notificaciones, correo y plazo de entrega");
         }
         business.setAcceptingOrders(accepting);
         business.setUpdatedAt(clock.instant());
@@ -224,7 +225,7 @@ public class BusinessService {
         boolean open = business.isAcceptingOrders() && business.isOpenAt(clock.instant())
                 && !ledger.isOverLimit(business.getOwnerId());
         return new Store(StoreSummary.from(business, open), business.schedule(), menu,
-                BusinessDtos.Seller.from(business));
+                BusinessDtos.Seller.from(business), business.getMaxDeliveryMinutes());
     }
 
     public Business requireOwned(UUID ownerId) {
@@ -233,6 +234,14 @@ public class BusinessService {
 
     public boolean isApproved(UUID ownerId) {
         return users.findById(ownerId).filter(u -> u.getStatus() == UserStatus.ACTIVE).isPresent();
+    }
+
+    /** Al eliminar la cuenta: sus datos se conservan como prueba de las ventas, pero deja de vender. */
+    public void closeFor(UUID ownerId) {
+        businesses.findByOwnerId(ownerId).ifPresent(business -> {
+            business.setAcceptingOrders(false);
+            business.setUpdatedAt(clock.instant());
+        });
     }
 
     public void requireActiveAccount(UUID ownerId) {

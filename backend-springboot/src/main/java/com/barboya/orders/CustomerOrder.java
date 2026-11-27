@@ -72,6 +72,8 @@ public class CustomerOrder {
     private Instant createdAt;
     private Instant updatedAt;
     private Instant deliveredAt;
+    /** Pasada esta hora sin entregar, el cliente puede terminar el pedido. */
+    private Instant deliverBy;
 
     private UUID courierId;
     private Double deliveryLatitude;

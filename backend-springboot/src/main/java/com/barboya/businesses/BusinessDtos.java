@@ -36,7 +36,8 @@ public final class BusinessDtos {
             @DecimalMin("-90") @DecimalMax("90") Double latitude,
             @DecimalMin("-180") @DecimalMax("180") Double longitude,
             @NotBlank @Size(min = 5, max = 200) String notificationAddress,
-            @NotBlank @Email @Size(max = 254) String contactEmail) {
+            @NotBlank @Email @Size(max = 254) String contactEmail,
+            @NotNull @Min(10) @Max(43200) Integer maxDeliveryMinutes) {
     }
 
     public record AcceptingRequest(@NotNull Boolean accepting) {
@@ -75,13 +76,15 @@ public final class BusinessDtos {
             UUID id, String name, String legalName, String nit, Business.Category category, String description,
             String address, String phone, boolean pickupEnabled, boolean deliveryEnabled, int deliveryFeeCop,
             boolean acceptingOrders, boolean courierDeliveryEnabled, Double latitude, Double longitude,
-            List<OpeningHours> hours, String notificationAddress, String contactEmail) {
+            List<OpeningHours> hours, String notificationAddress, String contactEmail,
+            Integer maxDeliveryMinutes) {
 
         static BusinessResponse from(Business b) {
             return new BusinessResponse(b.getId(), b.getName(), b.getLegalName(), b.getNit(), b.getCategory(),
                     b.getDescription(), b.getAddress(), b.getPhone(), b.isPickupEnabled(), b.isDeliveryEnabled(),
                     b.getDeliveryFeeCop(), b.isAcceptingOrders(), b.isCourierDeliveryEnabled(),
-                    b.getLatitude(), b.getLongitude(), b.schedule(), b.getNotificationAddress(), b.getContactEmail());
+                    b.getLatitude(), b.getLongitude(), b.schedule(), b.getNotificationAddress(), b.getContactEmail(),
+                    b.getMaxDeliveryMinutes());
         }
     }
 
@@ -136,7 +139,9 @@ public final class BusinessDtos {
         }
     }
 
-    public record Store(StoreSummary business, List<OpeningHours> hours, List<MenuItem> products, Seller seller) {
+    public record Store(
+            StoreSummary business, List<OpeningHours> hours, List<MenuItem> products, Seller seller,
+            Integer maxDeliveryMinutes) {
     }
 
     public record PageResponse<T>(List<T> items, int page, int size, long total) {

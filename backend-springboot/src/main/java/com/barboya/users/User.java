@@ -39,6 +39,8 @@ public class User {
     private Instant emailVerifiedAt;
     private int failedLogins;
     private Instant lockedUntil;
+    /** Cuando se elimino la cuenta; sus datos personales ya fueron reemplazados. */
+    private Instant deletedAt;
 
     @Column(updatable = false)
     private Instant createdAt;

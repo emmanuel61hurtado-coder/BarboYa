@@ -93,7 +93,8 @@ public final class OrderDtos {
             int subtotalCop, int deliveryFeeCop, int totalCop, CustomerOrder.PaymentMethod paymentMethod,
             Integer prepMinutes, String statusReason, String deliveryPin, boolean pinLocked,
             String pickupCode, CourierInfo courier, boolean hasEvidence, Integer commissionCop,
-            Instant createdAt, Instant respondBy, Instant deliveredAt, List<Step> history) {
+            Instant createdAt, Instant respondBy, Instant deliveredAt, List<Step> history,
+            Instant deliverBy, boolean cancellable) {
     }
 
     public record OrderPage(List<OrderResponse> items, int page, int size, long total) {
