@@ -23,7 +23,8 @@ import { SaveAddress, SavedAddressSelect } from './CheckoutAddresses'
 
 export function StorePage() {
   const { id = '' } = useParams()
-  const store = useQuery({ queryKey: ['catalog', 'store', id], queryFn: () => catalogApi.store(id) })
+  // Precios, existencias y horario cambian: al entrar siempre se consultan de nuevo
+  const store = useQuery({ queryKey: ['catalog', 'store', id], queryFn: () => catalogApi.store(id), staleTime: 0 })
 
   if (store.error) return <ErrorAlert error={store.error} />
   if (!store.data) return <p className="text-sm text-slate-400">Cargando…</p>
