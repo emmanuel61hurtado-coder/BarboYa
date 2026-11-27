@@ -72,6 +72,7 @@ Levantan un PostgreSQL 16 propio y temporal; no necesitan Docker ni tocan tu bas
 | `DELIVERY_BASE_FEE_COP`, `DELIVERY_PER_KM_COP`, `DELIVERY_MAX_KM` | No | Tarifa del domiciliario: `3000`, `1000` y `8` |
 | `MERCHANT_COMMISSION_BPS`, `COURIER_COMMISSION_BPS` | No | Comisiones en puntos básicos (`1000` = 10 %) |
 | `DEBT_LIMIT_COP` | No | Tope de comisiones sin pagar: `50000` |
+| `ORDER_ACCEPT_TIMEOUT` | No | Plazo del comercio para responder un pedido: `15m` |
 | `PORT` | No | `8081` |
 
 ## Rutas
@@ -107,6 +108,10 @@ Base: `/api/v1`. Los errores usan `application/problem+json` con un campo `code`
 | `POST /admin/finance/accounts/{id}/adjustments`, `POST /admin/finance/entries/{id}/reversal` | `SUPERADMIN` |
 | `GET …/orders/{id}/evidence` (también bajo `/merchant` y `/courier/delivery`) | Participantes del pedido |
 
+| `GET`, `POST /support/tickets`, `GET …/{id}`, `POST …/{id}/messages` | Sesión (casos propios) |
+| `GET /admin/support/tickets`, `GET …/{id}`, `POST …/{id}/{messages,resolve}` | `ADMIN`, `SUPERADMIN` |
+| `GET /admin/orders`, `GET /admin/orders/{id}`, `POST /admin/orders/{id}/close` | `ADMIN`, `SUPERADMIN` |
+
 Toda ruta no declarada queda cerrada.
 
 ## Pedidos
@@ -120,6 +125,7 @@ PLACED ──aceptar──▶ PREPARING ──▶ READY ──enviar──▶ OU
 - Los precios los calcula el servidor. El cliente envía `expectedTotalCop`; si no coincide responde `PRICE_CHANGED`.
 - `POST /orders` exige el encabezado `Idempotency-Key`: repetirlo devuelve el mismo pedido.
 - Las existencias se reservan al pedir y se devuelven al rechazar o cancelar.
+- Si el comercio no responde en el plazo (`respondBy`), el pedido se **cancela solo** y vuelven las existencias. Una tarea lo revisa cada 30 segundos.
 - El **PIN de 4 dígitos** solo lo ve el cliente y es la única forma de marcar la entrega. Tras 5 fallos se bloquea hasta que el cliente genere otro.
 - Pago: **solo en efectivo**. La plataforma todavía no cobra comisión.
 - Entrega: con personal del comercio o recogiendo en el local.
@@ -153,7 +159,8 @@ El comercio acepta ──▶ un domiciliario lo toma ──▶ READY ──códi
 - **Quién ve pedidos:** cuenta activa, documentos vigentes, conectado, posición de menos de 2 minutos y comercio a 5 km o menos. En bicicleta, el recorrido total no pasa de 4 km. Un pedido a la vez.
 - **Privacidad:** antes de tomar el pedido no se muestran datos del cliente; al terminar dejan de mostrarse. Solo se guarda la última posición y se borra al desconectarse.
 - La web no comparte la ubicación en segundo plano: la pantalla debe seguir abierta.
-- Un pedido `FAILED`, o uno recogido cuyo domiciliario deje de responder, **se resuelve manualmente**: no hay pantalla de soporte.
+- Una entrega `FAILED` abre sola un caso de soporte. El equipo puede cerrar un pedido atascado (ver Soporte).
+- El dinero que el domiciliario ya pagó al comercio **se resuelve por fuera de la plataforma**.
 - Los mapas usan las teselas públicas de OpenStreetMap, aptas para desarrollo y poco tráfico.
 
 ## Comisiones y libro contable
@@ -171,9 +178,18 @@ El comercio acepta ──▶ un domiciliario lo toma ──▶ READY ──códi
 - No se calculan impuestos ni se emiten facturas: debe definirlo un contador antes de operar.
 - Quien registra pagos puede ser cualquier administrador; perdonar y reversar, solo el superadministrador.
 
+## Soporte
+
+- Cualquier persona con sesión abre casos; sobre un pedido, solo quien participa en él (un caso abierto por persona y pedido, y máximo 10 abiertos).
+- Estados: `OPEN` (espera al equipo), `ANSWERED` y `RESOLVED`. Responder un caso resuelto lo reabre.
+- Los mensajes no se pueden editar ni borrar. Resolver un caso queda auditado.
+- El correo de aviso no incluye el contenido del mensaje.
+- **Cerrar un pedido** exige motivo y queda auditado: antes de recogerlo queda `CANCELLED` y vuelven las existencias; ya en camino queda `FAILED`. No genera comisiones.
+- No hay chat en tiempo real, adjuntos, plazos de atención ni reembolsos. Falta definir quién atiende y en qué horario.
+
 ## Avisos en vivo
 
-WebSocket en `/ws/v1/events`. El primer mensaje es `{"type":"auth","token":"<token de acceso>"}`; el servidor responde `ready` y luego envía `{"type":"order.updated","orderId":"…"}` a quienes participan. Los datos se consultan por la API. Las conexiones viven en memoria (una sola instancia).
+WebSocket en `/ws/v1/events`. El primer mensaje es `{"type":"auth","token":"<token de acceso>"}`; el servidor responde `ready` y luego envía `{"type":"order.updated","orderId":"…"}` a quienes participan y `{"type":"tickets.updated"}` a quien abrió un caso cuando el equipo responde. Los datos se consultan por la API. Las conexiones viven en memoria (una sola instancia).
 
 ## Sesiones
 
@@ -198,7 +214,7 @@ WebSocket en `/ws/v1/events`. El primer mensaje es `{"type":"auth","token":"<tok
 - Verificación documental y facial de quienes prestan servicios.
 - Fotografías de productos, horarios, promociones, reportes y búsqueda por cercanía o precio.
 - Chat, calificaciones, orden de ofertas por reputación y seguimiento en segundo plano.
-- Resolución de entregas fallidas y del dinero entre comercio y domiciliario.
+- Devolución del dinero entre comercio y domiciliario en entregas fallidas.
 - Pasarela de pagos, reembolsos, liquidaciones, impuestos y facturación.
 - Límite de peticiones y avisos en vivo compartidos entre instancias (hoy en memoria).
 - Migración de las cuentas existentes en FastAPI.

@@ -101,12 +101,12 @@ Cada fase termina cuando sus pruebas pasan.
 | 2. Base React (hecha, sin desplegar) | Router, TanStack Query, formularios con Zod, shadcn/ui, autenticación, seguridad y administración conectadas | Registro e ingreso funcionan de extremo a extremo (cumplido) |
 | 3. Comercio y pedidos (hecha en lo esencial, sin desplegar) | Hecho: comercios, productos, inventario, pedidos, PIN, tiempo real. Falta: fotografías, horarios, promociones y reportes | Pedido completo probado entre cliente y comercio (cumplido) |
 | 4A. Verificación de domiciliarios (hecha, sin desplegar) | Datos, autorización, documentos cifrados y revisión humana. Falta: prueba de vida, plazo de conservación y S3 | No opera quien no esté verificado (cumplido para la activación) |
-| 4B. Entregas con domiciliarios (hecha, sin desplegar) | Ubicación, tarifa por distancia, toma de pedidos, recogida, evidencia y mapas. Falta: resolver entregas fallidas | Entrega completa con evidencia (cumplido) |
+| 4B. Entregas con domiciliarios (hecha, sin desplegar) | Ubicación, tarifa por distancia, toma de pedidos, recogida, evidencia y mapas. Las entregas fallidas pasan a soporte (fase 8) | Entrega completa con evidencia (cumplido) |
 | 5A. Comisiones (hecha, sin desplegar) | Libro de doble partida, comisiones, estado de cuenta, pagos registrados a mano y tope de deuda | Las cuentas cuadran en las pruebas (cumplido) |
 | 5B. Pagos en línea | Pasarela en sandbox, webhooks firmados, idempotencia, conciliación y reembolsos. Requiere cuenta de un proveedor | Pago de prueba confirmado por el proveedor |
 | 6. Blockchain | `PaymentEscrow`, `CommissionManager`, `OrderVerification`, `RefundManager`, `ReputationRegistry`; Hardhat y Web3j en red de pruebas | Pruebas y análisis de contratos aprobados |
 | 7. Move | Viajes, negociación, seguridad y SOS real | Revisión jurídica aprobada antes de activar |
-| 8. Operación | Administración, reputación, notificaciones, soporte | Acciones críticas auditadas |
+| 8. Operación (en curso) | Hecho: vencimiento de pedidos sin respuesta, casos de soporte y cierre de pedidos por el equipo. Falta: reputación, notificaciones con la app cerrada, panel y reportes | Acciones críticas auditadas |
 | Entorno de pruebas (preparado, sin publicar) | Imagen, compose, comprobador y [guía](despliegue-pruebas.md) | Entrega probada en celulares reales |
 | 9. Lanzamiento | Endurecimiento, despliegue, monitoreo, retiro de FastAPI | Lista de producción completa |
 

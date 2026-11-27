@@ -14,6 +14,7 @@ import { Point, currentPosition } from '../../utils/geo'
 import { formatDate } from '../../utils/labels'
 import { StatusBadge } from '../orders/OrderSummary'
 import { useLocationSharing } from './useLocationSharing'
+import { claimLink } from '../support/labels'
 
 const km = (value: number) => `${value.toLocaleString('es-CO', { maximumFractionDigits: 1 })} km`
 
@@ -215,6 +216,9 @@ function ActiveDelivery({ order, position }: { order: Order; position: Point | n
       ) : (
         <ReasonAction label="Soltar pedido" confirm="Confirmar" onConfirm={release.mutate} />
       )}
+      <Link to={claimLink(order)} className="block text-xs text-sky-400 hover:underline">
+        Reportar un problema con este pedido
+      </Link>
     </section>
   )
 }
@@ -359,6 +363,9 @@ function History() {
             <span>
               #{order.number} · {order.businessName}
               <span className="block text-xs text-slate-500">{formatDate(order.createdAt)}</span>
+              <Link to={claimLink(order)} className="text-xs text-sky-400 hover:underline">
+                Reportar un problema
+              </Link>
             </span>
             <span className="text-right">
               {ORDER_STATUS_LABELS[order.status]}

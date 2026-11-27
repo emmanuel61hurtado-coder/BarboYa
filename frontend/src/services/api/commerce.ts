@@ -117,6 +117,8 @@ export interface Order {
   /** La comisión de quien consulta; nula para el cliente. */
   commissionCop: number | null
   createdAt: string
+  /** Solo mientras espera confirmación: después se cancela solo. */
+  respondBy: string | null
   deliveredAt: string | null
   history: { status: OrderStatus; note: string | null; at: string }[]
 }

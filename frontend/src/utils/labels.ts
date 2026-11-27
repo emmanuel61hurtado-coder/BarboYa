@@ -39,6 +39,8 @@ const ACTION_LABELS: Record<string, string> = {
   PAYMENT_REGISTERED: 'Pago de comisiones registrado',
   DEBT_ADJUSTED: 'Deuda perdonada',
   ENTRY_REVERSED: 'Movimiento reversado',
+  ORDER_CLOSED_BY_STAFF: 'Pedido cerrado por soporte',
+  TICKET_RESOLVED: 'Caso de soporte resuelto',
 }
 
 export const actionLabel = (action: string) => ACTION_LABELS[action] ?? action
@@ -46,3 +48,7 @@ export const actionLabel = (action: string) => ACTION_LABELS[action] ?? action
 const dateFormat = new Intl.DateTimeFormat('es-CO', { dateStyle: 'medium', timeStyle: 'short' })
 
 export const formatDate = (iso: string) => dateFormat.format(new Date(iso))
+
+const timeFormat = new Intl.DateTimeFormat('es-CO', { timeStyle: 'short' })
+
+export const formatTime = (iso: string) => timeFormat.format(new Date(iso))

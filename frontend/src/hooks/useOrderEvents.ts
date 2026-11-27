@@ -3,7 +3,7 @@ import { useQueryClient } from '@tanstack/react-query'
 import { apiClient } from '../services/api/client'
 import { connectOrderEvents } from '../services/realtime'
 
-/** Mantiene al día las listas de pedidos mientras haya sesión. */
+/** Mantiene al día pedidos y casos de soporte mientras haya sesión. */
 export function useOrderEvents(enabled: boolean) {
   const queryClient = useQueryClient()
 
@@ -20,6 +20,7 @@ export function useOrderEvents(enabled: boolean) {
         void queryClient.invalidateQueries({ queryKey: ['shop', 'products'] })
         // Pedidos disponibles y entrega en curso del domiciliario
         void queryClient.invalidateQueries({ queryKey: ['work'] })
+        void queryClient.invalidateQueries({ queryKey: ['support'] })
       },
     })
   }, [enabled, queryClient])

@@ -106,7 +106,11 @@ class OrderExpiryTest extends CommerceFixtures {
         mvc.perform(postJson("/api/v1/admin/orders/" + id + "/close", Map.of("reason", ""))
                 .header("Authorization", admin.bearer())).andExpect(status().isBadRequest());
 
-        mvc.perform(postJson("/api/v1/admin/orders/" + id + "/close", reason)
+        mvc.perform(postJson("/api/v1/admin/orders/" + id + "/close", Map.of("reason", "x".repeat(271)))
+                .header("Authorization", admin.bearer())).andExpect(status().isBadRequest());
+
+        // El motivo mas largo permitido cabe en el historial junto con su encabezado
+        mvc.perform(postJson("/api/v1/admin/orders/" + id + "/close", Map.of("reason", "x".repeat(270)))
                         .header("Authorization", admin.bearer()))
                 .andExpect(jsonPath("$.status").value("CANCELLED"));
         assertThat(stock(product)).isEqualTo(8);

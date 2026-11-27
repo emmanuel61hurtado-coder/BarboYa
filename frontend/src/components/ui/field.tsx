@@ -51,6 +51,26 @@ export const TextField = React.forwardRef<HTMLInputElement, FieldProps & React.I
 )
 TextField.displayName = 'TextField'
 
+export const TextAreaField = React.forwardRef<
+  HTMLTextAreaElement,
+  FieldProps & React.TextareaHTMLAttributes<HTMLTextAreaElement>
+>(({ label, error, hint, className, ...props }, ref) => {
+  const id = React.useId()
+  return (
+    <Wrapper id={id} label={label} error={error} hint={hint}>
+      <textarea
+        ref={ref}
+        id={id}
+        className={cn(control, 'resize-y', className)}
+        aria-invalid={Boolean(error)}
+        aria-describedby={error || hint ? `${id}-message` : undefined}
+        {...props}
+      />
+    </Wrapper>
+  )
+})
+TextAreaField.displayName = 'TextAreaField'
+
 export const SelectField = React.forwardRef<
   HTMLSelectElement,
   FieldProps & React.SelectHTMLAttributes<HTMLSelectElement>

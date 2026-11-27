@@ -11,7 +11,8 @@ import { reasonSchema } from '../../validations/auth'
 import { TextField } from '../../components/ui/field'
 import { Button } from '../../components/ui/button'
 import { Alert, Card, ErrorAlert, Pager } from '../../components/ui/surface'
-import { formatDate } from '../../utils/labels'
+import { formatDate, formatTime } from '../../utils/labels'
+import { claimLink } from '../support/labels'
 import { OrderSummary, StatusBadge } from '../orders/OrderSummary'
 import { formatCop } from '../../utils/commerce'
 import { DocumentPreview } from '../couriers/DocumentPreview'
@@ -99,6 +100,11 @@ function ShopOrder({ order }: { order: Order }) {
         </p>
       )}
       <OrderSummary order={order} />
+      {order.respondBy && (
+        <Alert variant="warning">
+          Responde antes de las {formatTime(order.respondBy)} o el pedido se cancela solo.
+        </Alert>
+      )}
       {!!order.commissionCop && !['REJECTED', 'CANCELLED', 'FAILED'].includes(order.status) && (
         <p className="text-xs text-slate-500">Comisión BarboYa al entregar: {formatCop(order.commissionCop)}</p>
       )}
@@ -107,6 +113,9 @@ function ShopOrder({ order }: { order: Order }) {
         <DocumentPreview label="Foto de la entrega" contentType="image/*" load={() => shopApi.evidence(order.id)} />
       )}
       <Actions order={order} />
+      <Link to={claimLink(order)} className="inline-block text-xs text-sky-400 hover:underline">
+        Reportar un problema con este pedido
+      </Link>
     </Card>
   )
 }

@@ -17,7 +17,7 @@ export function AppLayout() {
   const staff = user.role === 'ADMIN' || user.role === 'SUPERADMIN'
   const customer = user.role === 'CUSTOMER'
   const merchant = user.role === 'RESTAURANT' || user.role === 'STORE'
-  useOrderEvents(customer || merchant || user.role === 'COURIER')
+  useOrderEvents(!staff)
 
   const links = [
     { to: '/', label: 'Inicio' },
@@ -41,10 +41,13 @@ export function AppLayout() {
         ]
       : []),
     ...(merchant || user.role === 'COURIER' ? [{ to: '/comisiones', label: 'Comisiones' }] : []),
+    ...(staff ? [] : [{ to: '/soporte', label: 'Soporte' }]),
     { to: '/seguridad', label: 'Seguridad' },
     ...(staff
       ? [
           { to: '/admin/usuarios', label: 'Usuarios' },
+          { to: '/admin/pedidos', label: 'Pedidos' },
+          { to: '/admin/soporte', label: 'Casos' },
           { to: '/admin/finanzas', label: 'Finanzas' },
           { to: '/admin/auditoria', label: 'Auditoría' },
         ]

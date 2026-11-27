@@ -1,4 +1,4 @@
-/** Aviso en vivo de cambios en pedidos. Los datos se piden después por la API. */
+/** Aviso en vivo de cambios en pedidos y casos de soporte. Los datos se piden después por la API. */
 
 interface Options {
   url: string
@@ -11,6 +11,7 @@ interface Options {
 }
 
 const UNAUTHORIZED = 4401
+const CHANGES = new Set(['ready', 'order.updated', 'offers.updated', 'tickets.updated'])
 const MAX_DELAY_MS = 30_000
 
 export function connectOrderEvents({ url, getToken, renew, onChange, createSocket }: Options) {
@@ -27,7 +28,7 @@ export function connectOrderEvents({ url, getToken, renew, onChange, createSocke
     current.onmessage = (event) => {
       const type = (JSON.parse(String(event.data)) as { type?: string }).type
       if (type === 'ready') failures = 0
-      if (type === 'ready' || type === 'order.updated' || type === 'offers.updated') onChange()
+      if (type && CHANGES.has(type)) onChange()
     }
     current.onclose = (event) => {
       if (stopped) return

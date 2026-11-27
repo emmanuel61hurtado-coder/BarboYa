@@ -1,11 +1,12 @@
 import { useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { useParams } from 'react-router-dom'
+import { Link, useParams } from 'react-router-dom'
 import { Order, orderApi } from '../../services/api/commerce'
 import { Button } from '../../components/ui/button'
 import { Alert, Card, ErrorAlert } from '../../components/ui/surface'
 import { ORDER_STATUS_LABELS } from '../../utils/commerce'
-import { formatDate } from '../../utils/labels'
+import { formatDate, formatTime } from '../../utils/labels'
+import { claimLink } from '../support/labels'
 import { OrderSummary, StatusBadge } from '../orders/OrderSummary'
 import { Map } from '../../components/map/Map'
 import { DocumentPreview } from '../couriers/DocumentPreview'
@@ -70,6 +71,12 @@ function OrderView({ order }: { order: Order }) {
         <StatusBadge status={order.status} />
       </div>
       <ErrorAlert error={cancel.error ?? renew.error} />
+      {order.respondBy && (
+        <Alert>
+          Si el comercio no confirma antes de las {formatTime(order.respondBy)}, el pedido se cancela solo y no pagas
+          nada.
+        </Alert>
+      )}
       {order.prepMinutes && order.status === 'PREPARING' && (
         <Alert>El comercio calcula {order.prepMinutes} minutos de preparación.</Alert>
       )}
@@ -114,6 +121,9 @@ function OrderView({ order }: { order: Order }) {
             </Button>
           ))}
       </Card>
+      <Link to={claimLink(order)} className="inline-block text-sm text-sky-400 hover:underline">
+        Pedir ayuda con este pedido
+      </Link>
       <Card title="Seguimiento">
         <ol className="space-y-2">
           {order.history.map((step, index) => (

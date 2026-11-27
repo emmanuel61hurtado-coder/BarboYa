@@ -65,6 +65,10 @@ public final class OrderDtos {
     public record ReasonRequest(@NotBlank @Size(min = 5, max = 300) String reason) {
     }
 
+    /** Mas corto que otros motivos: lleva delante "Cerrado por soporte: " en el historial. */
+    public record CloseRequest(@NotBlank @Size(min = 5, max = 270) String reason) {
+    }
+
     public record DeliverRequest(@NotBlank @Pattern(regexp = "^\\d{4}$", message = "El PIN tiene 4 digitos") String pin) {
     }
 

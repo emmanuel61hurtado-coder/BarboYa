@@ -1,9 +1,9 @@
 package com.barboya.orders;
 
 import com.barboya.common.ClientInfo;
+import com.barboya.orders.OrderDtos.CloseRequest;
 import com.barboya.orders.OrderDtos.OrderPage;
 import com.barboya.orders.OrderDtos.OrderResponse;
-import com.barboya.orders.OrderDtos.ReasonRequest;
 import com.barboya.security.AuthUser;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
@@ -44,7 +44,7 @@ public class AdminOrderController {
 
     @PostMapping("/{id}/close")
     public OrderResponse close(@AuthenticationPrincipal AuthUser actor, @PathVariable UUID id,
-                               @Valid @RequestBody ReasonRequest body, HttpServletRequest request) {
+                               @Valid @RequestBody CloseRequest body, HttpServletRequest request) {
         return service.close(actor.id(), id, body.reason(), ClientInfo.from(request));
     }
 }
