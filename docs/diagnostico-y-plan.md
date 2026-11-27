@@ -80,7 +80,7 @@ Cada módulo reescrito debe cubrir su fallo con una prueba antes de activarse.
 - **SOS:** la alerta queda guardada, pero nadie la atiende: falta notificar a soporte y contactos, y mostrarla en el panel de administración.
 - **Incompatibilidad:** el frontend espera campos como `access_token` y rutas que Spring Boot no tiene (usa `accessToken`). Hoy no pueden funcionar juntos.
 - **Spring Boot:** faltan repartidores, viajes, pagos, comisiones y Web3j.
-- **Comercios:** faltan promociones, reportes, estadísticas y búsqueda por cercanía o precio.
+- **Comercios:** faltan cupones, reportes, estadísticas y búsqueda por cercanía o precio.
 - **Frontend `v1`:** usa React Router, TanStack Query, React Hook Form, Zod, Axios y componentes al estilo shadcn/ui escritos a mano. Faltan los módulos de viajes y finanzas.
 - **Sin implementar:** MFA, verificación por SMS, proveedor de pagos, reembolsos, liquidaciones, impuestos y contratos inteligentes.
 
@@ -99,7 +99,7 @@ Cada fase termina cuando sus pruebas pasan.
 | 0. Contención (hecha; despliegue sin verificar) | Recuperación de contraseña, secretos, oferta de viajes, webhook, accesos de demostración, SOS y limpieza de Git | Sin hallazgos críticos abiertos en el backend en uso |
 | 1. Base Spring Boot (identidad hecha) | Hecho: módulos, Flyway, roles, sesiones con refresco, códigos por correo, auditoría, OpenAPI, Actuator, CI. Falta: MFA y SMS | Pruebas de autorización por cada rol (cumplido) |
 | 2. Base React (hecha, sin desplegar) | Router, TanStack Query, formularios con Zod, shadcn/ui, autenticación, seguridad y administración conectadas | Registro e ingreso funcionan de extremo a extremo (cumplido) |
-| 3. Comercio y pedidos (hecha en lo esencial, sin desplegar) | Hecho: comercios, productos, inventario, fotografías, horarios, pedidos, PIN, tiempo real. Falta: promociones y reportes | Pedido completo probado entre cliente y comercio (cumplido) |
+| 3. Comercio y pedidos (hecha en lo esencial, sin desplegar) | Hecho: comercios, productos, inventario, fotografías, horarios, promociones por producto, direcciones guardadas, pedidos, PIN, tiempo real. Falta: cupones, pedidos programados y reportes | Pedido completo probado entre cliente y comercio (cumplido) |
 | 4A. Verificación de domiciliarios (hecha, sin desplegar) | Datos, autorización, documentos cifrados y revisión humana. Falta: prueba de vida, plazo de conservación y S3 | No opera quien no esté verificado (cumplido para la activación) |
 | 4B. Entregas con domiciliarios (hecha, sin desplegar) | Ubicación, tarifa por distancia, toma de pedidos, recogida, evidencia y mapas. Las entregas fallidas pasan a soporte (fase 8) | Entrega completa con evidencia (cumplido) |
 | 5A. Comisiones (hecha, sin desplegar) | Libro de doble partida, comisiones, estado de cuenta, pagos registrados a mano y tope de deuda | Las cuentas cuadran en las pruebas (cumplido) |

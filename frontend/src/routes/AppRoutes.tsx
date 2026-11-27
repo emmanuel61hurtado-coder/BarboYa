@@ -15,6 +15,7 @@ import { ExplorePage } from '../modules/client/ExplorePage'
 import { StorePage } from '../modules/client/StorePage'
 import { MyOrdersPage } from '../modules/client/MyOrdersPage'
 import { OrderPage } from '../modules/client/OrderPage'
+import { AddressesPage } from '../modules/client/AddressesPage'
 import { OrderBoardPage } from '../modules/business/OrderBoardPage'
 import { ProductsPage } from '../modules/business/ProductsPage'
 import { BusinessPage } from '../modules/business/BusinessPage'
@@ -73,6 +74,7 @@ export function AppRoutes() {
             <Route path="/comercios/:id" element={<StorePage />} />
             <Route path="/pedidos" element={<MyOrdersPage />} />
             <Route path="/pedidos/:id" element={<OrderPage />} />
+            <Route path="/direcciones" element={<AddressesPage />} />
           </Route>
           <Route element={<Allow roles={['RESTAURANT', 'STORE']} />}>
             <Route path="/recibidos" element={<OrderBoardPage />} />

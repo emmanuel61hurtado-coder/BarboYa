@@ -25,6 +25,7 @@ export function AppLayout() {
       ? [
           { to: '/comercios', label: 'Comercios' },
           { to: '/pedidos', label: 'Mis pedidos' },
+          { to: '/direcciones', label: 'Direcciones' },
         ]
       : []),
     ...(merchant

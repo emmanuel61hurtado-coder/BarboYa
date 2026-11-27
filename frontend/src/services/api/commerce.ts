@@ -57,6 +57,13 @@ export type Product = Omit<ProductInput, 'description'> & {
   id: string
   description: string | null
   photoUrl: string | null
+  promotion: (PromotionInput & { active: boolean }) | null
+}
+
+export interface PromotionInput {
+  priceCop: number
+  startsOn: string
+  endsOn: string
 }
 
 export interface StoreSummary {
@@ -82,6 +89,9 @@ export interface MenuItem {
   priceCop: number
   soldOut: boolean
   photoUrl: string | null
+  /** Con promoción: el precio normal; priceCop es lo que se cobra. */
+  regularPriceCop: number | null
+  promoEndsOn: string | null
 }
 
 export interface Store {
@@ -173,6 +183,10 @@ export const shopApi = {
     return (await http.post<Product>(`/merchant/products/${id}/photo`, form, { timeout: 60_000 })).data
   },
   removePhoto: async (id: string) => (await http.delete<Product>(`/merchant/products/${id}/photo`)).data,
+  setPromotion: async (id: string, data: PromotionInput) =>
+    (await http.put<Product>(`/merchant/products/${id}/promotion`, data)).data,
+  removePromotion: async (id: string) =>
+    (await http.delete<Product>(`/merchant/products/${id}/promotion`)).data,
   saveProduct: async (data: ProductInput, id?: string) =>
     (id
       ? await http.put<Product>(`/merchant/products/${id}`, data)

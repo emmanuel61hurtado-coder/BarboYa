@@ -86,6 +86,8 @@ Usa datos inventados y, si puedes, tres celulares.
 - [ ] Calificar una entrega y ocultar la opinión desde la administración.
 - [ ] Subir fotos de productos **tomadas con el celular** (verticales y horizontales) y revisar que se vean derechas.
 - [ ] Definir un horario y comprobar que fuera de él no se puede pedir.
+- [ ] Crear una promoción de un día y confirmar que al siguiente vuelve el precio normal.
+- [ ] Guardar una dirección estando en casa y usarla en otro pedido.
 
 ## 7. Problemas frecuentes
 

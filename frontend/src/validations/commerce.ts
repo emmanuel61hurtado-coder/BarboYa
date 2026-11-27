@@ -46,6 +46,18 @@ export const productSchema = z.object({
   available: z.boolean(),
 })
 
+export const promotionSchema = z
+  .object({
+    priceCop: money(100, 10000000),
+    startsOn: z.string().min(1, 'Elige la fecha'),
+    endsOn: z.string().min(1, 'Elige la fecha'),
+  })
+  // AAAA-MM-DD se puede comparar como texto
+  .refine((data) => data.endsOn >= data.startsOn, {
+    message: 'Debe terminar el mismo día o después',
+    path: ['endsOn'],
+  })
+
 export const checkoutSchema = z
   .object({
     fulfillment: z.enum(['PICKUP', 'DELIVERY', 'COURIER']),

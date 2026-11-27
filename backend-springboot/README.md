@@ -118,6 +118,8 @@ Base: `/api/v1`. Los errores usan `application/problem+json` con un campo `code`
 | `PUT /merchant/business/hours` | `RESTAURANT`, `STORE` (propio) |
 | `POST`, `DELETE /merchant/products/{id}/photo` | `RESTAURANT`, `STORE` (propios) |
 | `GET /photos/{clave}` | Público (solo fotos de productos) |
+| `PUT`, `DELETE /merchant/products/{id}/promotion` | `RESTAURANT`, `STORE` (propios) |
+| `GET`, `POST /addresses`, `PUT`, `DELETE /addresses/{id}` | `CUSTOMER` (propias) |
 
 Toda ruta no declarada queda cerrada.
 
@@ -143,6 +145,18 @@ PLACED ──aceptar──▶ PREPARING ──▶ READY ──enviar──▶ OU
 - Las fotos son **públicas** para quien tenga su dirección, que es aleatoria. Cambiar o quitar una elimina la anterior. No hay moderación de imágenes.
 - Se guardan en la misma carpeta cifrada que los documentos; la ruta pública solo entrega fotos de productos.
 - Horario en hora de Colombia: hasta dos turnos por día y pueden terminar después de medianoche. Fuera de horario el comercio aparece cerrado y no recibe pedidos (`OUTSIDE_HOURS`). Sin horario solo cuenta el interruptor. No hay festivos ni cierres por fecha.
+
+## Promociones
+
+- Precio rebajado de un producto entre dos fechas incluidas, en hora de Colombia; menor que el normal y con fin a máximo 90 días.
+- La **asume el comercio**: la comisión se calcula sobre lo cobrado. El servidor aplica el precio del día; si cambió mientras el cliente decidía, responde `PRICE_CHANGED`.
+- El cliente ve el precio normal tachado y hasta cuándo dura. Nada verifica que ese precio se haya cobrado antes: **revisar las reglas de publicidad (Ley 1480 de 2011) antes de operar.**
+- No hay cupones, descuentos por pedido ni promociones pagadas por la plataforma.
+
+## Direcciones guardadas
+
+- Hasta 10 por cliente, con nombre único, indicaciones y punto en el mapa opcional. Solo su dueño las ve y puede borrarlas.
+- El pedido copia la dirección: cambiarla o borrarla no altera pedidos anteriores.
 
 ## Verificación de domiciliarios
 
@@ -233,7 +247,7 @@ WebSocket en `/ws/v1/events`. El primer mensaje es `{"type":"auth","token":"<tok
 - Autenticación de múltiples factores.
 - Verificación del celular por SMS o WhatsApp (requiere proveedor).
 - Verificación documental y facial de quienes prestan servicios.
-- Promociones, reportes, festivos y búsqueda por cercanía o precio.
+- Cupones, reportes, festivos y búsqueda por cercanía o precio.
 - Chat, orden de ofertas por reputación, reputación de clientes y seguimiento en segundo plano.
 - Devolución del dinero entre comercio y domiciliario en entregas fallidas.
 - Pasarela de pagos, reembolsos, liquidaciones, impuestos y facturación.

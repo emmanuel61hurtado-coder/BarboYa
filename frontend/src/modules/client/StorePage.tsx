@@ -18,6 +18,8 @@ import { ratingApi } from '../../services/api/ratings'
 import { formatRating } from '../ratings/format'
 import { ReviewList } from '../ratings/ReviewList'
 import { DAY_LABELS, describeDay, toWeek } from '../../utils/hours'
+import { formatDay } from '../../utils/dates'
+import { SaveAddress, SavedAddressSelect } from './CheckoutAddresses'
 
 export function StorePage() {
   const { id = '' } = useParams()
@@ -104,7 +106,18 @@ function StoreView({ store }: { store: Store }) {
                         <div className="min-w-0 flex-1">
                           <p className="text-sm font-semibold">{product.name}</p>
                           {product.description && <p className="text-xs text-slate-500">{product.description}</p>}
-                          <p className="text-sm text-sky-300">{formatCop(product.priceCop)}</p>
+                          <p className="text-sm text-sky-300">
+                            {product.regularPriceCop !== null && (
+                              <del className="mr-2 text-slate-500">
+                                <span className="sr-only">Antes </span>
+                                {formatCop(product.regularPriceCop)}
+                              </del>
+                            )}
+                            {formatCop(product.priceCop)}
+                          </p>
+                          {product.promoEndsOn && (
+                            <p className="text-xs text-amber-300">Oferta hasta el {formatDay(product.promoEndsOn)}</p>
+                          )}
                         </div>
                         {product.soldOut ? (
                           <span className="shrink-0 text-xs text-rose-300">Agotado</span>
@@ -221,6 +234,19 @@ function Checkout({ store: { business, products }, cart }: { store: Store; cart:
             {business.courierDeliveryEnabled && <option value="COURIER">{FULFILLMENT_LABELS.COURIER}</option>}
             {business.pickupEnabled && <option value="PICKUP">{FULFILLMENT_LABELS.PICKUP}</option>}
           </SelectField>
+          {fulfillment !== 'PICKUP' && (
+            <SavedAddressSelect
+              onChoose={(saved) => {
+                form.setValue('deliveryAddress', saved.address, { shouldValidate: true })
+                form.setValue('notes', saved.notes ?? '')
+                setDestination(
+                  saved.latitude !== null && saved.longitude !== null
+                    ? { latitude: saved.latitude, longitude: saved.longitude }
+                    : null,
+                )
+              }}
+            />
+          )}
           {courier && (
             <>
               <LocationPicker label="Punto de entrega" value={destination} onChange={setDestination} />
@@ -241,6 +267,13 @@ function Checkout({ store: { business, products }, cart }: { store: Store; cart:
             />
           )}
           <TextField label="Indicaciones (opcional)" maxLength={300} {...form.register('notes')} />
+          {fulfillment !== 'PICKUP' && (
+            <SaveAddress
+              address={form.watch('deliveryAddress')}
+              notes={form.watch('notes')}
+              point={courier ? destination : null}
+            />
+          )}
           <dl className="border-t border-slate-800 pt-3 text-sm space-y-1">
             <div className="flex justify-between text-slate-400">
               <dt>Subtotal</dt>
