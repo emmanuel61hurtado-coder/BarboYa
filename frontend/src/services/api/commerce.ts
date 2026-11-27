@@ -114,6 +114,8 @@ export interface Order {
     location: Point | null
   } | null
   hasEvidence: boolean
+  /** La comisión de quien consulta; nula para el cliente. */
+  commissionCop: number | null
   createdAt: string
   deliveredAt: string | null
   history: { status: OrderStatus; note: string | null; at: string }[]

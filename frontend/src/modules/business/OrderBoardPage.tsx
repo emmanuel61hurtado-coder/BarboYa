@@ -99,6 +99,9 @@ function ShopOrder({ order }: { order: Order }) {
         </p>
       )}
       <OrderSummary order={order} />
+      {!!order.commissionCop && !['REJECTED', 'CANCELLED', 'FAILED'].includes(order.status) && (
+        <p className="text-xs text-slate-500">Comisión BarboYa al entregar: {formatCop(order.commissionCop)}</p>
+      )}
       {order.fulfillment === 'COURIER' && <CourierStatus order={order} />}
       {order.hasEvidence && (
         <DocumentPreview label="Foto de la entrega" contentType="image/*" load={() => shopApi.evidence(order.id)} />

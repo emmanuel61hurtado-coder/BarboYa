@@ -36,6 +36,9 @@ const ACTION_LABELS: Record<string, string> = {
   DOCUMENT_VIEWED: 'Documento consultado por el equipo',
   DOCUMENT_REVIEWED: 'Documento revisado',
   VERIFICATION_REOPENED: 'Cuenta de vuelta a revisión',
+  PAYMENT_REGISTERED: 'Pago de comisiones registrado',
+  DEBT_ADJUSTED: 'Deuda perdonada',
+  ENTRY_REVERSED: 'Movimiento reversado',
 }
 
 export const actionLabel = (action: string) => ACTION_LABELS[action] ?? action

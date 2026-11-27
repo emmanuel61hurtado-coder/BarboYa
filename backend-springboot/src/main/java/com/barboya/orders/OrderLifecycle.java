@@ -1,6 +1,7 @@
 package com.barboya.orders;
 
 import com.barboya.common.ApiException;
+import com.barboya.finance.LedgerService;
 import com.barboya.products.Product;
 import com.barboya.products.ProductRepository;
 import org.springframework.context.ApplicationEventPublisher;
@@ -30,10 +31,12 @@ class OrderLifecycle {
     private final OrderItemRepository items;
     private final ProductRepository products;
     private final ApplicationEventPublisher publisher;
+    private final LedgerService ledger;
     private final Clock clock;
 
     OrderLifecycle(OrderEventRepository events, OrderItemRepository items, ProductRepository products,
-                   ApplicationEventPublisher publisher, Clock clock) {
+                   ApplicationEventPublisher publisher, LedgerService ledger, Clock clock) {
+        this.ledger = ledger;
         this.events = events;
         this.items = items;
         this.products = products;
@@ -102,6 +105,11 @@ class OrderLifecycle {
         }
         order.setDeliveredAt(clock.instant());
         move(order, OrderStatus.DELIVERED, merchantId, actorId, "Entrega confirmada con PIN");
+        // La comision se causa al entregar, en la misma transaccion
+        ledger.chargeCommission(merchantId, order.getId(), order.getMerchantCommissionCop());
+        if (order.getCourierId() != null) {
+            ledger.chargeCommission(order.getCourierId(), order.getId(), order.getCourierCommissionCop());
+        }
     }
 
     /** Devuelve al inventario lo reservado por un pedido que no se entregara. */

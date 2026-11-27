@@ -45,8 +45,8 @@ public final class OrderDtos {
     /** Un pedido disponible, sin datos personales del cliente. */
     public record DeliveryOffer(
             UUID id, long number, OrderStatus status, String businessName, String businessAddress,
-            double pickupDistanceKm, double deliveryDistanceKm, int feeCop, int payAtPickupCop,
-            int collectCop) {
+            double pickupDistanceKm, double deliveryDistanceKm, int feeCop, int commissionCop,
+            int payAtPickupCop, int collectCop) {
     }
 
     /** {@code location} es nula si no hay una posicion reciente. */
@@ -88,7 +88,7 @@ public final class OrderDtos {
             Double distanceKm, String notes, List<Line> items,
             int subtotalCop, int deliveryFeeCop, int totalCop, CustomerOrder.PaymentMethod paymentMethod,
             Integer prepMinutes, String statusReason, String deliveryPin, boolean pinLocked,
-            String pickupCode, CourierInfo courier, boolean hasEvidence,
+            String pickupCode, CourierInfo courier, boolean hasEvidence, Integer commissionCop,
             Instant createdAt, Instant deliveredAt, List<Step> history) {
     }
 

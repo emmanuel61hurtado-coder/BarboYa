@@ -114,7 +114,12 @@ function Offer({ offer, taking, onTake }: { offer: DeliveryOffer; taking: boolea
           <p className="font-semibold">{offer.businessName}</p>
           <p className="text-xs text-slate-400">{offer.businessAddress}</p>
         </div>
-        <p className="text-lg font-bold text-emerald-300">Ganas {formatCop(offer.feeCop)}</p>
+        <div className="text-right">
+          <p className="text-lg font-bold text-emerald-300">Ganas {formatCop(offer.feeCop - offer.commissionCop)}</p>
+          <p className="text-xs text-slate-500">
+            Tarifa {formatCop(offer.feeCop)} menos comisión {formatCop(offer.commissionCop)}
+          </p>
+        </div>
       </div>
       <p className="text-xs text-slate-400">
         A {km(offer.pickupDistanceKm)} del comercio · {km(offer.deliveryDistanceKm)} hasta el cliente ·{' '}
@@ -180,7 +185,9 @@ function ActiveDelivery({ order, position }: { order: Order; position: Point | n
       </ul>
       <Alert>
         Paga <strong>{formatCop(order.subtotalCop)}</strong> al comercio y cobra{' '}
-        <strong>{formatCop(order.totalCop)}</strong> al cliente. Tu ganancia: {formatCop(order.deliveryFeeCop)}.
+        <strong>{formatCop(order.totalCop)}</strong> al cliente. Tu ganancia:{' '}
+        {formatCop(order.deliveryFeeCop - (order.commissionCop ?? 0))}, después de la comisión de{' '}
+        {formatCop(order.commissionCop ?? 0)}.
       </Alert>
 
       {order.status === 'PREPARING' && <p className="text-sm text-slate-400">El comercio todavía lo está preparando.</p>}
@@ -336,7 +343,7 @@ function History() {
     : []
 
   return (
-    <Card title="Mis ganancias">
+    <Card title="Mis ganancias" description="Tarifas menos comisiones.">
       <ErrorAlert error={earnings.error ?? history.error} />
       <dl className="grid grid-cols-3 gap-2">
         {totals.map(([label, value]) => (
@@ -356,7 +363,9 @@ function History() {
             <span className="text-right">
               {ORDER_STATUS_LABELS[order.status]}
               {order.status === 'DELIVERED' && (
-                <span className="block text-emerald-300">{formatCop(order.deliveryFeeCop)}</span>
+                <span className="block text-emerald-300">
+                  {formatCop(order.deliveryFeeCop - (order.commissionCop ?? 0))}
+                </span>
               )}
             </span>
           </li>

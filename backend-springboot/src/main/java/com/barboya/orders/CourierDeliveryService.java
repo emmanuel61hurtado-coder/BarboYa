@@ -13,6 +13,7 @@ import com.barboya.couriers.CourierService;
 import com.barboya.couriers.VehicleType;
 import com.barboya.files.FileStorage;
 import com.barboya.files.Uploads;
+import com.barboya.finance.LedgerService;
 import com.barboya.orders.OrderDtos.DeliveryOffer;
 import com.barboya.orders.OrderDtos.Earnings;
 import com.barboya.orders.OrderDtos.Evidence;
@@ -56,13 +57,15 @@ public class CourierDeliveryService {
     private final OrderLifecycle lifecycle;
     private final OrderViews views;
     private final FileStorage storage;
+    private final LedgerService ledger;
     private final DeliveryProperties settings;
     private final Clock clock;
 
     CourierDeliveryService(OrderRepository orders, BusinessRepository businesses, CourierService couriers,
                            CourierProfileRepository profiles, CourierPresenceRepository presence,
                            UserRepository users, OrderLifecycle lifecycle, OrderViews views, FileStorage storage,
-                           DeliveryProperties settings, Clock clock) {
+                           DeliveryProperties settings, LedgerService ledger, Clock clock) {
+        this.ledger = ledger;
         this.orders = orders;
         this.businesses = businesses;
         this.couriers = couriers;
@@ -83,6 +86,7 @@ public class CourierDeliveryService {
     @Transactional(readOnly = true)
     public List<DeliveryOffer> offers(UUID courierId) {
         couriers.requireOperable(courierId);
+        requireWithinDebtLimit(courierId);
         if (hasActive(courierId)) {
             return List.of();
         }
@@ -105,6 +109,7 @@ public class CourierDeliveryService {
         // Bloquear a la persona evita que tome dos pedidos a la vez
         users.lockById(courierId).orElseThrow(OrderLifecycle::notFound);
         couriers.requireOperable(courierId);
+        requireWithinDebtLimit(courierId);
         if (hasActive(courierId)) {
             throw conflict("ALREADY_DELIVERING", "Termina tu entrega actual antes de tomar otra");
         }
@@ -199,7 +204,7 @@ public class CourierDeliveryService {
                 result.getNumber(), result.getSize(), result.getTotalElements());
     }
 
-    /** Tarifas de entregas completadas. El dia empieza a medianoche en Colombia. */
+    /** Lo ganado: tarifa menos comision de las entregas completadas. El dia empieza a medianoche en Colombia. */
     @Transactional(readOnly = true)
     public Earnings earnings(UUID courierId) {
         Instant today = LocalDate.ofInstant(clock.instant(), COLOMBIA).atStartOfDay(COLOMBIA).toInstant();
@@ -222,7 +227,15 @@ public class CourierDeliveryService {
                 || (vehicle == VehicleType.BICYCLE && toPickup + order.getDistanceKm() > settings.bicycleMaxKm());
         return tooFar ? null : new DeliveryOffer(order.getId(), order.getNumber(), order.getStatus(),
                 business.getName(), business.getAddress(), Geo.round(toPickup), order.getDistanceKm(),
-                order.getDeliveryFeeCop(), order.getSubtotalCop(), order.getTotalCop());
+                order.getDeliveryFeeCop(), order.getCourierCommissionCop(), order.getSubtotalCop(),
+                order.getTotalCop());
+    }
+
+    private void requireWithinDebtLimit(UUID courierId) {
+        if (ledger.isOverLimit(courierId)) {
+            throw new ApiException(HttpStatus.FORBIDDEN, "DEBT_LIMIT",
+                    "Superaste el tope de comisiones pendientes. Ponte al dia para recibir pedidos");
+        }
     }
 
     private boolean hasActive(UUID courierId) {

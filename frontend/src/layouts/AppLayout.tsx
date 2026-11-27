@@ -40,10 +40,12 @@ export function AppLayout() {
           { to: '/verificacion', label: 'Verificación' },
         ]
       : []),
+    ...(merchant || user.role === 'COURIER' ? [{ to: '/comisiones', label: 'Comisiones' }] : []),
     { to: '/seguridad', label: 'Seguridad' },
     ...(staff
       ? [
           { to: '/admin/usuarios', label: 'Usuarios' },
+          { to: '/admin/finanzas', label: 'Finanzas' },
           { to: '/admin/auditoria', label: 'Auditoría' },
         ]
       : []),

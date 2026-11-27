@@ -14,6 +14,7 @@ export interface DeliveryOffer {
   pickupDistanceKm: number
   deliveryDistanceKm: number
   feeCop: number
+  commissionCop: number
   payAtPickupCop: number
   collectCop: number
 }

@@ -122,6 +122,7 @@ class OrderViews {
                     viewer == Viewer.MERCHANT && awaitingPickup(order) ? order.getPickupCode() : null,
                     courier(order, viewer, active, people, vehicles, positions),
                     order.getEvidenceKey() != null,
+                    commission(order, viewer),
                     order.getCreatedAt(), order.getDeliveredAt(),
                     history.getOrDefault(order.getId(), List.of()).stream()
                             .map(e -> new Step(e.getStatus(), e.getNote(), e.getCreatedAt()))
@@ -143,6 +144,15 @@ class OrderViews {
         CourierProfile profile = vehicles.get(id);
         return new CourierInfo(person.getFullName(), active ? person.getPhone() : null,
                 profile.getVehicleType(), profile.getPlate(), position);
+    }
+
+    /** Cada participante ve solo su comision; el cliente no paga ninguna. */
+    private static Integer commission(CustomerOrder order, Viewer viewer) {
+        return switch (viewer) {
+            case MERCHANT -> order.getMerchantCommissionCop();
+            case COURIER -> order.getCourierCommissionCop();
+            case CUSTOMER -> null;
+        };
     }
 
     private static boolean awaitingPickup(CustomerOrder order) {

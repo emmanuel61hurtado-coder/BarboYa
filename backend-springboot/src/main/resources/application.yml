@@ -72,6 +72,11 @@ barboya:
     max-per-day: 5
   mail:
     from: ${MAIL_FROM:}
+  # Comisiones en puntos basicos (1000 = 10 %) y tope de deuda
+  finance:
+    merchant-commission-bps: ${MERCHANT_COMMISSION_BPS:1000}
+    courier-commission-bps: ${COURIER_COMMISSION_BPS:1000}
+    debt-limit-cop: ${DEBT_LIMIT_COP:50000}
   # Entregas con domiciliarios (distancias en linea recta)
   delivery:
     base-fee-cop: ${DELIVERY_BASE_FEE_COP:3000}

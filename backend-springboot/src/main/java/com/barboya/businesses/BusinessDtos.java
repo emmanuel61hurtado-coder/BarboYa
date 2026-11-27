@@ -76,10 +76,10 @@ public final class BusinessDtos {
             boolean pickupEnabled, boolean deliveryEnabled, int deliveryFeeCop, boolean open,
             boolean courierDeliveryEnabled, Double latitude, Double longitude) {
 
-        static StoreSummary from(Business b) {
+        static StoreSummary from(Business b, boolean inGoodStanding) {
             return new StoreSummary(b.getId(), b.getName(), b.getCategory(), b.getDescription(), b.getAddress(),
-                    b.isPickupEnabled(), b.isDeliveryEnabled(), b.getDeliveryFeeCop(), b.isAcceptingOrders(),
-                    b.isCourierDeliveryEnabled(), b.getLatitude(), b.getLongitude());
+                    b.isPickupEnabled(), b.isDeliveryEnabled(), b.getDeliveryFeeCop(),
+                    b.isAcceptingOrders() && inGoodStanding, b.isCourierDeliveryEnabled(), b.getLatitude(), b.getLongitude());
         }
     }
 

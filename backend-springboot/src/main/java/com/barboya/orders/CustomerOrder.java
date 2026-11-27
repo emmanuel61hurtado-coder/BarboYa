@@ -83,6 +83,8 @@ public class CustomerOrder {
     private Instant pickedUpAt;
     private String evidenceKey;
     private String evidenceType;
+    private int merchantCommissionCop;
+    private int courierCommissionCop;
 
     @Version
     private Long version;

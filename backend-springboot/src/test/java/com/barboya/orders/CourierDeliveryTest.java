@@ -227,8 +227,9 @@ class CourierDeliveryTest extends CommerceFixtures {
         mvc.perform(get("/api/v1/courier/delivery").header("Authorization", courier.bearer()))
                 .andExpect(status().isNoContent());
         mvc.perform(get("/api/v1/courier/earnings").header("Authorization", courier.bearer()))
-                .andExpect(jsonPath("$.todayCop").value(5000))
-                .andExpect(jsonPath("$.last30DaysCop").value(5000));
+                // Tarifa de 5.000 menos el 10 % de comision
+                .andExpect(jsonPath("$.todayCop").value(4500))
+                .andExpect(jsonPath("$.last30DaysCop").value(4500));
         mvc.perform(get("/api/v1/orders/" + id).header("Authorization", customer.bearer()))
                 .andExpect(jsonPath("$.courier.location").doesNotExist())
                 .andExpect(jsonPath("$.courier.phone").doesNotExist());

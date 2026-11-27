@@ -10,6 +10,7 @@ import com.barboya.businesses.BusinessDtos.Store;
 import com.barboya.businesses.BusinessDtos.StoreSummary;
 import com.barboya.common.ApiException;
 import com.barboya.common.Contacts;
+import com.barboya.finance.LedgerService;
 import com.barboya.products.Product;
 import com.barboya.products.ProductRepository;
 import com.barboya.users.UserRepository;
@@ -31,10 +32,12 @@ public class BusinessService {
     private final BusinessRepository businesses;
     private final ProductRepository products;
     private final UserRepository users;
+    private final LedgerService ledger;
     private final Clock clock;
 
     public BusinessService(BusinessRepository businesses, ProductRepository products, UserRepository users,
-                           Clock clock) {
+                           LedgerService ledger, Clock clock) {
+        this.ledger = ledger;
         this.businesses = businesses;
         this.products = products;
         this.users = users;
@@ -92,6 +95,10 @@ public class BusinessService {
     public BusinessResponse setAccepting(UUID ownerId, boolean accepting) {
         if (accepting) {
             requireActiveAccount(ownerId);
+            if (ledger.isOverLimit(ownerId)) {
+                throw new ApiException(HttpStatus.FORBIDDEN, "DEBT_LIMIT",
+                        "Superaste el tope de comisiones pendientes. Ponte al dia para recibir pedidos");
+            }
         }
         Business business = requireOwned(ownerId);
         business.setAcceptingOrders(accepting);
@@ -130,7 +137,10 @@ public class BusinessService {
         String pattern = "%" + term.replace("!", "!!").replace("%", "!%").replace("_", "!_") + "%";
         var result = businesses.search(pattern, category,
                 PageRequest.of(Math.max(page, 0), Math.clamp(size, 1, 50)));
-        return new PageResponse<>(result.map(StoreSummary::from).getContent(),
+        // Con la deuda por encima del tope se muestra cerrado
+        var blocked = ledger.overLimit(result.map(Business::getOwnerId).getContent());
+        return new PageResponse<>(
+                result.map(b -> StoreSummary.from(b, !blocked.contains(b.getOwnerId()))).getContent(),
                 result.getNumber(), result.getSize(), result.getTotalElements());
     }
 
@@ -141,7 +151,7 @@ public class BusinessService {
                 .orElseThrow(BusinessService::notFound);
         List<MenuItem> menu = products.findByBusinessIdAndArchivedFalseOrderByCategoryAscNameAsc(businessId)
                 .stream().filter(Product::isAvailable).map(MenuItem::from).toList();
-        return new Store(StoreSummary.from(business), menu);
+        return new Store(StoreSummary.from(business, !ledger.isOverLimit(business.getOwnerId())), menu);
     }
 
     public Business requireOwned(UUID ownerId) {

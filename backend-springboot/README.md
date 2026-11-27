@@ -1,6 +1,6 @@
 # BarboYa API (Spring Boot)
 
-Backend en Java 21 y Spring Boot 3.3 que reemplazará al de FastAPI. Hoy cubre **identidad, administración de cuentas, comercios, catálogo, pedidos, verificación de domiciliarios y entregas**; los viajes y los pagos siguen en `../backend` o están pendientes.
+Backend en Java 21 y Spring Boot 3.3 que reemplazará al de FastAPI. Hoy cubre **identidad, administración de cuentas, comercios, catálogo, pedidos, verificación de domiciliarios, entregas, comisiones y libro contable**; los viajes y los pagos en línea siguen en `../backend` o están pendientes.
 
 **No reemplaza todavía al backend publicado.** El frontend lo usa solo en el modo `v1` (ver [Interfaz](#interfaz)).
 
@@ -65,6 +65,8 @@ Levantan un PostgreSQL 16 propio y temporal; no necesitan Docker ni tocan tu bas
 | `FILES_KEY` | Sí, salvo en `dev` | 32 bytes en base64 (`openssl rand -base64 32`). Cifra los documentos |
 | `FILES_DIRECTORY` | Recomendada en `prod` | Carpeta privada y persistente. Por defecto `./data/files` |
 | `DELIVERY_BASE_FEE_COP`, `DELIVERY_PER_KM_COP`, `DELIVERY_MAX_KM` | No | Tarifa del domiciliario: `3000`, `1000` y `8` |
+| `MERCHANT_COMMISSION_BPS`, `COURIER_COMMISSION_BPS` | No | Comisiones en puntos básicos (`1000` = 10 %) |
+| `DEBT_LIMIT_COP` | No | Tope de comisiones sin pagar: `50000` |
 | `PORT` | No | `8081` |
 
 ## Rutas
@@ -95,6 +97,9 @@ Base: `/api/v1`. Los errores usan `application/problem+json` con un campo `code`
 | `GET /courier/delivery`, `POST /courier/delivery/{id}/{release,pickup,evidence,deliver,fail}` | `COURIER` (propia) |
 | `GET /courier/history`, `GET /courier/earnings` | `COURIER` (propios) |
 | `POST /merchant/orders/{id}/unassign` | `RESTAURANT`, `STORE` (propios) |
+| `GET /finance/statement` | `RESTAURANT`, `STORE`, `COURIER` (propio) |
+| `GET /admin/finance/summary`, `GET /admin/finance/accounts/{id}`, `POST …/payments` | `ADMIN`, `SUPERADMIN` |
+| `POST /admin/finance/accounts/{id}/adjustments`, `POST /admin/finance/entries/{id}/reversal` | `SUPERADMIN` |
 | `GET …/orders/{id}/evidence` (también bajo `/merchant` y `/courier/delivery`) | Participantes del pedido |
 
 Toda ruta no declarada queda cerrada.
@@ -146,6 +151,21 @@ El comercio acepta ──▶ un domiciliario lo toma ──▶ READY ──códi
 - Un pedido `FAILED`, o uno recogido cuyo domiciliario deje de responder, **se resuelve manualmente**: no hay pantalla de soporte.
 - Los mapas usan las teselas públicas de OpenStreetMap, aptas para desarrollo y poco tráfico.
 
+## Comisiones y libro contable
+
+| Quién | Base | Por defecto |
+|---|---|---|
+| Comercio | Valor de los productos (no su domicilio propio) | 10 % |
+| Domiciliario | Tarifa del domicilio | 10 % |
+
+- La comisión se **fija al crear el pedido** y se **causa al entregarlo**. El cliente no paga nada adicional.
+- Libro de **doble partida**: la base rechaza asientos descuadrados y no permite modificarlos ni borrarlos. Los errores se corrigen con una reversión.
+- Cuentas: `RECEIVABLE` (deuda de cada participante), `COMMISSION_REVENUE`, `PLATFORM_FUNDS` y `WAIVED`.
+- Los pagos son **conciliación manual**: un administrador registra un dinero ya recibido, con su comprobante, que no se puede repetir. No hay pasarela ni confirmación automática.
+- Una deuda **superior al tope** cierra el comercio a pedidos nuevos o impide al domiciliario tomarlos. Lo que está en curso continúa.
+- No se calculan impuestos ni se emiten facturas: debe definirlo un contador antes de operar.
+- Quien registra pagos puede ser cualquier administrador; perdonar y reversar, solo el superadministrador.
+
 ## Avisos en vivo
 
 WebSocket en `/ws/v1/events`. El primer mensaje es `{"type":"auth","token":"<token de acceso>"}`; el servidor responde `ready` y luego envía `{"type":"order.updated","orderId":"…"}` a quienes participan. Los datos se consultan por la API. Las conexiones viven en memoria (una sola instancia).
@@ -173,7 +193,8 @@ WebSocket en `/ws/v1/events`. El primer mensaje es `{"type":"auth","token":"<tok
 - Verificación documental y facial de quienes prestan servicios.
 - Fotografías de productos, horarios, promociones, reportes y búsqueda por cercanía o precio.
 - Chat, calificaciones, orden de ofertas por reputación y seguimiento en segundo plano.
-- Resolución de entregas fallidas y registro del efectivo.
+- Resolución de entregas fallidas y del dinero entre comercio y domiciliario.
+- Pasarela de pagos, reembolsos, liquidaciones, impuestos y facturación.
 - Límite de peticiones y avisos en vivo compartidos entre instancias (hoy en memoria).
 - Migración de las cuentas existentes en FastAPI.
 - Imagen Docker y despliegue.

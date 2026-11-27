@@ -6,6 +6,8 @@ import com.barboya.businesses.BusinessService;
 import com.barboya.businesses.DeliveryPricing;
 import com.barboya.common.ApiException;
 import com.barboya.common.Geo;
+import com.barboya.config.FinanceProperties;
+import com.barboya.finance.LedgerService;
 import com.barboya.orders.OrderDtos.LineRequest;
 import com.barboya.orders.OrderDtos.OrderPage;
 import com.barboya.orders.OrderDtos.OrderResponse;
@@ -39,13 +41,18 @@ public class CustomerOrderService {
     private final BusinessService businessService;
     private final ProductRepository products;
     private final DeliveryPricing pricing;
+    private final LedgerService ledger;
+    private final FinanceProperties finance;
     private final OrderLifecycle lifecycle;
     private final OrderViews views;
     private final Clock clock;
 
     CustomerOrderService(OrderRepository orders, OrderItemRepository items, BusinessRepository businesses,
                          BusinessService businessService, ProductRepository products, DeliveryPricing pricing,
-                         OrderLifecycle lifecycle, OrderViews views, Clock clock) {
+                         OrderLifecycle lifecycle, OrderViews views, LedgerService ledger,
+                         FinanceProperties finance, Clock clock) {
+        this.ledger = ledger;
+        this.finance = finance;
         this.pricing = pricing;
         this.orders = orders;
         this.items = items;
@@ -71,7 +78,7 @@ public class CustomerOrderService {
                 .filter(b -> businessService.isApproved(b.getOwnerId()))
                 .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "BUSINESS_NOT_FOUND",
                         "Comercio no encontrado"));
-        if (!business.isAcceptingOrders()) {
+        if (!business.isAcceptingOrders() || ledger.isOverLimit(business.getOwnerId())) {
             throw conflict("BUSINESS_CLOSED", "El comercio no esta recibiendo pedidos");
         }
         boolean offered = switch (request.fulfillment()) {
@@ -140,6 +147,8 @@ public class CustomerOrderService {
         order.setSubtotalCop(Math.toIntExact(subtotal));
         order.setDeliveryFeeCop(fee);
         order.setTotalCop(total);
+        order.setMerchantCommissionCop(finance.merchantCommission(order.getSubtotalCop()));
+        order.setCourierCommissionCop(quote == null ? 0 : finance.courierCommission(fee));
         order.setDeliveryPin(lifecycle.newPin());
         if (quote != null) {
             order.setDeliveryLatitude(request.deliveryLatitude());

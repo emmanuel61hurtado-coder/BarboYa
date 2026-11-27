@@ -32,7 +32,7 @@ public interface OrderRepository extends JpaRepository<CustomerOrder, UUID> {
             UUID courierId, Collection<OrderStatus> statuses, Pageable pageable);
 
     @Query("""
-            select coalesce(sum(o.deliveryFeeCop), 0) from CustomerOrder o
+            select coalesce(sum(o.deliveryFeeCop - o.courierCommissionCop), 0) from CustomerOrder o
             where o.courierId = :courierId and o.status = com.barboya.orders.OrderStatus.DELIVERED
               and o.deliveredAt >= :since""")
     long earningsSince(@Param("courierId") UUID courierId, @Param("since") Instant since);
