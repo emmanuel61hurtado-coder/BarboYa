@@ -97,7 +97,7 @@ class SecurityUnitTest {
     @Test
     @SuppressWarnings("unchecked")
     void withoutAMailServerCodesAreReportedUnavailable() {
-        MailService mail = new MailService(mock(ObjectProvider.class), properties(""));
+        MailService mail = new MailService(mock(ObjectProvider.class), properties(""), "");
 
         assertThatThrownBy(mail::requireConfigured)
                 .isInstanceOf(ApiException.class)

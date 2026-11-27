@@ -1,4 +1,9 @@
 # Perfil de las pruebas automaticas. La base de datos la inyecta cada ejecucion.
+spring:
+  # Servidor ficticio: las pruebas sustituyen el envio
+  mail:
+    host: correo.barboya.test
+
 barboya:
   security:
     auth-requests-per-minute: 100000

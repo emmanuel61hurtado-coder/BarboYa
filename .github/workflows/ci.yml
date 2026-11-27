@@ -43,6 +43,29 @@ jobs:
           npm run build
           npm run build:v1
 
+  imagen-pruebas:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Construir y levantar el entorno de pruebas
+        run: |
+          {
+            echo "DB_PASSWORD=$(openssl rand -hex 16)"
+            echo "JWT_SECRET=$(openssl rand -hex 32)"
+            echo "FILES_KEY=$(openssl rand -base64 32)"
+          } > .env.ci
+          printf 'services:\n  app:\n    ports: ["8081:8081"]\n' > compose.ci.yml
+          docker compose --env-file .env.ci -f docker-compose.pruebas.yml -f compose.ci.yml \
+            up -d --build --wait --wait-timeout 240
+      - name: Comprobar el despliegue
+        run: |
+          sh scripts/verificar-despliegue.sh http://localhost:8081
+          # Como llega detras de un proxy con HTTPS
+          sh scripts/verificar-despliegue.sh http://localhost:8081 pruebas.example.co
+      - name: Registros si algo falla
+        if: failure()
+        run: docker compose --env-file .env.ci -f docker-compose.pruebas.yml logs --tail 200
+
   backend-ci:
     runs-on: ubuntu-latest
     defaults:

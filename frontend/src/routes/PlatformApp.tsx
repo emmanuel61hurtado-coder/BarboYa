@@ -1,10 +1,14 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { z } from 'zod'
 import { BrowserRouter } from 'react-router-dom'
 import { AuthProvider, useAuth } from '../contexts/AuthContext'
 import { ApiError } from '../services/api/client'
 import { Alert } from '../components/ui/surface'
 import { Button } from '../components/ui/button'
 import { AppRoutes } from './AppRoutes'
+
+// La politica de contenido del servidor no permite generar codigo en el navegador
+z.config({ jitless: true })
 
 const queryClient = new QueryClient({
   defaultOptions: {

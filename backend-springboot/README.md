@@ -39,7 +39,12 @@ Vite reenvía `/api/v1` a `http://localhost:8081` (otro destino: variable `BARBO
 - Para entrar a la administración, arranca la API la primera vez con las variables `BOOTSTRAP_ADMIN_*`.
 - Para los códigos por correo, configura las variables SMTP.
 - `npm run dev` y `npm run build` siguen generando la aplicación actual, conectada a FastAPI.
-- `npm run build:v1` compila esta interfaz en `dist-v1/`. El servidor que la publique debe devolver `index.html` en cualquier ruta y enviar `/api/v1` a esta API desde el mismo sitio.
+- `npm run build:v1` compila esta interfaz en `dist-v1/`. La propia API la sirve si `SPRING_WEB_RESOURCES_STATIC_LOCATIONS=file:/ruta/dist-v1/`.
+- Una pantalla nueva debe añadirse también en `web/SpaRoutes.java`, y un recurso externo nuevo, en la política de contenido de `SecurityConfig`.
+
+## Publicar
+
+`Dockerfile` y `../docker-compose.pruebas.yml` empaquetan API e interfaz. Guía: [docs/despliegue-pruebas.md](../docs/despliegue-pruebas.md).
 
 ## Pruebas
 
@@ -197,4 +202,4 @@ WebSocket en `/ws/v1/events`. El primer mensaje es `{"type":"auth","token":"<tok
 - Pasarela de pagos, reembolsos, liquidaciones, impuestos y facturación.
 - Límite de peticiones y avisos en vivo compartidos entre instancias (hoy en memoria).
 - Migración de las cuentas existentes en FastAPI.
-- Imagen Docker y despliegue.
+- Endurecimiento y monitoreo para producción.

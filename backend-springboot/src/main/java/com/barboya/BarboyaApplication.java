@@ -29,7 +29,8 @@ import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
                 "com.barboya.products",
                 "com.barboya.realtime",
                 "com.barboya.security",
-                "com.barboya.users"
+                "com.barboya.users",
+                "com.barboya.web"
         },
         exclude = UserDetailsServiceAutoConfiguration.class)
 @ConfigurationPropertiesScan("com.barboya.config")

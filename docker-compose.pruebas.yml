@@ -1,0 +1,58 @@
+services:
+  # Entorno de PRUEBAS de la version nueva (Spring Boot + interfaz v1).
+  # Es independiente de docker-compose.backend.yml, que sigue sirviendo la app actual.
+  # Guia: docs/despliegue-pruebas.md
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: barboya
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?Define DB_PASSWORD}
+      POSTGRES_DB: barboya_core
+    volumes:
+      - pruebas_db:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "barboya", "-d", "barboya_core"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  app:
+    build:
+      context: .
+      dockerfile: backend-springboot/Dockerfile
+    restart: unless-stopped
+    environment:
+      DB_URL: jdbc:postgresql://db:5432/barboya_core
+      DB_USER: barboya
+      DB_PASSWORD: ${DB_PASSWORD:?Define DB_PASSWORD}
+      JWT_SECRET: ${JWT_SECRET:?Define JWT_SECRET (32 caracteres o mas)}
+      FILES_KEY: ${FILES_KEY:?Define FILES_KEY (32 bytes en base64)}
+      # Primer superadministrador: borra la clave despues del primer arranque
+      BOOTSTRAP_ADMIN_EMAIL: ${BOOTSTRAP_ADMIN_EMAIL:-}
+      BOOTSTRAP_ADMIN_PHONE: ${BOOTSTRAP_ADMIN_PHONE:-}
+      BOOTSTRAP_ADMIN_PASSWORD: ${BOOTSTRAP_ADMIN_PASSWORD:-}
+      # Correo (opcional). Sin el, verificacion y recuperacion responden "no disponible"
+      SPRING_MAIL_HOST: ${SPRING_MAIL_HOST:-}
+      SPRING_MAIL_PORT: ${SPRING_MAIL_PORT:-587}
+      SPRING_MAIL_USERNAME: ${SPRING_MAIL_USERNAME:-}
+      SPRING_MAIL_PASSWORD: ${SPRING_MAIL_PASSWORD:-}
+      MAIL_FROM: ${MAIL_FROM:-}
+      # Reglas del negocio
+      DELIVERY_BASE_FEE_COP: ${DELIVERY_BASE_FEE_COP:-3000}
+      DELIVERY_PER_KM_COP: ${DELIVERY_PER_KM_COP:-1000}
+      DELIVERY_MAX_KM: ${DELIVERY_MAX_KM:-8}
+      MERCHANT_COMMISSION_BPS: ${MERCHANT_COMMISSION_BPS:-1000}
+      COURIER_COMMISSION_BPS: ${COURIER_COMMISSION_BPS:-1000}
+      DEBT_LIMIT_COP: ${DEBT_LIMIT_COP:-50000}
+    volumes:
+      - pruebas_files:/data/files
+    expose:
+      - "8081"
+    depends_on:
+      db:
+        condition: service_healthy
+
+volumes:
+  pruebas_db:
+  pruebas_files:

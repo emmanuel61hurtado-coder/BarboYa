@@ -2,6 +2,10 @@
 server:
   # Detras de un proxy inverso: usa X-Forwarded-For/Proto para la IP real
   forward-headers-strategy: native
+  # Solo archivos de la interfaz: no se comprimen respuestas con datos de sesion
+  compression:
+    enabled: true
+    mime-types: text/html,text/css,text/javascript,application/javascript
 
 spring:
   datasource:

@@ -13,6 +13,10 @@ frontend/dist
 **/*.db
 **/*.sqlite3
 mobile
+**/target
+backend-springboot/data
+frontend/dist-v1
+!frontend/.env.v1
 docs
 README.md
 docker-compose*.yml

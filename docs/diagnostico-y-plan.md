@@ -26,7 +26,8 @@ Fecha: 26 de noviembre de 2026. Base revisada: commit `f1d19c5`. Incluye las cor
 | Pruebas Python (suite completa) | 76 aprobadas en 4 corridas seguidas |
 | Prueba de punta a punta con la API real (SQLite) | Registro, ingreso, SOS, webhook y recuperación responden como se espera; en producción sin `JWT_SECRET` no arranca |
 | TypeScript y build de Vite (ambos modos, Node 20) | Correctos |
-| Pruebas de Spring Boot (PostgreSQL 16 real) | 159 aprobadas |
+| Pruebas de Spring Boot (PostgreSQL 16 real) | 167 aprobadas |
+| Entorno de pruebas reproducido sin Docker (perfil `prod`, API sirviendo la interfaz) | Comprobador de despliegue y 57 pasos en Chrome aprobados. La imagen Docker la construye el CI; falta ver ese resultado |
 | Pruebas del frontend (`npm test`) | 26 aprobadas |
 | Flujos de la interfaz `v1` en Chrome (API, PostgreSQL y correo de prueba) | 57 pasos (cuentas, pedido, verificación, entrega y comisiones) en 2 corridas, sin errores de consola; teselas del mapa simuladas |
 | App actual en Chrome tras actualizar herramientas | Carga, cambia de pestaña y abre el SOS sin errores |
@@ -106,6 +107,7 @@ Cada fase termina cuando sus pruebas pasan.
 | 6. Blockchain | `PaymentEscrow`, `CommissionManager`, `OrderVerification`, `RefundManager`, `ReputationRegistry`; Hardhat y Web3j en red de pruebas | Pruebas y análisis de contratos aprobados |
 | 7. Move | Viajes, negociación, seguridad y SOS real | Revisión jurídica aprobada antes de activar |
 | 8. Operación | Administración, reputación, notificaciones, soporte | Acciones críticas auditadas |
+| Entorno de pruebas (preparado, sin publicar) | Imagen, compose, comprobador y [guía](despliegue-pruebas.md) | Entrega probada en celulares reales |
 | 9. Lanzamiento | Endurecimiento, despliegue, monitoreo, retiro de FastAPI | Lista de producción completa |
 
 ## 8. Pendientes de decisión y de terceros
