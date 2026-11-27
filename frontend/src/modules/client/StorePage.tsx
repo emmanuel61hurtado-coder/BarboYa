@@ -17,6 +17,7 @@ import type { Point } from '../../utils/geo'
 import { ratingApi } from '../../services/api/ratings'
 import { formatRating } from '../ratings/format'
 import { ReviewList } from '../ratings/ReviewList'
+import { DAY_LABELS, describeDay, toWeek } from '../../utils/hours'
 
 export function StorePage() {
   const { id = '' } = useParams()
@@ -45,6 +46,23 @@ function StoreReviews({ businessId }: { businessId: string }) {
   )
 }
 
+function Schedule({ hours }: { hours: Store['hours'] }) {
+  if (hours.length === 0) return null
+  return (
+    <details className="text-sm">
+      <summary className="cursor-pointer text-sky-400">Ver horario de atención</summary>
+      <dl aria-label="Horario de atención" className="mt-2 max-w-sm space-y-1">
+        {toWeek(hours).map((shifts, index) => (
+          <div key={DAY_LABELS[index]} className="flex justify-between gap-3">
+            <dt className="text-slate-400">{DAY_LABELS[index]}</dt>
+            <dd className="text-right">{describeDay(shifts)}</dd>
+          </div>
+        ))}
+      </dl>
+    </details>
+  )
+}
+
 function StoreView({ store }: { store: Store }) {
   const { business, products } = store
   const [cart, setCart] = useState<Cart>({})
@@ -58,6 +76,7 @@ function StoreView({ store }: { store: Store }) {
           {CATEGORY_LABELS[business.category]} · {business.address}
         </p>
         {business.description && <p className="text-sm text-slate-400">{business.description}</p>}
+        <Schedule hours={store.hours} />
       </header>
       {!business.open && (
         <Alert variant="warning">Este comercio no está recibiendo pedidos en este momento.</Alert>
@@ -74,7 +93,15 @@ function StoreView({ store }: { store: Store }) {
                     const quantity = cart[product.id] ?? 0
                     return (
                       <li key={product.id} aria-label={product.name} className="flex items-center justify-between gap-3 py-3">
-                        <div className="min-w-0">
+                        {product.photoUrl && (
+                          <img
+                            src={product.photoUrl}
+                            alt={`Foto de ${product.name}`}
+                            loading="lazy"
+                            className="h-16 w-16 shrink-0 rounded-xl object-cover"
+                          />
+                        )}
+                        <div className="min-w-0 flex-1">
                           <p className="text-sm font-semibold">{product.name}</p>
                           {product.description && <p className="text-xs text-slate-500">{product.description}</p>}
                           <p className="text-sm text-sky-300">{formatCop(product.priceCop)}</p>

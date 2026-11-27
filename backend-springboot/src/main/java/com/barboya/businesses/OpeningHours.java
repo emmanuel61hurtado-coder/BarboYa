@@ -2,6 +2,7 @@ package com.barboya.businesses;
 
 import com.barboya.common.ApiException;
 import com.fasterxml.jackson.annotation.JsonFormat;
+import jakarta.persistence.Convert;
 import jakarta.persistence.Embeddable;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
@@ -23,8 +24,8 @@ import java.util.stream.Collectors;
 @Embeddable
 public record OpeningHours(
         @NotNull @Min(1) @Max(7) Integer day,
-        @NotNull @JsonFormat(pattern = "HH:mm") LocalTime opens,
-        @NotNull @JsonFormat(pattern = "HH:mm") LocalTime closes) {
+        @NotNull @JsonFormat(pattern = "HH:mm") @Convert(converter = MinuteOfDay.class) LocalTime opens,
+        @NotNull @JsonFormat(pattern = "HH:mm") @Convert(converter = MinuteOfDay.class) LocalTime closes) {
 
     static final Comparator<OpeningHours> ORDER =
             Comparator.comparing(OpeningHours::day).thenComparing(OpeningHours::opens);

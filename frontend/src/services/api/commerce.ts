@@ -2,6 +2,7 @@ import { ApiError, apiClient } from './client'
 import type { Page } from './types'
 import type { VehicleType } from './courier'
 import type { Point } from '../../utils/geo'
+import type { Shift } from '../../utils/hours'
 
 const { http } = apiClient
 
@@ -39,6 +40,8 @@ export type Business = Omit<BusinessInput, 'legalName' | 'nit' | 'description'> 
   nit: string | null
   description: string | null
   acceptingOrders: boolean
+  /** Vacío: no usa horario. */
+  hours: Shift[]
 }
 
 export interface ProductInput {
@@ -50,7 +53,11 @@ export interface ProductInput {
   available: boolean
 }
 
-export type Product = Omit<ProductInput, 'description'> & { id: string; description: string | null }
+export type Product = Omit<ProductInput, 'description'> & {
+  id: string
+  description: string | null
+  photoUrl: string | null
+}
 
 export interface StoreSummary {
   id: string
@@ -74,10 +81,12 @@ export interface MenuItem {
   category: string
   priceCop: number
   soldOut: boolean
+  photoUrl: string | null
 }
 
 export interface Store {
   business: StoreSummary
+  hours: Shift[]
   products: MenuItem[]
 }
 
@@ -156,7 +165,14 @@ export const shopApi = {
   saveBusiness: async (data: BusinessInput) => (await http.put<Business>('/merchant/business', data)).data,
   setAccepting: async (accepting: boolean) =>
     (await http.patch<Business>('/merchant/business/accepting', { accepting })).data,
+  setHours: async (hours: Shift[]) => (await http.put<Business>('/merchant/business/hours', { hours })).data,
   products: async () => (await http.get<Product[]>('/merchant/products')).data,
+  setPhoto: async (id: string, photo: File) => {
+    const form = new FormData()
+    form.append('file', photo)
+    return (await http.post<Product>(`/merchant/products/${id}/photo`, form, { timeout: 60_000 })).data
+  },
+  removePhoto: async (id: string) => (await http.delete<Product>(`/merchant/products/${id}/photo`)).data,
   saveProduct: async (data: ProductInput, id?: string) =>
     (id
       ? await http.put<Product>(`/merchant/products/${id}`, data)

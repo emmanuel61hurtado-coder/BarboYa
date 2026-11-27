@@ -84,6 +84,8 @@ Usa datos inventados y, si puedes, tres celulares.
 - [ ] Abrir un caso desde un pedido, responderlo y resolverlo como administrador.
 - [ ] Registrar una entrega fallida y revisar el caso que se abre solo.
 - [ ] Calificar una entrega y ocultar la opinión desde la administración.
+- [ ] Subir fotos de productos **tomadas con el celular** (verticales y horizontales) y revisar que se vean derechas.
+- [ ] Definir un horario y comprobar que fuera de él no se puede pedir.
 
 ## 7. Problemas frecuentes
 

@@ -15,6 +15,8 @@ public interface ProductRepository extends JpaRepository<Product, UUID> {
 
     List<Product> findByBusinessIdAndArchivedFalseOrderByCategoryAscNameAsc(UUID businessId);
 
+    boolean existsByPhotoKey(String photoKey);
+
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("select p from Product p where p.id = :id and p.businessId = :businessId and p.archived = false")
     Optional<Product> lockOwned(@Param("id") UUID id, @Param("businessId") UUID businessId);

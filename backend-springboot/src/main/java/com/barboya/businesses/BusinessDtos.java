@@ -1,6 +1,7 @@
 package com.barboya.businesses;
 
 import com.barboya.products.Product;
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.DecimalMax;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.Max;
@@ -37,6 +38,10 @@ public final class BusinessDtos {
     public record AcceptingRequest(@NotNull Boolean accepting) {
     }
 
+    /** Reemplaza todo el horario; una lista vacia lo quita. */
+    public record HoursRequest(@NotNull @Size(max = 14) List<@NotNull @Valid OpeningHours> hours) {
+    }
+
     public record ProductRequest(
             @NotBlank @Size(min = 2, max = 120) String name,
             @Size(max = 500) String description,
@@ -50,23 +55,24 @@ public final class BusinessDtos {
     public record BusinessResponse(
             UUID id, String name, String legalName, String nit, Business.Category category, String description,
             String address, String phone, boolean pickupEnabled, boolean deliveryEnabled, int deliveryFeeCop,
-            boolean acceptingOrders, boolean courierDeliveryEnabled, Double latitude, Double longitude) {
+            boolean acceptingOrders, boolean courierDeliveryEnabled, Double latitude, Double longitude,
+            List<OpeningHours> hours) {
 
         static BusinessResponse from(Business b) {
             return new BusinessResponse(b.getId(), b.getName(), b.getLegalName(), b.getNit(), b.getCategory(),
                     b.getDescription(), b.getAddress(), b.getPhone(), b.isPickupEnabled(), b.isDeliveryEnabled(),
                     b.getDeliveryFeeCop(), b.isAcceptingOrders(), b.isCourierDeliveryEnabled(),
-                    b.getLatitude(), b.getLongitude());
+                    b.getLatitude(), b.getLongitude(), b.schedule());
         }
     }
 
     public record ProductResponse(
             UUID id, String name, String description, String category, int priceCop, Integer stock,
-            boolean available) {
+            boolean available, String photoUrl) {
 
         static ProductResponse from(Product p) {
             return new ProductResponse(p.getId(), p.getName(), p.getDescription(), p.getCategory(),
-                    p.getPriceCop(), p.getStock(), p.isAvailable());
+                    p.getPriceCop(), p.getStock(), p.isAvailable(), p.photoUrl());
         }
     }
 
@@ -76,24 +82,26 @@ public final class BusinessDtos {
             boolean pickupEnabled, boolean deliveryEnabled, int deliveryFeeCop, boolean open,
             boolean courierDeliveryEnabled, Double latitude, Double longitude) {
 
-        static StoreSummary from(Business b, boolean inGoodStanding) {
+        /** @param open si recibe pedidos en este momento */
+        static StoreSummary from(Business b, boolean open) {
             return new StoreSummary(b.getId(), b.getName(), b.getCategory(), b.getDescription(), b.getAddress(),
                     b.isPickupEnabled(), b.isDeliveryEnabled(), b.getDeliveryFeeCop(),
-                    b.isAcceptingOrders() && inGoodStanding, b.isCourierDeliveryEnabled(), b.getLatitude(), b.getLongitude());
+                    open, b.isCourierDeliveryEnabled(), b.getLatitude(), b.getLongitude());
         }
     }
 
     /** Del inventario solo se publica si hay existencias, no cuantas. */
     public record MenuItem(
-            UUID id, String name, String description, String category, int priceCop, boolean soldOut) {
+            UUID id, String name, String description, String category, int priceCop, boolean soldOut,
+            String photoUrl) {
 
         static MenuItem from(Product p) {
             return new MenuItem(p.getId(), p.getName(), p.getDescription(), p.getCategory(), p.getPriceCop(),
-                    !p.canSell(1));
+                    !p.canSell(1), p.photoUrl());
         }
     }
 
-    public record Store(StoreSummary business, List<MenuItem> products) {
+    public record Store(StoreSummary business, List<OpeningHours> hours, List<MenuItem> products) {
     }
 
     public record PageResponse<T>(List<T> items, int page, int size, long total) {

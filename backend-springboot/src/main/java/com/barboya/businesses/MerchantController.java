@@ -3,6 +3,7 @@ package com.barboya.businesses;
 import com.barboya.businesses.BusinessDtos.AcceptingRequest;
 import com.barboya.businesses.BusinessDtos.BusinessRequest;
 import com.barboya.businesses.BusinessDtos.BusinessResponse;
+import com.barboya.businesses.BusinessDtos.HoursRequest;
 import com.barboya.businesses.BusinessDtos.ProductRequest;
 import com.barboya.businesses.BusinessDtos.ProductResponse;
 import com.barboya.security.AuthUser;
@@ -18,8 +19,10 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 import java.util.UUID;
@@ -32,8 +35,11 @@ public class MerchantController {
 
     private final BusinessService service;
 
-    public MerchantController(BusinessService service) {
+    private final ProductPhotoService photos;
+
+    public MerchantController(BusinessService service, ProductPhotoService photos) {
         this.service = service;
+        this.photos = photos;
     }
 
     @GetMapping("/business")
@@ -73,6 +79,22 @@ public class MerchantController {
     @DeleteMapping("/products/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void archive(@AuthenticationPrincipal AuthUser user, @PathVariable UUID id) {
-        service.archiveProduct(user.id(), id);
+        photos.archive(user.id(), id);
+    }
+
+    @PostMapping("/products/{id}/photo")
+    public ProductResponse setPhoto(@AuthenticationPrincipal AuthUser user, @PathVariable UUID id,
+                                    @RequestParam("file") MultipartFile file) {
+        return photos.set(user.id(), id, file);
+    }
+
+    @DeleteMapping("/products/{id}/photo")
+    public ProductResponse removePhoto(@AuthenticationPrincipal AuthUser user, @PathVariable UUID id) {
+        return photos.remove(user.id(), id);
+    }
+
+    @PutMapping("/business/hours")
+    public BusinessResponse hours(@AuthenticationPrincipal AuthUser user, @Valid @RequestBody HoursRequest body) {
+        return service.setHours(user.id(), body.hours());
     }
 }

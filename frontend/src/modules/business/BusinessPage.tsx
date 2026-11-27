@@ -12,6 +12,7 @@ import { Button } from '../../components/ui/button'
 import { Alert, Card, ErrorAlert } from '../../components/ui/surface'
 import { LocationPicker } from '../../components/map/Map'
 import { CATEGORY_LABELS } from '../../utils/commerce'
+import { HoursCard } from './HoursCard'
 
 export function BusinessPage() {
   const business = useQuery({ queryKey: ['shop', 'business'], queryFn: shopApi.business })
@@ -23,6 +24,7 @@ export function BusinessPage() {
       {business.isPending && <p className="text-sm text-slate-400">Cargando…</p>}
       {business.data && <OpenCard business={business.data} />}
       {business.data !== undefined && <BusinessForm business={business.data} />}
+      {business.data && <HoursCard business={business.data} />}
     </>
   )
 }

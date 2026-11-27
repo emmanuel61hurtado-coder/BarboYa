@@ -76,6 +76,8 @@ public class SecurityConfig {
                                 "/api/v1/auth/password/forgot",
                                 "/api/v1/auth/password/reset").permitAll()
                         .requestMatchers(HttpMethod.GET, "/actuator/health").permitAll()
+                        // Fotos del catalogo: las pide el navegador sin encabezado de sesion
+                        .requestMatchers(HttpMethod.GET, "/api/v1/photos/*").permitAll()
                         // Interfaz publica: los datos se piden despues a la API, con sesion
                         .requestMatchers(HttpMethod.GET, SpaRoutes.PAGES).permitAll()
                         .requestMatchers(HttpMethod.GET, SpaRoutes.FILES).permitAll()

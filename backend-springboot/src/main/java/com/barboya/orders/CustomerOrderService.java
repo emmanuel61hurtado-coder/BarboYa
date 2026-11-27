@@ -81,6 +81,9 @@ public class CustomerOrderService {
         if (!business.isAcceptingOrders() || ledger.isOverLimit(business.getOwnerId())) {
             throw conflict("BUSINESS_CLOSED", "El comercio no esta recibiendo pedidos");
         }
+        if (!business.isOpenAt(clock.instant())) {
+            throw conflict("OUTSIDE_HOURS", "El comercio esta cerrado a esta hora");
+        }
         boolean offered = switch (request.fulfillment()) {
             case PICKUP -> business.isPickupEnabled();
             case DELIVERY -> business.isDeliveryEnabled();

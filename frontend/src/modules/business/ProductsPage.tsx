@@ -11,6 +11,7 @@ import { TextField } from '../../components/ui/field'
 import { Button } from '../../components/ui/button'
 import { Card, ErrorAlert } from '../../components/ui/surface'
 import { formatCop } from '../../utils/commerce'
+import { ProductPhoto } from './ProductPhoto'
 
 export function ProductsPage() {
   const business = useQuery({ queryKey: ['shop', 'business'], queryFn: shopApi.business })
@@ -96,6 +97,7 @@ function ProductRow({ product, onEdit }: { product: Product; onEdit: () => void 
           )}
         </div>
       </div>
+      <ProductPhoto product={product} />
       <ErrorAlert error={archive.error} />
     </li>
   )

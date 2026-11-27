@@ -115,6 +115,9 @@ Base: `/api/v1`. Los errores usan `application/problem+json` con un campo `code`
 | `GET /ratings/businesses?ids=…`, `GET /ratings/businesses/{id}` | Sesión |
 | `GET /ratings/me` | `RESTAURANT`, `STORE`, `COURIER` (propias) |
 | `GET /admin/ratings`, `POST /admin/ratings/{id}/{hide,restore}` | `ADMIN`, `SUPERADMIN` |
+| `PUT /merchant/business/hours` | `RESTAURANT`, `STORE` (propio) |
+| `POST`, `DELETE /merchant/products/{id}/photo` | `RESTAURANT`, `STORE` (propios) |
+| `GET /photos/{clave}` | Público (solo fotos de productos) |
 
 Toda ruta no declarada queda cerrada.
 
@@ -133,6 +136,13 @@ PLACED ──aceptar──▶ PREPARING ──▶ READY ──enviar──▶ OU
 - El **PIN de 4 dígitos** solo lo ve el cliente y es la única forma de marcar la entrega. Tras 5 fallos se bloquea hasta que el cliente genere otro.
 - Pago: **solo en efectivo**. La plataforma todavía no cobra comisión.
 - Entrega: con personal del comercio o recogiendo en el local.
+
+## Fotos y horarios
+
+- Fotos JPG o PNG de hasta 5 MB (la interfaz las reduce antes de subirlas). El servidor las vuelve a crear como JPEG de máximo 1000 píxeles, respetando la orientación y **sin metadatos** (tampoco la ubicación).
+- Las fotos son **públicas** para quien tenga su dirección, que es aleatoria. Cambiar o quitar una elimina la anterior. No hay moderación de imágenes.
+- Se guardan en la misma carpeta cifrada que los documentos; la ruta pública solo entrega fotos de productos.
+- Horario en hora de Colombia: hasta dos turnos por día y pueden terminar después de medianoche. Fuera de horario el comercio aparece cerrado y no recibe pedidos (`OUTSIDE_HOURS`). Sin horario solo cuenta el interruptor. No hay festivos ni cierres por fecha.
 
 ## Verificación de domiciliarios
 
@@ -223,7 +233,7 @@ WebSocket en `/ws/v1/events`. El primer mensaje es `{"type":"auth","token":"<tok
 - Autenticación de múltiples factores.
 - Verificación del celular por SMS o WhatsApp (requiere proveedor).
 - Verificación documental y facial de quienes prestan servicios.
-- Fotografías de productos, horarios, promociones, reportes y búsqueda por cercanía o precio.
+- Promociones, reportes, festivos y búsqueda por cercanía o precio.
 - Chat, orden de ofertas por reputación, reputación de clientes y seguimiento en segundo plano.
 - Devolución del dinero entre comercio y domiciliario en entregas fallidas.
 - Pasarela de pagos, reembolsos, liquidaciones, impuestos y facturación.

@@ -8,6 +8,7 @@ const item = (id: string, priceCop: number, soldOut = false) => ({
   category: 'General',
   priceCop,
   soldOut,
+  photoUrl: null,
 })
 
 describe('carrito', () => {

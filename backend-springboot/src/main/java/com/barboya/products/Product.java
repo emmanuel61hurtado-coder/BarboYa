@@ -30,6 +30,8 @@ public class Product {
     private Integer stock;
     private boolean available;
     private boolean archived;
+    /** Clave del archivo de la foto; nula si no tiene. */
+    private String photoKey;
 
     @Column(updatable = false)
     private Instant createdAt;
@@ -45,6 +47,10 @@ public class Product {
         product.createdAt = now;
         product.updatedAt = now;
         return product;
+    }
+
+    public String photoUrl() {
+        return photoKey == null ? null : "/api/v1/photos/" + photoKey;
     }
 
     public boolean canSell(int quantity) {

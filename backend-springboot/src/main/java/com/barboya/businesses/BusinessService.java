@@ -21,6 +21,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Clock;
+import java.time.Instant;
 import java.util.List;
 import java.util.Locale;
 import java.util.UUID;
@@ -106,6 +107,13 @@ public class BusinessService {
         return BusinessResponse.from(businesses.saveAndFlush(business));
     }
 
+    public BusinessResponse setHours(UUID ownerId, List<OpeningHours> week) {
+        Business business = requireOwned(ownerId);
+        business.replaceHours(week);
+        business.setUpdatedAt(clock.instant());
+        return BusinessResponse.from(businesses.saveAndFlush(business));
+    }
+
     @Transactional(readOnly = true)
     public List<ProductResponse> ownedProducts(UUID ownerId) {
         return products.findByBusinessIdAndArchivedFalseOrderByCategoryAscNameAsc(requireOwned(ownerId).getId())
@@ -124,11 +132,6 @@ public class BusinessService {
         return ProductResponse.from(products.saveAndFlush(product));
     }
 
-    public void archiveProduct(UUID ownerId, UUID productId) {
-        Product product = requireProduct(ownerId, productId);
-        product.setArchived(true);
-        product.setUpdatedAt(clock.instant());
-    }
 
     @Transactional(readOnly = true)
     public PageResponse<StoreSummary> search(String text, Business.Category category, int page, int size) {
@@ -139,8 +142,10 @@ public class BusinessService {
                 PageRequest.of(Math.max(page, 0), Math.clamp(size, 1, 50)));
         // Con la deuda por encima del tope se muestra cerrado
         var blocked = ledger.overLimit(result.map(Business::getOwnerId).getContent());
+        Instant now = clock.instant();
         return new PageResponse<>(
-                result.map(b -> StoreSummary.from(b, !blocked.contains(b.getOwnerId()))).getContent(),
+                result.map(b -> StoreSummary.from(b, b.isAcceptingOrders() && b.isOpenAt(now)
+                        && !blocked.contains(b.getOwnerId()))).getContent(),
                 result.getNumber(), result.getSize(), result.getTotalElements());
     }
 
@@ -151,7 +156,9 @@ public class BusinessService {
                 .orElseThrow(BusinessService::notFound);
         List<MenuItem> menu = products.findByBusinessIdAndArchivedFalseOrderByCategoryAscNameAsc(businessId)
                 .stream().filter(Product::isAvailable).map(MenuItem::from).toList();
-        return new Store(StoreSummary.from(business, !ledger.isOverLimit(business.getOwnerId())), menu);
+        boolean open = business.isAcceptingOrders() && business.isOpenAt(clock.instant())
+                && !ledger.isOverLimit(business.getOwnerId());
+        return new Store(StoreSummary.from(business, open), business.schedule(), menu);
     }
 
     public Business requireOwned(UUID ownerId) {
@@ -169,7 +176,7 @@ public class BusinessService {
         }
     }
 
-    private Product requireProduct(UUID ownerId, UUID productId) {
+    Product requireProduct(UUID ownerId, UUID productId) {
         return products.lockOwned(productId, requireOwned(ownerId).getId())
                 .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "PRODUCT_NOT_FOUND",
                         "Producto no encontrado"));
