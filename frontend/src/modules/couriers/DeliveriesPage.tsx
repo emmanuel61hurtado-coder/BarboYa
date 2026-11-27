@@ -43,7 +43,8 @@ function Work() {
   const presence = useQuery({ queryKey: ['work', 'presence'], queryFn: deliveryApi.presence })
   const delivery = useQuery({ queryKey: ['work', 'delivery'], queryFn: deliveryApi.current, refetchInterval: 20_000 })
   const online = presence.data?.online ?? false
-  const location = useLocationSharing(online || Boolean(delivery.data), online)
+  // Sin conocer el estado no se envía nada: un envío con "desconectado" lo apagaría
+  const location = useLocationSharing(presence.data !== undefined && (online || Boolean(delivery.data)), online)
 
   const connect = useMutation({
     mutationFn: async (next: boolean) => {
@@ -60,18 +61,20 @@ function Work() {
     <>
       <h1 className="text-2xl font-display font-black">Entregas</h1>
       <Card
-        title={online ? 'Estás conectado' : 'Estás desconectado'}
+        title={!presence.data ? 'Consultando tu estado…' : online ? 'Estás conectado' : 'Estás desconectado'}
         description="Mantén esta pantalla abierta: la ubicación no se comparte en segundo plano."
       >
         <ErrorAlert error={presence.error ?? connect.error} />
         {location.problem && <Alert variant="warning">{location.problem}</Alert>}
-        <Button
-          variant={online ? 'secondary' : 'primary'}
-          loading={connect.isPending}
-          onClick={() => connect.mutate(!online)}
-        >
-          {online ? 'Desconectarme' : 'Conectarme'}
-        </Button>
+        {presence.data && (
+          <Button
+            variant={online ? 'secondary' : 'primary'}
+            loading={connect.isPending}
+            onClick={() => connect.mutate(!online)}
+          >
+            {online ? 'Desconectarme' : 'Conectarme'}
+          </Button>
+        )}
       </Card>
       <ErrorAlert error={delivery.error} />
       {delivery.data ? (

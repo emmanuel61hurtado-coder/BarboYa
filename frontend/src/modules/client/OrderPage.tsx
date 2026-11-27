@@ -7,12 +7,25 @@ import { Alert, Card, ErrorAlert } from '../../components/ui/surface'
 import { ORDER_STATUS_LABELS } from '../../utils/commerce'
 import { formatDate, formatTime } from '../../utils/labels'
 import { claimLink } from '../support/labels'
+import { ratingApi } from '../../services/api/ratings'
+import { OrderRatingCard } from '../ratings/OrderRatingCard'
+import { RatingBadge } from '../ratings/Stars'
 import { OrderSummary, StatusBadge } from '../orders/OrderSummary'
 import { Map } from '../../components/map/Map'
 import { DocumentPreview } from '../couriers/DocumentPreview'
 import { VEHICLE_LABELS } from '../couriers/labels'
 
+/** Con la entrega terminada permite calificar; antes muestra la nota del domiciliario. */
+function useRatings(order: Order) {
+  return useQuery({
+    queryKey: ['ratings', 'order', order.id, order.status, Boolean(order.courier)],
+    queryFn: () => ratingApi.forOrder(order.id),
+    enabled: order.status === 'DELIVERED' || Boolean(order.courier),
+  }).data
+}
+
 function CourierCard({ order }: { order: Order }) {
+  const rating = useRatings(order)?.targets.find((t) => t.target === 'COURIER')
   const courier = order.courier!
   const active = ['PREPARING', 'READY', 'OUT_FOR_DELIVERY'].includes(order.status)
   const markers = [
@@ -27,6 +40,7 @@ function CourierCard({ order }: { order: Order }) {
         {courier.name} · {VEHICLE_LABELS[courier.vehicleType]}
         {courier.plate && ` · Placa ${courier.plate}`}
       </p>
+      {rating && <RatingBadge summary={rating.summary} />}
       {courier.phone && (
         <a href={`tel:${courier.phone}`} className="text-sm text-sky-400 hover:underline">
           Llamar: {courier.phone}
@@ -61,6 +75,7 @@ function OrderView({ order }: { order: Order }) {
   const queryClient = useQueryClient()
   const [confirming, setConfirming] = useState(false)
   const refresh = () => queryClient.invalidateQueries({ queryKey: ['orders'] })
+  const ratings = useRatings(order)
   const cancel = useMutation({ mutationFn: () => orderApi.cancel(order.id), onSettled: refresh })
   const renew = useMutation({ mutationFn: () => orderApi.newPin(order.id), onSettled: refresh })
 
@@ -94,6 +109,13 @@ function OrderView({ order }: { order: Order }) {
         </Card>
       )}
       {order.courier && <CourierCard order={order} />}
+      {order.status === 'DELIVERED' && ratings && (
+        <OrderRatingCard
+          orderId={order.id}
+          ratings={ratings}
+          names={{ BUSINESS: order.businessName, COURIER: order.courier?.name ?? 'Domiciliario' }}
+        />
+      )}
       {order.hasEvidence && (
         <Card title="Foto de la entrega">
           <DocumentPreview label="Foto de la entrega" contentType="image/*" load={() => orderApi.evidence(order.id)} />

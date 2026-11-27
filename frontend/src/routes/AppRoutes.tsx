@@ -27,6 +27,8 @@ import { TicketPage } from '../modules/support/TicketPage'
 import { OrdersPage } from '../modules/admin/OrdersPage'
 import { SupportQueuePage } from '../modules/admin/SupportQueuePage'
 import { SupportTicketPage } from '../modules/admin/SupportTicketPage'
+import { MyRatingsPage } from '../modules/ratings/MyRatingsPage'
+import { RatingsModerationPage } from '../modules/admin/RatingsModerationPage'
 
 // Estas guardas solo ordenan la navegación: quien decide el acceso es el backend
 
@@ -83,12 +85,14 @@ export function AppRoutes() {
           </Route>
           <Route element={<Allow roles={['RESTAURANT', 'STORE', 'COURIER']} />}>
             <Route path="/comisiones" element={<MyAccountPage />} />
+            <Route path="/calificaciones" element={<MyRatingsPage />} />
           </Route>
           <Route element={<Allow roles={['ADMIN', 'SUPERADMIN']} />}>
             <Route path="/admin/finanzas" element={<AdminFinancePage />} />
             <Route path="/admin/pedidos" element={<OrdersPage />} />
             <Route path="/admin/soporte" element={<SupportQueuePage />} />
             <Route path="/admin/soporte/:id" element={<SupportTicketPage />} />
+            <Route path="/admin/calificaciones" element={<RatingsModerationPage />} />
             <Route path="/admin/usuarios" element={<UsersPage />} />
             <Route path="/admin/auditoria" element={<AuditPage />} />
           </Route>

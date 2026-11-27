@@ -80,6 +80,10 @@ Usa datos inventados y, si puedes, tres celulares.
 - [ ] Anotar la distancia real recorrida y compararla con la calculada (línea recta).
 - [ ] Bloquear la pantalla del domiciliario y anotar cuánto tarda en dejar de verse su posición.
 - [ ] Revisar las comisiones del comercio y del domiciliario, y registrar un pago de prueba.
+- [ ] Dejar un pedido sin responder 15 minutos y confirmar que se cancela solo.
+- [ ] Abrir un caso desde un pedido, responderlo y resolverlo como administrador.
+- [ ] Registrar una entrega fallida y revisar el caso que se abre solo.
+- [ ] Calificar una entrega y ocultar la opinión desde la administración.
 
 ## 7. Problemas frecuentes
 

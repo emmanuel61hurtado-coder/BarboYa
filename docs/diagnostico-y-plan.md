@@ -26,10 +26,10 @@ Fecha: 26 de noviembre de 2026. Base revisada: commit `f1d19c5`. Incluye las cor
 | Pruebas Python (suite completa) | 76 aprobadas en 4 corridas seguidas |
 | Prueba de punta a punta con la API real (SQLite) | Registro, ingreso, SOS, webhook y recuperación responden como se espera; en producción sin `JWT_SECRET` no arranca |
 | TypeScript y build de Vite (ambos modos, Node 20) | Correctos |
-| Pruebas de Spring Boot (PostgreSQL 16 real) | 167 aprobadas |
-| Entorno de pruebas reproducido sin Docker (perfil `prod`, API sirviendo la interfaz) | Comprobador de despliegue y 57 pasos en Chrome aprobados. La imagen Docker la construye el CI; falta ver ese resultado |
-| Pruebas del frontend (`npm test`) | 26 aprobadas |
-| Flujos de la interfaz `v1` en Chrome (API, PostgreSQL y correo de prueba) | 57 pasos (cuentas, pedido, verificación, entrega y comisiones) en 2 corridas, sin errores de consola; teselas del mapa simuladas |
+| Pruebas de Spring Boot (PostgreSQL 16 real) | 180 aprobadas |
+| Entorno de pruebas reproducido sin Docker (perfil `prod`, API sirviendo la interfaz) | Comprobador de despliegue y 71 pasos en Chrome aprobados. La imagen Docker la construye el CI; falta ver ese resultado |
+| Pruebas del frontend (`npm test`) | 31 aprobadas |
+| Flujos de la interfaz `v1` en Chrome (API, PostgreSQL y correo de prueba) | 71 pasos (cuentas, pedido, verificación, entrega, comisiones, soporte y calificaciones), sin errores de consola; teselas del mapa simuladas |
 | App actual en Chrome tras actualizar herramientas | Carga, cambia de pestaña y abre el SOS sin errores |
 | `.jar` de Spring Boot con perfil `prod` | Arranca, aplica migraciones y responde por HTTP como se espera; sin `JWT_SECRET` no arranca |
 | `docker compose` | No ejecutado: Docker no está instalado |
@@ -82,7 +82,7 @@ Cada módulo reescrito debe cubrir su fallo con una prueba antes de activarse.
 - **Spring Boot:** faltan repartidores, viajes, pagos, comisiones y Web3j.
 - **Comercios:** faltan fotografías, horarios, promociones, reportes, estadísticas y búsqueda por cercanía o precio.
 - **Frontend `v1`:** usa React Router, TanStack Query, React Hook Form, Zod, Axios y componentes al estilo shadcn/ui escritos a mano. Faltan los módulos de viajes y finanzas.
-- **Sin implementar:** MFA, verificación por SMS, proveedor de pagos, reembolsos, liquidaciones, impuestos, contratos inteligentes y reputación.
+- **Sin implementar:** MFA, verificación por SMS, proveedor de pagos, reembolsos, liquidaciones, impuestos y contratos inteligentes.
 
 ## 6. Repositorio
 
@@ -106,7 +106,7 @@ Cada fase termina cuando sus pruebas pasan.
 | 5B. Pagos en línea | Pasarela en sandbox, webhooks firmados, idempotencia, conciliación y reembolsos. Requiere cuenta de un proveedor | Pago de prueba confirmado por el proveedor |
 | 6. Blockchain | `PaymentEscrow`, `CommissionManager`, `OrderVerification`, `RefundManager`, `ReputationRegistry`; Hardhat y Web3j en red de pruebas | Pruebas y análisis de contratos aprobados |
 | 7. Move | Viajes, negociación, seguridad y SOS real | Revisión jurídica aprobada antes de activar |
-| 8. Operación (en curso) | Hecho: vencimiento de pedidos sin respuesta, casos de soporte y cierre de pedidos por el equipo. Falta: reputación, notificaciones con la app cerrada, panel y reportes | Acciones críticas auditadas |
+| 8. Operación (en curso) | Hecho: vencimiento de pedidos sin respuesta, casos de soporte, cierre de pedidos y calificaciones con moderación. Falta: usar la reputación al asignar, notificaciones con la app cerrada, panel y reportes | Acciones críticas auditadas |
 | Entorno de pruebas (preparado, sin publicar) | Imagen, compose, comprobador y [guía](despliegue-pruebas.md) | Entrega probada en celulares reales |
 | 9. Lanzamiento | Endurecimiento, despliegue, monitoreo, retiro de FastAPI | Lista de producción completa |
 

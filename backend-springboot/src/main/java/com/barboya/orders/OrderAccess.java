@@ -4,6 +4,8 @@ import com.barboya.businesses.BusinessRepository;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Instant;
+import java.util.Optional;
 import java.util.UUID;
 
 /** Lo que otros modulos pueden preguntar sobre quien participa en un pedido. */
@@ -17,6 +19,15 @@ public class OrderAccess {
     OrderAccess(OrderRepository orders, BusinessRepository businesses) {
         this.orders = orders;
         this.businesses = businesses;
+    }
+
+    /** {@code courierId} es nulo si no hubo domiciliario de BarboYa. */
+    public record Parties(UUID customerId, UUID businessId, UUID courierId, boolean delivered, Instant deliveredAt) {
+    }
+
+    public Optional<Parties> parties(UUID orderId) {
+        return orders.findById(orderId).map(o -> new Parties(o.getCustomerId(), o.getBusinessId(), o.getCourierId(),
+                o.getStatus() == OrderStatus.DELIVERED, o.getDeliveredAt()));
     }
 
     /** Cliente, dueno del comercio o domiciliario asignado. */

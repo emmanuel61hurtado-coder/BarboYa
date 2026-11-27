@@ -14,6 +14,9 @@ import { CATEGORY_LABELS, FULFILLMENT_LABELS, formatCop } from '../../utils/comm
 import { Cart, setQuantity, summarize } from './cart'
 import { LocationPicker } from '../../components/map/Map'
 import type { Point } from '../../utils/geo'
+import { ratingApi } from '../../services/api/ratings'
+import { formatRating } from '../ratings/format'
+import { ReviewList } from '../ratings/ReviewList'
 
 export function StorePage() {
   const { id = '' } = useParams()
@@ -22,6 +25,24 @@ export function StorePage() {
   if (store.error) return <ErrorAlert error={store.error} />
   if (!store.data) return <p className="text-sm text-slate-400">Cargando…</p>
   return <StoreView key={id} store={store.data} />
+}
+
+function StoreReviews({ businessId }: { businessId: string }) {
+  const reviews = useQuery({
+    queryKey: ['ratings', 'store', businessId],
+    queryFn: () => ratingApi.reviews(businessId, 0),
+  })
+  if (!reviews.data) return <ErrorAlert error={reviews.error} />
+
+  return (
+    <Card title="Opiniones" description={formatRating(reviews.data.summary)}>
+      {reviews.data.items.length === 0 ? (
+        <p className="text-sm text-slate-400">Todavía no hay comentarios.</p>
+      ) : (
+        <ReviewList items={reviews.data.items.slice(0, 5)} />
+      )}
+    </Card>
+  )
 }
 
 function StoreView({ store }: { store: Store }) {
@@ -98,6 +119,7 @@ function StoreView({ store }: { store: Store }) {
           <Checkout store={store} cart={cart} />
         </div>
       </div>
+      <StoreReviews businessId={business.id} />
     </>
   )
 }

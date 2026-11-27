@@ -41,6 +41,8 @@ const ACTION_LABELS: Record<string, string> = {
   ENTRY_REVERSED: 'Movimiento reversado',
   ORDER_CLOSED_BY_STAFF: 'Pedido cerrado por soporte',
   TICKET_RESOLVED: 'Caso de soporte resuelto',
+  RATING_HIDDEN: 'Calificación ocultada',
+  RATING_RESTORED: 'Calificación visible de nuevo',
 }
 
 export const actionLabel = (action: string) => ACTION_LABELS[action] ?? action

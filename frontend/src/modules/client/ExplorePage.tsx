@@ -6,6 +6,8 @@ import { SelectField, TextField } from '../../components/ui/field'
 import { Button } from '../../components/ui/button'
 import { Card, ErrorAlert, Pager } from '../../components/ui/surface'
 import { CATEGORY_LABELS, FULFILLMENT_LABELS, formatCop } from '../../utils/commerce'
+import { ratingApi } from '../../services/api/ratings'
+import { RatingBadge } from '../ratings/Stars'
 
 export function ExplorePage() {
   const [text, setText] = useState('')
@@ -16,6 +18,13 @@ export function ExplorePage() {
     queryKey: ['catalog', search, category, page],
     queryFn: () => catalogApi.search(search, category, page),
     placeholderData: keepPreviousData,
+  })
+
+  const ids = stores.data?.items.map((store) => store.id) ?? []
+  const ratings = useQuery({
+    queryKey: ['ratings', 'stores', ids],
+    queryFn: () => ratingApi.summaries(ids),
+    enabled: ids.length > 0,
   })
 
   return (
@@ -72,6 +81,7 @@ export function ExplorePage() {
               <p className="text-xs text-slate-400">
                 {CATEGORY_LABELS[store.category]} · {store.address}
               </p>
+              {ratings.data?.[store.id] && <RatingBadge summary={ratings.data[store.id]} />}
               <p className="text-xs text-slate-500">
                 {[
                   store.deliveryEnabled && `${FULFILLMENT_LABELS.DELIVERY} ${formatCop(store.deliveryFeeCop)}`,

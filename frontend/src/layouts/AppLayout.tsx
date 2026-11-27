@@ -40,7 +40,12 @@ export function AppLayout() {
           { to: '/verificacion', label: 'Verificación' },
         ]
       : []),
-    ...(merchant || user.role === 'COURIER' ? [{ to: '/comisiones', label: 'Comisiones' }] : []),
+    ...(merchant || user.role === 'COURIER'
+      ? [
+          { to: '/comisiones', label: 'Comisiones' },
+          { to: '/calificaciones', label: 'Calificaciones' },
+        ]
+      : []),
     ...(staff ? [] : [{ to: '/soporte', label: 'Soporte' }]),
     { to: '/seguridad', label: 'Seguridad' },
     ...(staff
@@ -48,6 +53,7 @@ export function AppLayout() {
           { to: '/admin/usuarios', label: 'Usuarios' },
           { to: '/admin/pedidos', label: 'Pedidos' },
           { to: '/admin/soporte', label: 'Casos' },
+          { to: '/admin/calificaciones', label: 'Opiniones' },
           { to: '/admin/finanzas', label: 'Finanzas' },
           { to: '/admin/auditoria', label: 'Auditoría' },
         ]

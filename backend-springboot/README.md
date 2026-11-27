@@ -111,6 +111,10 @@ Base: `/api/v1`. Los errores usan `application/problem+json` con un campo `code`
 | `GET`, `POST /support/tickets`, `GET …/{id}`, `POST …/{id}/messages` | Sesión (casos propios) |
 | `GET /admin/support/tickets`, `GET …/{id}`, `POST …/{id}/{messages,resolve}` | `ADMIN`, `SUPERADMIN` |
 | `GET /admin/orders`, `GET /admin/orders/{id}`, `POST /admin/orders/{id}/close` | `ADMIN`, `SUPERADMIN` |
+| `GET`, `POST /orders/{id}/ratings` | `CUSTOMER` (propios) |
+| `GET /ratings/businesses?ids=…`, `GET /ratings/businesses/{id}` | Sesión |
+| `GET /ratings/me` | `RESTAURANT`, `STORE`, `COURIER` (propias) |
+| `GET /admin/ratings`, `POST /admin/ratings/{id}/{hide,restore}` | `ADMIN`, `SUPERADMIN` |
 
 Toda ruta no declarada queda cerrada.
 
@@ -187,6 +191,13 @@ El comercio acepta ──▶ un domiciliario lo toma ──▶ READY ──códi
 - **Cerrar un pedido** exige motivo y queda auditado: antes de recogerlo queda `CANCELLED` y vuelven las existencias; ya en camino queda `FAILED`. No genera comisiones.
 - No hay chat en tiempo real, adjuntos, plazos de atención ni reembolsos. Falta definir quién atiende y en qué horario.
 
+## Calificaciones
+
+- Solo el cliente de un pedido **entregado**, dentro de los 7 días: una al comercio y otra al domiciliario, de 1 a 5, con comentario opcional.
+- No se pueden editar ni borrar (lo impide la base). El equipo puede **ocultar** una con motivo, y volver a mostrarla; queda auditado.
+- Los comentarios del comercio son públicos **sin nombre ni pedido**. El comercio y el domiciliario ven las suyas.
+- La reputación todavía no influye en el orden de las ofertas, y no se califica a los clientes.
+
 ## Avisos en vivo
 
 WebSocket en `/ws/v1/events`. El primer mensaje es `{"type":"auth","token":"<token de acceso>"}`; el servidor responde `ready` y luego envía `{"type":"order.updated","orderId":"…"}` a quienes participan y `{"type":"tickets.updated"}` a quien abrió un caso cuando el equipo responde. Los datos se consultan por la API. Las conexiones viven en memoria (una sola instancia).
@@ -213,7 +224,7 @@ WebSocket en `/ws/v1/events`. El primer mensaje es `{"type":"auth","token":"<tok
 - Verificación del celular por SMS o WhatsApp (requiere proveedor).
 - Verificación documental y facial de quienes prestan servicios.
 - Fotografías de productos, horarios, promociones, reportes y búsqueda por cercanía o precio.
-- Chat, calificaciones, orden de ofertas por reputación y seguimiento en segundo plano.
+- Chat, orden de ofertas por reputación, reputación de clientes y seguimiento en segundo plano.
 - Devolución del dinero entre comercio y domiciliario en entregas fallidas.
 - Pasarela de pagos, reembolsos, liquidaciones, impuestos y facturación.
 - Límite de peticiones y avisos en vivo compartidos entre instancias (hoy en memoria).
