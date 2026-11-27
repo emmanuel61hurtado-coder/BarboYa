@@ -3,6 +3,7 @@ package com.barboya.realtime;
 import com.barboya.couriers.CourierPresence;
 import com.barboya.couriers.CourierPresenceRepository;
 import com.barboya.orders.OrderChanged;
+import com.barboya.support.TicketChanged;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.event.TransactionalEventListener;
@@ -24,6 +25,12 @@ class OrderNotifier {
     OrderNotifier(EventsSocketHandler socket, CourierPresenceRepository presence) {
         this.socket = socket;
         this.presence = presence;
+    }
+
+    @Async
+    @TransactionalEventListener
+    public void ticketChanged(TicketChanged event) {
+        socket.sendTo(Set.of(event.openerId()), Map.of("type", "tickets.updated"));
     }
 
     @Async

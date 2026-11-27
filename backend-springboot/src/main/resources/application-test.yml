@@ -5,6 +5,9 @@ spring:
     host: correo.barboya.test
 
 barboya:
+  # Las pruebas lanzan el vencimiento a mano; el reloj adelantado afectaria a otras
+  orders:
+    expiry-job-enabled: false
   security:
     auth-requests-per-minute: 100000
   mail:

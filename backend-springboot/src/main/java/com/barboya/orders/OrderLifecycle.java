@@ -61,7 +61,7 @@ class OrderLifecycle {
 
     void move(CustomerOrder order, OrderStatus next, UUID merchantId, UUID actorId, String note) {
         order.setStatus(next);
-        if (next == OrderStatus.REJECTED || next == OrderStatus.CANCELLED) {
+        if (next == OrderStatus.REJECTED || next == OrderStatus.CANCELLED || next == OrderStatus.FAILED) {
             order.setStatusReason(note);
         }
         record(order, merchantId, actorId, note);

@@ -5,6 +5,7 @@ import com.barboya.businesses.BusinessRepository;
 import com.barboya.common.ApiException;
 import com.barboya.common.Geo;
 import com.barboya.config.DeliveryProperties;
+import com.barboya.config.OrderProperties;
 import com.barboya.couriers.CourierPresence;
 import com.barboya.couriers.CourierPresenceRepository;
 import com.barboya.couriers.CourierProfile;
@@ -37,7 +38,9 @@ class OrderViews {
     enum Viewer {
         CUSTOMER,
         MERCHANT,
-        COURIER
+        COURIER,
+        /** El equipo ve contactos y destino aunque el pedido haya terminado; nunca PIN ni codigos. */
+        STAFF
     }
 
     private final OrderItemRepository items;
@@ -49,10 +52,12 @@ class OrderViews {
     private final FileStorage storage;
     private final DeliveryProperties delivery;
     private final Clock clock;
+    private final OrderProperties rules;
 
     OrderViews(OrderItemRepository items, OrderEventRepository events, BusinessRepository businesses,
                UserRepository users, CourierProfileRepository profiles, CourierPresenceRepository presence,
-               FileStorage storage, DeliveryProperties delivery, Clock clock) {
+               FileStorage storage, DeliveryProperties delivery, Clock clock, OrderProperties rules) {
+        this.rules = rules;
         this.items = items;
         this.events = events;
         this.businesses = businesses;
@@ -99,7 +104,7 @@ class OrderViews {
             Business store = stores.get(order.getBusinessId());
             boolean active = OrderStatus.ACTIVE.contains(order.getStatus());
             User customer = people.get(order.getCustomerId());
-            boolean seesCustomer = active && viewer != Viewer.CUSTOMER;
+            boolean seesCustomer = viewer == Viewer.STAFF || (active && viewer != Viewer.CUSTOMER);
             // Despues de la entrega el domiciliario deja de ver donde vive el cliente
             boolean seesDestination = viewer != Viewer.COURIER || active;
             return new OrderResponse(
@@ -123,7 +128,10 @@ class OrderViews {
                     courier(order, viewer, active, people, vehicles, positions),
                     order.getEvidenceKey() != null,
                     commission(order, viewer),
-                    order.getCreatedAt(), order.getDeliveredAt(),
+                    order.getCreatedAt(),
+                    order.getStatus() == OrderStatus.PLACED
+                            ? order.getCreatedAt().plus(rules.acceptTimeout()) : null,
+                    order.getDeliveredAt(),
                     history.getOrDefault(order.getId(), List.of()).stream()
                             .map(e -> new Step(e.getStatus(), e.getNote(), e.getCreatedAt()))
                             .toList());
@@ -142,7 +150,7 @@ class OrderViews {
                 ? null : last.freshPosition(clock.instant(), delivery.locationMaxAge()).orElse(null);
         User person = people.get(id);
         CourierProfile profile = vehicles.get(id);
-        return new CourierInfo(person.getFullName(), active ? person.getPhone() : null,
+        return new CourierInfo(person.getFullName(), active || viewer == Viewer.STAFF ? person.getPhone() : null,
                 profile.getVehicleType(), profile.getPlate(), position);
     }
 
@@ -151,7 +159,7 @@ class OrderViews {
         return switch (viewer) {
             case MERCHANT -> order.getMerchantCommissionCop();
             case COURIER -> order.getCourierCommissionCop();
-            case CUSTOMER -> null;
+            case CUSTOMER, STAFF -> null;
         };
     }
 

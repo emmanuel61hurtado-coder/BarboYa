@@ -14,6 +14,8 @@ public final class SpaRoutes {
             "/comercios", "/comercios/*", "/pedidos", "/pedidos/*",
             "/recibidos", "/productos", "/mi-comercio",
             "/verificacion", "/entregas", "/comisiones",
+            "/soporte", "/soporte/*",
+            "/admin/pedidos", "/admin/soporte", "/admin/soporte/*",
             "/admin/usuarios", "/admin/finanzas", "/admin/auditoria", "/admin/equipo"
     };
 

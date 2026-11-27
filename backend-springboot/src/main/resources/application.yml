@@ -72,6 +72,10 @@ barboya:
     max-per-day: 5
   mail:
     from: ${MAIL_FROM:}
+  # Un pedido sin respuesta del comercio se cancela solo
+  orders:
+    accept-timeout: ${ORDER_ACCEPT_TIMEOUT:15m}
+    expiry-interval: PT30S
   # Comisiones en puntos basicos (1000 = 10 %) y tope de deuda
   finance:
     merchant-commission-bps: ${MERCHANT_COMMISSION_BPS:1000}

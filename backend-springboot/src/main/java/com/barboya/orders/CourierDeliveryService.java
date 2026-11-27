@@ -20,6 +20,7 @@ import com.barboya.orders.OrderDtos.Evidence;
 import com.barboya.orders.OrderDtos.OrderPage;
 import com.barboya.orders.OrderDtos.OrderResponse;
 import com.barboya.users.UserRepository;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -58,13 +59,16 @@ public class CourierDeliveryService {
     private final OrderViews views;
     private final FileStorage storage;
     private final LedgerService ledger;
+    private final ApplicationEventPublisher publisher;
     private final DeliveryProperties settings;
     private final Clock clock;
 
     CourierDeliveryService(OrderRepository orders, BusinessRepository businesses, CourierService couriers,
                            CourierProfileRepository profiles, CourierPresenceRepository presence,
                            UserRepository users, OrderLifecycle lifecycle, OrderViews views, FileStorage storage,
-                           DeliveryProperties settings, LedgerService ledger, Clock clock) {
+                           DeliveryProperties settings, LedgerService ledger, ApplicationEventPublisher publisher,
+                           Clock clock) {
+        this.publisher = publisher;
         this.ledger = ledger;
         this.orders = orders;
         this.businesses = businesses;
@@ -191,8 +195,8 @@ public class CourierDeliveryService {
     public OrderResponse fail(UUID courierId, UUID orderId, String reason) {
         CustomerOrder order = own(courierId, orderId);
         lifecycle.require(order, OrderStatus.OUT_FOR_DELIVERY);
-        order.setStatusReason(reason.trim());
         lifecycle.move(order, OrderStatus.FAILED, merchantOf(order), courierId, reason.trim());
+        publisher.publishEvent(new DeliveryFailed(order.getId(), order.getNumber(), courierId, reason.trim()));
         return view(orders.saveAndFlush(order));
     }
 

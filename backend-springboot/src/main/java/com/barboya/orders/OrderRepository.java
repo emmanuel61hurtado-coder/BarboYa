@@ -37,6 +37,15 @@ public interface OrderRepository extends JpaRepository<CustomerOrder, UUID> {
               and o.deliveredAt >= :since""")
     long earningsSince(@Param("courierId") UUID courierId, @Param("since") Instant since);
 
+    @Query("select o.id from CustomerOrder o where o.status = :status and o.createdAt < :before "
+            + "order by o.createdAt")
+    List<UUID> findIdsCreatedBefore(@Param("status") OrderStatus status, @Param("before") Instant before,
+                                    Pageable pageable);
+
+    Page<CustomerOrder> findByNumber(Long number, Pageable pageable);
+
+    Page<CustomerOrder> findByStatusIn(Collection<OrderStatus> statuses, Pageable pageable);
+
     /** Bloqueado: dos acciones simultaneas sobre un pedido se aplican en orden. */
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("select o from CustomerOrder o where o.id = :id")
