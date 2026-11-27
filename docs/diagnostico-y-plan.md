@@ -27,7 +27,7 @@ Fecha: 26 de noviembre de 2026. Base revisada: commit `f1d19c5`. Incluye las cor
 | Prueba de punta a punta con la API real (SQLite) | Registro, ingreso, SOS, webhook y recuperación responden como se espera; en producción sin `JWT_SECRET` no arranca |
 | TypeScript y build de Vite (ambos modos, Node 20) | Correctos |
 | Pruebas de Spring Boot (PostgreSQL 16 real) | 200 aprobadas |
-| Entorno de pruebas reproducido sin Docker (perfil `prod`, API sirviendo la interfaz) | Comprobador de despliegue y 71 pasos en Chrome aprobados (antes de fotos y horarios). La imagen Docker la construye el CI; falta ver ese resultado |
+| Entorno de pruebas reproducido sin Docker (perfil `prod`, API sirviendo la interfaz) | Comprobador de despliegue y 76 pasos en Chrome aprobados. La imagen Docker la construye el CI; falta ver ese resultado |
 | Pruebas del frontend (`npm test`) | 34 aprobadas |
 | Flujos de la interfaz `v1` en Chrome (API, PostgreSQL y correo de prueba) | 76 pasos (cuentas, pedido, verificación, entrega, comisiones, soporte, calificaciones, fotos y horarios), sin errores de consola; teselas del mapa simuladas |
 | App actual en Chrome tras actualizar herramientas | Carga, cambia de pestaña y abre el SOS sin errores |
