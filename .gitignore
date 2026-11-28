@@ -1,17 +1,19 @@
 __pycache__/
-*.py[cod]
-*$py.class
-.venv/
-venv/
-env/
-.env
-dist/
-build/
-node_modules/
 .pytest_cache/
-.ruff_cache/
-alembic/versions/*.py
-!alembic/versions/README
-.DS_Store
-coverage.xml
-.coverage
+.env
+*.pyc
+build/
+.dart_tool/
+*.db
+*.db-shm
+*.db-wal
+# Dependencias y artefactos compilados
+node_modules/
+target/
+# Claves privadas de wallets (tesorería blockchain) — jamás al repositorio
+*.key
+treasury*
+# Documentos subidos (datos personales): nunca al repositorio
+backend-springboot/data/
+# Build de la interfaz v1 (el dist/ actual si se versiona)
+dist-v1/

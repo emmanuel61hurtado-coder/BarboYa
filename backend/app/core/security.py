@@ -1,36 +1,82 @@
-from datetime import datetime, timedelta
-from typing import Any, Union
-from jose import jwt
-from argon2 import PasswordHasher
-from argon2.exceptions import VerifyMismatchError
-from app.core.config import settings
+from datetime import datetime, timedelta, timezone
+from uuid import UUID
 
-ph = PasswordHasher()
+from fastapi import Depends, HTTPException, status
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
+from jose import JWTError, jwt
+from passlib.context import CryptContext
+
+from app.core.config import get_settings
+
+settings = get_settings()
+pwd_context = CryptContext(schemes=["argon2", "bcrypt"], deprecated="auto")
+bearer = HTTPBearer(auto_error=False)
 
 
-def verify_password(plain_password: str, hashed_password: str) -> bool:
+def hash_password(raw: str) -> str:
+    return pwd_context.hash(raw)
+
+
+def verify_password(raw: str, hashed: str) -> bool:
+    return pwd_context.verify(raw, hashed)
+
+
+def create_token(user_id: UUID, role: str) -> str:
+    now = datetime.now(timezone.utc)
+    exp = now + timedelta(minutes=settings.jwt_expire_minutes)
+    payload = {
+        "sub": str(user_id),
+        "role": role,
+        "iss": settings.jwt_issuer,
+        "aud": settings.jwt_audience,
+        "iat": now,
+        "exp": exp,
+    }
+    return jwt.encode(
+        payload,
+        settings.jwt_secret,
+        algorithm=settings.jwt_algorithm,
+    )
+
+
+def decode_token(token: str) -> dict:
     try:
-        return ph.verify(hashed_password, plain_password)
-    except VerifyMismatchError:
-        return False
+        return jwt.decode(
+            token,
+            settings.jwt_secret,
+            algorithms=[settings.jwt_algorithm],
+            options={
+                "verify_signature": True,
+                "verify_exp": True,
+                "verify_iss": True,
+                "verify_aud": True,
+            },
+            issuer=settings.jwt_issuer,
+            audience=settings.jwt_audience,
+        )
+    except JWTError as exc:
+        raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Token inválido o expirado") from exc
 
 
-def get_password_hash(password: str) -> str:
-    return ph.hash(password)
+class CurrentUser:
+    def __init__(self, id: UUID, role: str):
+        self.id = id
+        self.role = role
 
 
-def create_access_token(subject: Union[str, Any], expires_delta: timedelta = None) -> str:
-    if expires_delta:
-        expire = datetime.utcnow() + expires_delta
-    else:
-        expire = datetime.utcnow() + timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
-    to_encode = {"exp": expire, "sub": str(subject), "type": "access"}
-    encoded_jwt = jwt.encode(to_encode, settings.SECRET_KEY, algorithm="HS256")
-    return encoded_jwt
+async def get_current_user(
+    creds: HTTPAuthorizationCredentials | None = Depends(bearer),
+) -> CurrentUser:
+    if creds is None:
+        raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Falta autenticación")
+    payload = decode_token(creds.credentials)
+    return CurrentUser(UUID(payload["sub"]), payload["role"])
 
 
-def create_refresh_token(subject: Union[str, Any]) -> str:
-    expire = datetime.utcnow() + timedelta(days=settings.REFRESH_TOKEN_EXPIRE_DAYS)
-    to_encode = {"exp": expire, "sub": str(subject), "type": "refresh"}
-    encoded_jwt = jwt.encode(to_encode, settings.SECRET_KEY, algorithm="HS256")
-    return encoded_jwt
+def require_role(*roles: str):
+    async def checker(user: CurrentUser = Depends(get_current_user)) -> CurrentUser:
+        if user.role not in roles:
+            raise HTTPException(status.HTTP_403_FORBIDDEN, "Sin permisos")
+        return user
+
+    return checker

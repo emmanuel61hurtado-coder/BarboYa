@@ -1,0 +1,110 @@
+spring:
+  application:
+    name: barboya-api
+  datasource:
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/barboya_core}
+    username: ${DB_USER:barboya}
+    password: ${DB_PASSWORD:}
+  jpa:
+    open-in-view: false
+    hibernate:
+      # El esquema lo crean las migraciones; Hibernate solo comprueba que coincida
+      ddl-auto: validate
+    properties:
+      hibernate:
+        jdbc:
+          time_zone: UTC
+  flyway:
+    locations: classpath:db/migration
+  servlet:
+    multipart:
+      max-file-size: 5MB
+      max-request-size: 6MB
+  # El correo se activa definiendo SPRING_MAIL_HOST (y puerto, usuario y clave)
+  mail:
+    properties:
+      mail:
+        smtp:
+          connectiontimeout: 5000
+          timeout: 5000
+          writetimeout: 5000
+
+server:
+  port: ${PORT:8081}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health
+  endpoint:
+    health:
+      show-details: never
+  health:
+    mail:
+      enabled: false
+
+springdoc:
+  api-docs:
+    enabled: false
+  swagger-ui:
+    enabled: false
+
+barboya:
+  security:
+    # Obligatorio fuera de los perfiles dev y test: 32 caracteres o mas
+    jwt-secret: ${JWT_SECRET:}
+    issuer: barboya-auth
+    audience: barboya-api
+    access-token-ttl: 15m
+    session-ttl: 30d
+    # Margen para repetir una renovacion cuya respuesta se perdio
+    refresh-retry-window: 20s
+    max-failed-logins: 5
+    lock-duration: 15m
+    cookie-secure: true
+    auth-requests-per-minute: 20
+    cors-allowed-origins: ${CORS_ORIGINS:}
+  codes:
+    ttl: 10m
+    max-attempts: 5
+    resend-cooldown: 60s
+    max-per-day: 5
+  mail:
+    from: ${MAIL_FROM:}
+  # Quien opera la plataforma: aparece en los terminos y en la politica de datos
+  legal:
+    operator-name: ${LEGAL_OPERATOR_NAME:}
+    operator-id: ${LEGAL_OPERATOR_ID:}
+    operator-address: ${LEGAL_OPERATOR_ADDRESS:}
+    operator-phone: ${LEGAL_OPERATOR_PHONE:}
+    operator-email: ${LEGAL_OPERATOR_EMAIL:}
+    # Solo "true" cuando un abogado haya aprobado los documentos
+    reviewed: ${LEGAL_REVIEWED:false}
+  # Apagados hasta cumplir sus requisitos legales
+  features:
+    pharmacy: ${ENABLE_PHARMACY:false}
+    driver-registration: ${ENABLE_DRIVER_REGISTRATION:false}
+  # Un pedido sin respuesta del comercio se cancela solo
+  orders:
+    accept-timeout: ${ORDER_ACCEPT_TIMEOUT:15m}
+    expiry-interval: PT30S
+  # Comisiones en puntos basicos (1000 = 10 %) y tope de deuda
+  finance:
+    merchant-commission-bps: ${MERCHANT_COMMISSION_BPS:1000}
+    courier-commission-bps: ${COURIER_COMMISSION_BPS:1000}
+    debt-limit-cop: ${DEBT_LIMIT_COP:50000}
+  # Entregas con domiciliarios (distancias en linea recta)
+  delivery:
+    base-fee-cop: ${DELIVERY_BASE_FEE_COP:3000}
+    per-km-cop: ${DELIVERY_PER_KM_COP:1000}
+    max-distance-km: ${DELIVERY_MAX_KM:8}
+  # Documentos de domiciliarios: cifrados con FILES_KEY (32 bytes en base64)
+  files:
+    directory: ${FILES_DIRECTORY:./data/files}
+    key: ${FILES_KEY:}
+  # Crea el primer superadministrador solo si todavia no existe ninguno
+  bootstrap-admin:
+    email: ${BOOTSTRAP_ADMIN_EMAIL:}
+    phone: ${BOOTSTRAP_ADMIN_PHONE:}
+    password: ${BOOTSTRAP_ADMIN_PASSWORD:}

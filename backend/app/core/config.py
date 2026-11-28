@@ -1,20 +1,159 @@
-from typing import List
+import logging
+import secrets
+from functools import lru_cache
+from urllib.parse import quote_plus
+
+from pydantic import model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+# Valores públicos (código y ejemplos): quien los conozca podría firmar tokens
+PLACEHOLDER_SECRETS = {"", "CAMBIAR-EN-PRODUCCION", "cambia-esto-por-un-secreto-largo-y-aleatorio"}
+MIN_SECRET_LENGTH = 32
 
 
 class Settings(BaseSettings):
-    PROJECT_NAME: str = "BarboYa API"
-    API_V1_STR: str = "/api/v1"
-    DATABASE_URL: str = "postgresql+asyncpg://barboyadb:barboyasecret@localhost:5432/barboyadb"
-    SECRET_KEY: str = "supersecretkeychangemeinproduction"
-    ACCESS_TOKEN_EXPIRE_MINUTES: int = 15
-    REFRESH_TOKEN_EXPIRE_DAYS: int = 7
-    ENVIRONMENT: str = "development"
-    ALLOWED_ORIGINS: List[str] = ["*"]
-    ADMIN_EMAIL: str = "admin@barboya.com"
-    ADMIN_PASSWORD: str = "Admin123*"
-
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
+    app_name: str = "Barboya API"
+    environment: str = "development"
 
-settings = Settings()
+    database_url: str = ""
+
+    # Partes de la URL de PostgreSQL (se usan si DATABASE_URL no viene definida)
+    postgres_user: str = "barboya"
+    postgres_password: str = "barboya"
+    postgres_host: str = "localhost"
+    postgres_port: int = 5432
+    postgres_db: str = "barboya"
+
+    redis_url: str = "redis://localhost:6379/0"
+
+    # SQLite fallback for local development without Docker/PostgreSQL
+    use_sqlite: bool = True  # auto-fallback when PostgreSQL is unreachable
+    sqlite_url: str = "sqlite+aiosqlite:///./barboya_dev.db"
+
+    jwt_secret: str = "CAMBIAR-EN-PRODUCCION"
+    jwt_algorithm: str = "HS256"
+    jwt_expire_minutes: int = 60 * 24
+    jwt_issuer: str = "barboya-auth"
+    jwt_audience: str = "barboya-api"
+
+    cors_origins: list[str] = ["*"]
+
+    # Suspendidos hasta tener concepto juridico (docs/revision-legal.md).
+    # Se encienden con ENABLE_TRIPS=true y ENABLE_CRYPTO_PAYMENTS=true.
+    enable_trips: bool = False  # viajes de pasajeros y envios entre personas
+    enable_crypto_payments: bool = False  # recargas nuevas con criptomonedas
+
+    # Firma HMAC de los webhooks de pago. Vacío = el webhook rechaza todo.
+    webhook_secret: str = ""
+
+    # Tarifas de suscripción (COP)
+    price_daily_cop: int = 3_000
+    price_weekly_cop: int = 15_000
+    price_monthly_cop: int = 50_000
+
+    # Fee por carrera por defecto (COP)
+    default_trip_fee_cop: int = 300
+
+    # Seguridad / operación
+    stopped_alert_seconds: int = 180
+    face_check_interval_minutes: int = 240
+    offer_ttl_seconds: int = 120
+
+    # Storage (S3 o Supabase compatible con S3)
+    s3_bucket: str = "barboya-media"
+    s3_endpoint_url: str | None = None
+    s3_region: str = "us-east-1"
+
+    # ── Pagos blockchain (EVM). Ver docs/blockchain-payments.md ──
+    # Nodo JSON-RPC (paso 2 de la arquitectura). Vacío = cadena simulada local,
+    # suficiente para desarrollo y pruebas sin desplegar un nodo.
+    chain_rpc_url: str = ""
+    chain_id: int = 80002                       # Polygon Amoy (testnet) por defecto
+    payment_token_address: str = ""             # contrato del stablecoin (0x…)
+    payment_token_symbol: str = "USDC"
+    payment_token_decimals: int = 6
+    # Tesorería de Barboya: dirección que recibe los pagos (0x…)
+    treasury_address: str = ""
+    cop_per_token: int = 4_000                  # 1 USDC ≈ 4.000 COP
+    required_confirmations: int = 12
+    topup_min_cop: int = 1_000
+    topup_max_cop: int = 500_000
+    # Cada cuántos segundos el indexador (paso 7) revisa pagos pendientes
+    indexer_interval_seconds: float = 15.0
+
+    @model_validator(mode="after")
+    def _require_safe_jwt_secret(self) -> "Settings":
+        """Fuera de desarrollo exige un secreto propio; en desarrollo genera uno efímero."""
+        import os
+
+        secret = self.jwt_secret
+        if secret in PLACEHOLDER_SECRETS:
+            secret = os.getenv("SECRET_KEY") or os.getenv("JWT_SECRET") or ""
+        is_placeholder = secret in PLACEHOLDER_SECRETS
+
+        if self.environment.lower() != "development":
+            if is_placeholder or len(secret) < MIN_SECRET_LENGTH:
+                raise ValueError(
+                    f"Define JWT_SECRET con un valor propio de al menos {MIN_SECRET_LENGTH} caracteres"
+                )
+        elif is_placeholder:
+            secret = secrets.token_urlsafe(48)
+            logging.getLogger("barboya").warning(
+                "JWT_SECRET sin definir: se usa uno temporal y las sesiones se cierran al reiniciar"
+            )
+        self.jwt_secret = secret
+        return self
+
+    @model_validator(mode="after")
+    def _build_database_url(self) -> "Settings":
+        """Si no viene DATABASE_URL, se arma con las variables POSTGRES_*."""
+        import os
+        import json
+
+        if self.cors_origins == ["*"]:
+            allowed = os.getenv("ALLOWED_ORIGINS") or os.getenv("CORS_ORIGINS")
+            if allowed:
+                try:
+                    parsed = json.loads(allowed)
+                    if isinstance(parsed, list):
+                        self.cors_origins = parsed
+                except Exception:
+                    self.cors_origins = [o.strip() for o in allowed.split(",")]
+
+        if not self.database_url:
+            from urllib.parse import urlparse
+
+            if self.postgres_host:
+                host_str = str(self.postgres_host).strip()
+                if "://" in host_str:
+                    parsed_url = urlparse(host_str)
+                    if parsed_url.hostname:
+                        self.postgres_host = parsed_url.hostname
+                    if parsed_url.port:
+                        self.postgres_port = parsed_url.port
+                    if parsed_url.username and not self.postgres_user:
+                        self.postgres_user = parsed_url.username
+                    if parsed_url.password and not self.postgres_password:
+                        self.postgres_password = parsed_url.password
+                    if parsed_url.path and len(parsed_url.path) > 1 and not self.postgres_db:
+                        self.postgres_db = parsed_url.path.lstrip("/")
+                elif ":" in host_str and not host_str.startswith("["):
+                    parts = host_str.split(":")
+                    self.postgres_host = parts[0]
+                    if len(parts) > 1 and parts[1].isdigit():
+                        self.postgres_port = int(parts[1])
+
+            user = quote_plus(self.postgres_user)
+            password = quote_plus(self.postgres_password)
+            self.database_url = (
+                f"postgresql+asyncpg://{user}:{password}"
+                f"@{self.postgres_host}:{self.postgres_port}/{self.postgres_db}"
+            )
+        return self
+
+
+@lru_cache
+def get_settings() -> Settings:
+    return Settings()
