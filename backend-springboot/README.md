@@ -125,6 +125,7 @@ Base: `/api/v1`. Los errores usan `application/problem+json` con un campo `code`
 | `GET`, `POST /addresses`, `PUT`, `DELETE /addresses/{id}` | `CUSTOMER` (propias) |
 | `GET /legal`, `GET /legal/documents/{terminos,privacidad}` | Público |
 | `GET /legal/pending`, `POST /legal/acceptances` | Sesión |
+| `POST /account/delete` | Sesión (propia, con contraseña) |
 
 Toda ruta no declarada queda cerrada.
 
@@ -173,6 +174,10 @@ Ver la [revisión legal](../docs/revision-legal.md); nada de esto reemplaza a un
 - Un comercio debe registrar nombre o razón social, documento, dirección de notificaciones y correo para recibir pedidos; el comprador los ve.
 - Cada pedido envía un acuse de recibo por correo (si el correo está configurado).
 - Farmacias y registro de transporte de pasajeros están apagados.
+- **Plazo de entrega:** cada comercio promete un máximo (10 minutos a 30 días). Vencido, el cliente puede cancelar un pedido aceptado; si ya iba en camino con domiciliario, se abre un caso para resolver el dinero que este pagó.
+- **Reclamos:** fecha límite de 15 días hábiles (10 para datos personales). Solo descuenta fines de semana, así que nunca cae después del plazo legal. La cola del equipo muestra primero lo que vence antes. No envía alertas.
+- **Eliminar cuenta:** reemplaza los datos personales, borra direcciones, documentos y ubicación y cierra las sesiones. Conserva pedidos (con su dirección), comisiones, casos, auditoría, autorizaciones y los datos de comercios. No se permite con pedidos en curso o deuda. El texto libre ya escrito (casos, opiniones) no se reescribe.
+- Falta definir plazos de conservación y borrado automático.
 
 ## Verificación de domiciliarios
 

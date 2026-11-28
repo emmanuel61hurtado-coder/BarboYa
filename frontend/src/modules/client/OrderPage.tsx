@@ -86,6 +86,13 @@ function OrderView({ order }: { order: Order }) {
         <StatusBadge status={order.status} />
       </div>
       <ErrorAlert error={cancel.error ?? renew.error} />
+      {order.deliverBy && ['PREPARING', 'READY', 'OUT_FOR_DELIVERY'].includes(order.status) && (
+        <Alert variant={order.cancellable ? 'warning' : 'info'}>
+          {order.cancellable
+            ? 'Se venció el plazo de entrega. Puedes cancelar el pedido sin costo.'
+            : `Entrega prometida a más tardar: ${formatDate(order.deliverBy)}.`}
+        </Alert>
+      )}
       {order.respondBy && (
         <Alert>
           Si el comercio no confirma antes de las {formatTime(order.respondBy)}, el pedido se cancela solo y no pagas
@@ -126,7 +133,7 @@ function OrderView({ order }: { order: Order }) {
           Llamar al comercio: {order.businessPhone}
         </a>
         <OrderSummary order={order} />
-        {order.status === 'PLACED' &&
+        {order.cancellable &&
           (confirming ? (
             <div className="flex flex-wrap items-center gap-2">
               <span className="text-sm">¿Cancelar este pedido?</span>

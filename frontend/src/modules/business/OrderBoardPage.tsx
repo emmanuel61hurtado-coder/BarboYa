@@ -100,6 +100,11 @@ function ShopOrder({ order }: { order: Order }) {
         </p>
       )}
       <OrderSummary order={order} />
+      {order.deliverBy && ['PREPARING', 'READY', 'OUT_FOR_DELIVERY'].includes(order.status) && (
+        <p className="text-xs text-amber-300">
+          Entregar antes de: {formatDate(order.deliverBy)}. Pasada esa hora el cliente puede cancelar.
+        </p>
+      )}
       {order.respondBy && (
         <Alert variant="warning">
           Responde antes de las {formatTime(order.respondBy)} o el pedido se cancela solo.

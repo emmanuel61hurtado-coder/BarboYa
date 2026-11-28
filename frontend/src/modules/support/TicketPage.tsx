@@ -3,6 +3,7 @@ import { Link, useParams } from 'react-router-dom'
 import { supportApi } from '../../services/api/support'
 import { Card, ErrorAlert } from '../../components/ui/surface'
 import { TICKET_CATEGORY_LABELS } from './labels'
+import { DueLabel } from './DueLabel'
 import { Messages, ReplyForm, TicketBadge } from './TicketThread'
 
 export function TicketPage() {
@@ -28,6 +29,7 @@ export function TicketPage() {
         <h1 className="text-2xl font-display font-black">Caso {ticket.number}</h1>
         <TicketBadge status={ticket.status} staff={false} />
       </div>
+      <DueLabel ticket={ticket} />
       <Card title={ticket.subject} description={TICKET_CATEGORY_LABELS[ticket.category]}>
         <Messages ticket={query.data} staff={false} />
         <ReplyForm

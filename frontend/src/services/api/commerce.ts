@@ -34,12 +34,14 @@ export interface BusinessInput {
   longitude: number | null
   notificationAddress: string
   contactEmail: string
+  maxDeliveryMinutes: number
 }
 
 export type Business = Omit<
   BusinessInput,
-  'legalName' | 'nit' | 'description' | 'notificationAddress' | 'contactEmail'
+  'legalName' | 'nit' | 'description' | 'notificationAddress' | 'contactEmail' | 'maxDeliveryMinutes'
 > & {
+  maxDeliveryMinutes: number | null
   id: string
   legalName: string | null
   nit: string | null
@@ -107,6 +109,7 @@ export interface Store {
   business: StoreSummary
   hours: Shift[]
   products: MenuItem[]
+  maxDeliveryMinutes: number | null
   /** Quién vende; nulo si el comercio aún no completó sus datos. */
   seller: {
     legalName: string
@@ -153,6 +156,10 @@ export interface Order {
   /** La comisión de quien consulta; nula para el cliente. */
   commissionCop: number | null
   createdAt: string
+  /** Hora límite prometida para la entrega. */
+  deliverBy: string | null
+  /** Si el cliente puede cancelarlo ahora mismo. */
+  cancellable: boolean
   /** Solo mientras espera confirmación: después se cancela solo. */
   respondBy: string | null
   deliveredAt: string | null

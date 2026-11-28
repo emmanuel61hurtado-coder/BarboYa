@@ -14,6 +14,11 @@ export const businessSchema = z
     nit: z.string().trim().regex(/^[0-9.]{6,15}(-[0-9])?$/, 'Cédula o NIT no válido, por ejemplo 900123456-7'),
     notificationAddress: z.string().trim().min(5, 'Escribe la dirección de notificaciones').max(200),
     contactEmail: z.email('Escribe un correo válido').max(254),
+    maxDeliveryMinutes: z
+      .number({ error: 'Escribe los minutos' })
+      .int('Sin decimales')
+      .min(10, 'Mínimo 10 minutos')
+      .max(43200, 'Máximo 30 días'),
     category: z.enum(['RESTAURANT', 'GROCERY', 'PHARMACY', 'BAKERY', 'OTHER']),
     description: z.string().trim().max(500),
     address: z.string().trim().min(5, 'Escribe la dirección').max(200),

@@ -72,6 +72,7 @@ function BusinessForm({ business }: { business: Business | null }) {
       phone: business?.phone ?? '',
       notificationAddress: business?.notificationAddress ?? '',
       contactEmail: business?.contactEmail ?? '',
+      maxDeliveryMinutes: business?.maxDeliveryMinutes ?? 60,
       pickupEnabled: business?.pickupEnabled ?? true,
       deliveryEnabled: business?.deliveryEnabled ?? false,
       deliveryFeeCop: business?.deliveryFeeCop ?? 0,
@@ -110,6 +111,16 @@ function BusinessForm({ business }: { business: Business | null }) {
           <TextField label="Teléfono del negocio" type="tel" error={errors.phone?.message} {...form.register('phone')} />
         </div>
         <TextField label="Descripción (opcional)" maxLength={500} {...form.register('description')} />
+        <div className="max-w-xs">
+          <TextField
+            label="Plazo máximo de entrega (minutos)"
+            type="number"
+            min={10}
+            hint="Desde que piden. Si se vence, el cliente puede cancelar"
+            error={errors.maxDeliveryMinutes?.message}
+            {...form.register('maxDeliveryMinutes', { valueAsNumber: true })}
+          />
+        </div>
         <fieldset className="space-y-3">
           <legend className="text-xs font-medium text-slate-300">
             Quién vende (la ley obliga a mostrarlo a los compradores)

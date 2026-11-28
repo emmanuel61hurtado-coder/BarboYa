@@ -10,14 +10,19 @@ import { TextField } from '../../components/ui/field'
 import { Button } from '../../components/ui/button'
 import { Alert, Card, ErrorAlert } from '../../components/ui/surface'
 import { actionLabel, formatDate } from '../../utils/labels'
+import { DeleteAccountCard } from './DeleteAccountCard'
 
 export function SecurityPage() {
+  const { role } = useCurrentUser()
+  // Las cuentas del equipo no se eliminan desde aquí
+  const staff = role === 'ADMIN' || role === 'SUPERADMIN'
   return (
     <>
       <h1 className="text-2xl font-display font-black">Seguridad</h1>
       <EmailCard />
       <SessionsCard />
       <HistoryCard />
+      {!staff && <DeleteAccountCard />}
     </>
   )
 }

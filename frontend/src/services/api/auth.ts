@@ -25,6 +25,7 @@ export const authApi = {
   register: (data: Registration) => openSession('/auth/register', data),
   login: (identifier: string, password: string) => openSession('/auth/login', { identifier, password }),
   restore: async () => (await apiClient.refresh()).user,
+  deleteAccount: async (password: string) => void (await http.post('/account/delete', { password })),
   logout: async () => {
     await http.post('/auth/logout')
     apiClient.setAccessToken(null)

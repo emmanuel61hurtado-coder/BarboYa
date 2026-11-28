@@ -6,8 +6,8 @@ package com.barboya.legal;
  * aceptacion y queda claro que aprobo cada quien.
  */
 public enum LegalDocument {
-    TERMS("terminos", "2026-11-borrador-1"),
-    PRIVACY("privacidad", "2026-11-borrador-1");
+    TERMS("terminos", "2026-11-borrador-2"),
+    PRIVACY("privacidad", "2026-11-borrador-2");
 
     private final String slug;
     private final String version;

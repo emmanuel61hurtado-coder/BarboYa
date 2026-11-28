@@ -11,6 +11,7 @@ import { Button } from '../../components/ui/button'
 import { Card, ErrorAlert } from '../../components/ui/surface'
 import { ROLE_LABELS } from '../../utils/labels'
 import { TICKET_CATEGORY_LABELS } from '../support/labels'
+import { DueLabel } from '../support/DueLabel'
 import { Messages, ReplyForm, TicketBadge } from '../support/TicketThread'
 
 export function SupportTicketPage() {
@@ -37,6 +38,7 @@ export function SupportTicketPage() {
         <h1 className="text-2xl font-display font-black">Caso {ticket.number}</h1>
         <TicketBadge status={ticket.status} staff />
       </div>
+      <DueLabel ticket={ticket} />
       {opener && (
         <Card title="Quién reclama">
           <p className="text-sm">

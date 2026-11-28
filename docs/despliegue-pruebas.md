@@ -90,6 +90,8 @@ Usa datos inventados y, si puedes, tres celulares.
 - [ ] Definir un horario y comprobar que fuera de él no se puede pedir.
 - [ ] Crear una promoción de un día y confirmar que al siguiente vuelve el precio normal.
 - [ ] Guardar una dirección estando en casa y usarla en otro pedido.
+- [ ] Revisar los documentos legales, registrarse aceptándolos y eliminar una cuenta de prueba.
+- [ ] Dejar vencer el plazo de entrega de un pedido y cancelarlo desde el cliente.
 
 ## 7. Problemas frecuentes
 

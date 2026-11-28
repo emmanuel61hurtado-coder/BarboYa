@@ -39,11 +39,11 @@ Puedes conocer, actualizar y rectificar tus datos; pedir prueba de tu autorizaci
 
 ## 7. Cómo ejercerlos
 
-Abre un caso en Soporte o escribe a {{correo}}. Las consultas se responden en máximo 10 días hábiles (prorrogables hasta 5 más) y los reclamos en máximo 15 (prorrogables hasta 8 más). Si el reclamo está incompleto, te pediremos completarlo dentro de los 5 días siguientes.
+Abre un caso en Soporte con el tema «Mis datos personales» o escribe a {{correo}}. Las consultas se responden en máximo 10 días hábiles (prorrogables hasta 5 más) y los reclamos en máximo 15 (prorrogables hasta 8 más). Si el reclamo está incompleto, te pediremos completarlo dentro de los 5 días siguientes.
 
 ## 8. Cuánto tiempo se conservan
 
-Mientras tengas la cuenta y, después, el tiempo que exijan las obligaciones legales y contables. Puedes eliminar tus direcciones y documentos desde la plataforma. PENDIENTE: plazos de conservación y borrado para cada tipo de dato.
+Mientras tengas la cuenta. Puedes eliminar tus direcciones y documentos, y también la cuenta completa desde Seguridad: tus datos personales se reemplazan y se borran direcciones, documentos y ubicación. Se conservan, el tiempo que exijan las obligaciones legales y contables, los pedidos (con la dirección de entrega), las comisiones, los casos de soporte, los registros de seguridad y la prueba de tus autorizaciones; los datos de un comercio se conservan como identificación de quien vendió. PENDIENTE: plazos de conservación y borrado para cada tipo de dato.
 
 ## 9. Seguridad
 

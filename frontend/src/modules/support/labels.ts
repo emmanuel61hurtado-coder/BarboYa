@@ -5,6 +5,7 @@ export const TICKET_CATEGORY_LABELS: Record<TicketCategory, string> = {
   DELIVERY_FAILED: 'Entrega fallida',
   PAYMENT: 'Cobros o comisiones',
   ACCOUNT: 'Mi cuenta',
+  PERSONAL_DATA: 'Mis datos personales',
   OTHER: 'Otro',
 }
 

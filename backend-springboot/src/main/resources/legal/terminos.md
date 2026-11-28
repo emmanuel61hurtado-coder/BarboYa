@@ -27,9 +27,10 @@ BarboYa es una plataforma de contacto entre comercios, clientes y domiciliarios.
 ## 5. Pedidos, entregas y cancelaciones
 
 - El comercio debe responder en el plazo que muestra la plataforma; si no lo hace, el pedido se cancela solo.
-- Puedes cancelar mientras el comercio no lo haya aceptado. Si ya fue aceptado y no se cumple lo ofrecido, puedes pedir la cancelación en Soporte; no pagas lo que no recibas.
+- Puedes cancelar mientras el comercio no lo haya aceptado. No pagas lo que no recibas.
+- Antes de confirmar se informa el plazo máximo de entrega. Si se vence, puedes cancelar el pedido desde la plataforma, aunque ya esté aceptado o en camino.
 - La entrega se confirma con tu PIN. Entrégalo solo cuando tengas el pedido.
-- Si un pedido no se entrega en el plazo informado o, sin plazo, en 30 días calendario, puedes darlo por terminado y recuperar lo que hayas pagado.
+- Si no se informó plazo, rige el máximo de 30 días calendario. Al terminar un pedido por retraso recuperas lo que hayas pagado en máximo 15 días calendario.
 
 ## 6. Derecho de retracto
 
@@ -62,12 +63,16 @@ Solo se califica un pedido entregado. No se permiten insultos, datos personales 
 
 ## 12. Peticiones, quejas y reclamos
 
-Abre un caso en Soporte: recibirás un número, la fecha y su estado. También puedes escribir a {{correo}}. Las reclamaciones se responden en máximo 15 días hábiles. Puedes acudir a la Superintendencia de Industria y Comercio (https://www.sic.gov.co).
+Abre un caso en Soporte: recibirás un número, la fecha, su estado y la fecha límite de respuesta. También puedes escribir a {{correo}}. Las reclamaciones se responden en máximo 15 días hábiles. Puedes acudir a la Superintendencia de Industria y Comercio (https://www.sic.gov.co).
 
-## 13. Emergencias
+## 13. Eliminar tu cuenta
+
+Puedes eliminar tu cuenta desde Seguridad cuando no tengas pedidos en curso ni comisiones pendientes.
+
+## 14. Emergencias
 
 El botón o los avisos de la plataforma no reemplazan a las autoridades. En una emergencia llama al 123.
 
-## 14. Cambios
+## 15. Cambios
 
 Si cambian estos términos publicaremos la nueva versión y te pediremos aceptarla. Se aplica la ley colombiana.

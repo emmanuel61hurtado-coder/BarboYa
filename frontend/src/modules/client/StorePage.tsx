@@ -18,7 +18,7 @@ import { ratingApi } from '../../services/api/ratings'
 import { formatRating } from '../ratings/format'
 import { ReviewList } from '../ratings/ReviewList'
 import { DAY_LABELS, describeDay, toWeek } from '../../utils/hours'
-import { formatDay } from '../../utils/dates'
+import { formatDay, formatMinutes } from '../../utils/dates'
 import { SaveAddress, SavedAddressSelect } from './CheckoutAddresses'
 
 export function StorePage() {
@@ -192,7 +192,8 @@ function StoreView({ store }: { store: Store }) {
   )
 }
 
-function Checkout({ store: { business, products }, cart }: { store: Store; cart: Cart }) {
+function Checkout({ store, cart }: { store: Store; cart: Cart }) {
+  const { business, products } = store
   const navigate = useNavigate()
   const queryClient = useQueryClient()
   const attempt = useRef<{ content: string; key: string }>()
@@ -319,6 +320,12 @@ function Checkout({ store: { business, products }, cart }: { store: Store; cart:
           <p className="text-xs text-slate-500">
             {courier ? 'Pagas en efectivo al domiciliario.' : 'Pagas en efectivo al recibir.'} No hay cargos adicionales.
           </p>
+          {store.maxDeliveryMinutes !== null && (
+            <p className="text-sm text-slate-300">
+              {fulfillment === 'PICKUP' ? 'Listo para recoger' : 'Entrega'} en máximo{' '}
+              {formatMinutes(store.maxDeliveryMinutes)} desde que pides. Si se vence, puedes cancelar sin costo.
+            </p>
+          )}
           <p className="text-xs text-slate-500">
             Precios en pesos con impuestos incluidos. Tienes 5 días hábiles de retracto, salvo excepciones como los
             alimentos preparados y perecederos. El comercio indica el tiempo de preparación al confirmar.{' '}

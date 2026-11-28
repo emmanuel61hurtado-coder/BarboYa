@@ -3,7 +3,13 @@ import type { Page, Role } from './types'
 
 const { http } = apiClient
 
-export type TicketCategory = 'ORDER_PROBLEM' | 'DELIVERY_FAILED' | 'PAYMENT' | 'ACCOUNT' | 'OTHER'
+export type TicketCategory =
+  | 'ORDER_PROBLEM'
+  | 'DELIVERY_FAILED'
+  | 'PAYMENT'
+  | 'ACCOUNT'
+  | 'PERSONAL_DATA'
+  | 'OTHER'
 export type TicketStatus = 'OPEN' | 'ANSWERED' | 'RESOLVED'
 
 export interface TicketSummary {
@@ -15,6 +21,8 @@ export interface TicketSummary {
   orderId: string | null
   createdAt: string
   updatedAt: string
+  /** Fecha límite legal de respuesta. */
+  dueAt: string
 }
 
 export interface Ticket {

@@ -1,7 +1,7 @@
 import { z } from 'zod'
 
 export const ticketSchema = z.object({
-  category: z.enum(['ORDER_PROBLEM', 'DELIVERY_FAILED', 'PAYMENT', 'ACCOUNT', 'OTHER']),
+  category: z.enum(['ORDER_PROBLEM', 'DELIVERY_FAILED', 'PAYMENT', 'ACCOUNT', 'PERSONAL_DATA', 'OTHER']),
   subject: z.string().trim().min(5, 'Resume el problema (mínimo 5 caracteres)').max(120),
   message: z.string().trim().min(10, 'Cuéntanos qué pasó (mínimo 10 caracteres)').max(2000),
 })

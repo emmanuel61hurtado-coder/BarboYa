@@ -6,6 +6,7 @@ import { Button } from '../../components/ui/button'
 import { Card, ErrorAlert, Pager } from '../../components/ui/surface'
 import { formatDate } from '../../utils/labels'
 import { TICKET_CATEGORY_LABELS } from '../support/labels'
+import { DueLabel } from '../support/DueLabel'
 import { TicketBadge } from '../support/TicketThread'
 
 const FILTERS: [TicketStatus, string][] = [
@@ -57,7 +58,10 @@ export function SupportQueuePage() {
                   {TICKET_CATEGORY_LABELS[ticket.category]} · {formatDate(ticket.updatedAt)}
                 </p>
               </div>
-              <TicketBadge status={ticket.status} staff />
+              <div className="flex flex-col items-end gap-1">
+                <TicketBadge status={ticket.status} staff />
+                <DueLabel ticket={ticket} />
+              </div>
             </li>
           ))}
         </ul>

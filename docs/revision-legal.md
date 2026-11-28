@@ -39,8 +39,11 @@ Hechos en el código; **entran en servicio solo cuando subas los cambios y se de
 | Autorización de datos, términos y mayoría de edad con prueba; documentos publicados como **borrador** | Versión nueva |
 | Identificación obligatoria del comercio, visible al comprador; enlace a la SIC; aviso de impuestos y retracto; acuse de recibo por correo | Versión nueva |
 | Farmacia y registro de mototaxistas y conductores apagados | Versión nueva |
+| Plazo máximo de entrega informado antes de comprar y cancelación por retraso (art. 50 c y h) | Versión nueva |
+| Fecha límite en cada reclamo (15 días hábiles; 10 en datos personales) y categoría de datos personales | Versión nueva; sin alertas automáticas |
+| Eliminación de cuenta por su titular, conservando la prueba de las operaciones | Versión nueva |
 
-**Sigue pendiente:** datos del responsable y revisión de los documentos por un abogado; plazo de entrega antes de comprar y cancelación por retraso; fechas límite de PQR y datos personales; eliminación de cuenta y plazos de borrado; fuentes alojadas en el propio servidor; todo lo de domiciliarios; y en la app actual, términos y política publicados, autorización registrada y las cuentas y datos ya recogidos sin esa autorización.
+**Sigue pendiente:** datos del responsable y revisión de los documentos por un abogado; plazos de conservación y borrado automático; devolución de dinero cuando existan pagos en línea; fuentes alojadas en el propio servidor; todo lo de domiciliarios; y en la app actual, términos y política publicados, autorización registrada y las cuentas y datos ya recogidos sin esa autorización.
 
 ## 2. Lo urgente: la aplicación que está funcionando
 

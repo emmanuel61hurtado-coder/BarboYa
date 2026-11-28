@@ -43,6 +43,7 @@ const ACTION_LABELS: Record<string, string> = {
   TICKET_RESOLVED: 'Caso de soporte resuelto',
   RATING_HIDDEN: 'Calificación ocultada',
   RATING_RESTORED: 'Calificación visible de nuevo',
+  ACCOUNT_DELETED: 'Cuenta eliminada por su titular',
 }
 
 export const actionLabel = (action: string) => ACTION_LABELS[action] ?? action
